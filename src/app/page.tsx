@@ -7,10 +7,7 @@ import FeatureCard from '@/components/feature-card';
 import { Search, TrendingUp, Trophy } from 'lucide-react';
 
 export default function LandingPage() {
-  const handleLogin = () => {
-    console.log("Login clicked");
-    // TODO: Implement Supabase Auth
-  };
+
 
   return (
     <div className="min-h-screen bg-[#0b0b10] relative overflow-hidden font-sans text-white selection:bg-purple-500/30">
@@ -19,8 +16,8 @@ export default function LandingPage() {
       <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-blue-600/20 rounded-full blur-[120px] delay-700" />
       <div className="absolute top-[20%] right-[10%] w-[30vw] h-[30vw] bg-pink-600/10 rounded-full blur-[100px]" />
 
-      <Navbar onLogin={handleLogin} />
-      <HeroSection onLogin={handleLogin} />
+      <Navbar />
+      <HeroSection />
 
       {/* Features Grid */}
       <section className="relative z-10 py-20 bg-black/20 backdrop-blur-sm border-t border-white/5">

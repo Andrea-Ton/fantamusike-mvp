@@ -1,11 +1,11 @@
-'use client';
-
 import React from 'react';
 import { Trophy, TrendingUp, Info, LogOut } from 'lucide-react';
 import ArtistCard, { Slot } from '@/components/dashboard/artist-card';
 import Image from 'next/image';
+import { createClient } from '@/utils/supabase/server';
+import { redirect } from 'next/navigation';
 
-// --- Mock Data ---
+// --- Mock Data (To be replaced with real team data later) ---
 const MOCK_TEAM: Slot[] = [
     { id: 1, type: 'Big', label: 'Headliner', requirement: 'Popolarità > 75', artist: { id: '1', name: 'Lazza', image: 'https://i.scdn.co/image/ab6761610000e5eb82d5d954eb4222c411465699', popularity: 88, category: 'Big', trend: +12 } },
     { id: 2, type: 'Mid', label: 'Rising Star 1', requirement: 'Popolarità 30-75', artist: { id: '2', name: 'Anna', image: 'https://i.scdn.co/image/ab6761610000e5eb4c6e9a63a932e14617073921', popularity: 68, category: 'Mid', trend: +45 } },
@@ -14,7 +14,23 @@ const MOCK_TEAM: Slot[] = [
     { id: 5, type: 'New Gen', label: 'Scout Pick 2', requirement: 'Popolarità < 30', artist: null },
 ];
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        redirect('/');
+    }
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+    const totalScore = profile?.total_score || 0;
+    const musiCoins = profile?.musi_coins || 0;
+
     return (
         <>
             {/* Mobile Header */}
@@ -45,7 +61,10 @@ export default function DashboardPage() {
                         <p className="text-gray-400">Benvenuto, Manager. Ecco come sta andando la tua etichetta.</p>
                     </div>
                     <div className="flex gap-4">
-                        <button className="px-4 py-2 bg-[#1a1a24] rounded-lg border border-white/10 text-sm font-medium hover:bg-white/5 transition">Notifiche</button>
+                        <div className="px-4 py-2 bg-[#1a1a24] rounded-lg border border-white/10 text-sm font-medium text-yellow-400 flex items-center gap-2">
+                            <span>MusiCoins:</span>
+                            <span className="font-bold">{musiCoins}</span>
+                        </div>
                         <button className="px-4 py-2 bg-purple-600 rounded-lg text-white text-sm font-bold hover:bg-purple-700 transition shadow-lg shadow-purple-500/20">Invita Amico</button>
                     </div>
                 </header>
@@ -60,11 +79,11 @@ export default function DashboardPage() {
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <p className="text-purple-200 text-sm font-medium mb-2">Punteggio Totale</p>
-                                        <h2 className="text-5xl md:text-6xl font-bold tracking-tighter">850</h2>
+                                        <h2 className="text-5xl md:text-6xl font-bold tracking-tighter">{totalScore}</h2>
                                     </div>
                                     <div className="bg-white/20 backdrop-blur-md px-4 py-2 rounded-full flex items-center gap-2">
                                         <Trophy size={16} className="text-yellow-300" />
-                                        <span className="text-sm font-bold">#42 Global</span>
+                                        <span className="text-sm font-bold">#-- Global</span>
                                     </div>
                                 </div>
 
@@ -73,7 +92,7 @@ export default function DashboardPage() {
                                         <span className="text-xs text-purple-200 uppercase tracking-wider mb-1">Trend Settimanale</span>
                                         <div className="flex items-center gap-1 text-lg font-bold">
                                             <TrendingUp size={18} className="text-green-300" />
-                                            +124 pts
+                                            +0 pts
                                         </div>
                                     </div>
                                     <div className="w-px h-10 bg-white/20"></div>
