@@ -18,7 +18,7 @@ export type SaveTeamResult = {
     errors?: Record<string, string>;
 };
 
-export async function saveTeamAction(slots: TeamSlots): Promise<SaveTeamResult> {
+export async function saveTeamAction(slots: TeamSlots, captainId: string | null): Promise<SaveTeamResult> {
     const supabase = await createClient();
 
     // 1. Auth Check
@@ -48,6 +48,14 @@ export async function saveTeamAction(slots: TeamSlots): Promise<SaveTeamResult> 
     validateSlot('slot_3', slots.slot_3, 30, 75, 'Mid Tier (30-75)');
     validateSlot('slot_4', slots.slot_4, 0, 29, 'New Gen (<30)');
     validateSlot('slot_5', slots.slot_5, 0, 29, 'New Gen (<30)');
+
+    // Validate Captain
+    if (captainId) {
+        const isCaptainInTeam = artists.some(a => a.id === captainId);
+        if (!isCaptainInTeam) {
+            errors['captain'] = 'Captain must be one of the selected artists';
+        }
+    }
 
     if (Object.keys(errors).length > 0) {
         return { success: false, message: 'Validation failed', errors };
@@ -82,8 +90,8 @@ export async function saveTeamAction(slots: TeamSlots): Promise<SaveTeamResult> 
             slot_3_id: slots.slot_3!.id,
             slot_4_id: slots.slot_4!.id,
             slot_5_id: slots.slot_5!.id,
+            captain_id: captainId,
             locked_at: new Date().toISOString()
-            // captain_id is optional for now
         };
 
         const { error: teamError } = await supabase
@@ -110,6 +118,7 @@ export type UserTeamResponse = {
     slot_3: SpotifyArtist | null;
     slot_4: SpotifyArtist | null;
     slot_5: SpotifyArtist | null;
+    captain_id?: string | null;
 } | null;
 
 export async function getUserTeamAction(): Promise<UserTeamResponse> {
@@ -167,5 +176,6 @@ export async function getUserTeamAction(): Promise<UserTeamResponse> {
         slot_3: getArtist(team.slot_3_id),
         slot_4: getArtist(team.slot_4_id),
         slot_5: getArtist(team.slot_5_id),
+        captain_id: team.captain_id
     };
 }

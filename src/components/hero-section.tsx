@@ -1,10 +1,12 @@
 'use client';
 
 import React from 'react';
-import { ArrowRight, Music, Plus, TrendingUp } from 'lucide-react';
+import { ArrowRight, Music, Plus, TrendingUp, Star } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { SpotifyArtist } from '@/lib/spotify';
+import Image from 'next/image';
 
-export default function HeroSection({ seasonName = 'Season Zero' }: { seasonName?: string }) {
+export default function HeroSection({ seasonName = 'Season Zero', featuredArtists = [] }: { seasonName?: string, featuredArtists?: SpotifyArtist[] }) {
     const handleLogin = async () => {
         const supabase = createClient();
         await supabase.auth.signInWithOAuth({
@@ -65,40 +67,67 @@ export default function HeroSection({ seasonName = 'Season Zero' }: { seasonName
 
                     {/* Content simulation */}
                     <div className="space-y-4">
-                        {/* Row 1 */}
-                        <div className="flex gap-4 items-center p-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center">
-                                <Music size={20} className="text-white" />
-                            </div>
-                            <div className="flex-1">
-                                <div className="text-white font-bold text-sm">Lazza</div>
-                                <div className="text-gray-500 text-xs">Headliner • Pop 88</div>
-                            </div>
-                            <div className="text-green-400 text-xs font-bold flex items-center gap-1">
-                                <TrendingUp size={14} /> +124
-                            </div>
-                        </div>
-                        {/* Row 2 */}
-                        <div className="flex gap-4 items-center p-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 to-orange-600 flex items-center justify-center">
-                                <Music size={20} className="text-white" />
-                            </div>
-                            <div className="flex-1">
-                                <div className="text-white font-bold text-sm">Anna</div>
-                                <div className="text-gray-500 text-xs">Mid Tier • Pop 68</div>
-                            </div>
-                            <div className="text-green-400 text-xs font-bold flex items-center gap-1">
-                                <TrendingUp size={14} /> +89
-                            </div>
-                        </div>
-                        {/* Row 3 */}
+                        {featuredArtists.length > 0 ? (
+                            <>
+                                <div className="text-xs font-bold text-yellow-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                    <Star size={12} className="fill-yellow-500" /> Featured Artists
+                                </div>
+                                {featuredArtists.slice(0, 3).map((artist) => (
+                                    <div key={artist.id} className="flex gap-4 items-center p-3 rounded-2xl bg-white/5 border border-yellow-500/20 hover:bg-white/10 transition-colors cursor-pointer">
+                                        <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-gray-800">
+                                            {artist.images[0] && (
+                                                <Image src={artist.images[0].url} alt={artist.name} fill className="object-cover" />
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="text-white font-bold text-sm">{artist.name}</div>
+                                            <div className="text-gray-500 text-xs">Pop {artist.popularity}</div>
+                                        </div>
+                                        <div className="text-yellow-500 text-xs font-bold flex items-center gap-1">
+                                            x2 Pts
+                                        </div>
+                                    </div>
+                                ))}
+                            </>
+                        ) : (
+                            <>
+                                {/* Row 1 */}
+                                <div className="flex gap-4 items-center p-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer">
+                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center">
+                                        <Music size={20} className="text-white" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="text-white font-bold text-sm">Lazza</div>
+                                        <div className="text-gray-500 text-xs">Headliner • Pop 88</div>
+                                    </div>
+                                    <div className="text-green-400 text-xs font-bold flex items-center gap-1">
+                                        <TrendingUp size={14} /> +124
+                                    </div>
+                                </div>
+                                {/* Row 2 */}
+                                <div className="flex gap-4 items-center p-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer">
+                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 to-orange-600 flex items-center justify-center">
+                                        <Music size={20} className="text-white" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="text-white font-bold text-sm">Anna</div>
+                                        <div className="text-gray-500 text-xs">Mid Tier • Pop 68</div>
+                                    </div>
+                                    <div className="text-green-400 text-xs font-bold flex items-center gap-1">
+                                        <TrendingUp size={14} /> +89
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        {/* Row 3 (Placeholder) */}
                         <div className="flex gap-4 items-center p-3 rounded-2xl bg-white/5 border border-white/5 opacity-70">
                             <div className="w-12 h-12 rounded-xl bg-gray-800 flex items-center justify-center">
                                 <Plus size={20} className="text-gray-500" />
                             </div>
                             <div className="flex-1">
-                                <div className="text-gray-400 font-bold text-sm">Slot New Gen</div>
-                                <div className="text-gray-600 text-xs">Seleziona un artista...</div>
+                                <div className="text-gray-400 font-bold text-sm">Crea la tua Label</div>
+                                <div className="text-gray-600 text-xs">Scegli i tuoi 5 artisti...</div>
                             </div>
                         </div>
                     </div>

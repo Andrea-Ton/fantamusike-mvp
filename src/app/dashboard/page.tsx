@@ -51,7 +51,8 @@ export default async function DashboardPage() {
                 image: userTeam.slot_1.images[0]?.url || '',
                 popularity: userTeam.slot_1.popularity,
                 category: 'Big',
-                trend: 0 // Placeholder for now
+                trend: 0, // Placeholder for now
+                isCaptain: userTeam.captain_id === userTeam.slot_1.id
             } : null
         },
         {
@@ -65,7 +66,8 @@ export default async function DashboardPage() {
                 image: userTeam.slot_2.images[0]?.url || '',
                 popularity: userTeam.slot_2.popularity,
                 category: 'Mid',
-                trend: 0
+                trend: 0,
+                isCaptain: userTeam.captain_id === userTeam.slot_2.id
             } : null
         },
         {
@@ -79,7 +81,8 @@ export default async function DashboardPage() {
                 image: userTeam.slot_3.images[0]?.url || '',
                 popularity: userTeam.slot_3.popularity,
                 category: 'Mid',
-                trend: 0
+                trend: 0,
+                isCaptain: userTeam.captain_id === userTeam.slot_3.id
             } : null
         },
         {
@@ -93,7 +96,8 @@ export default async function DashboardPage() {
                 image: userTeam.slot_4.images[0]?.url || '',
                 popularity: userTeam.slot_4.popularity,
                 category: 'New Gen',
-                trend: 0
+                trend: 0,
+                isCaptain: userTeam.captain_id === userTeam.slot_4.id
             } : null
         },
         {
@@ -107,7 +111,8 @@ export default async function DashboardPage() {
                 image: userTeam.slot_5.images[0]?.url || '',
                 popularity: userTeam.slot_5.popularity,
                 category: 'New Gen',
-                trend: 0
+                trend: 0,
+                isCaptain: userTeam.captain_id === userTeam.slot_5.id
             } : null
         },
     ];

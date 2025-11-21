@@ -4,10 +4,12 @@ import HeroSection from '@/components/hero-section';
 import FeatureCard from '@/components/feature-card';
 import { Search, TrendingUp, Trophy } from 'lucide-react';
 import { getCurrentSeasonAction } from '@/app/actions/season';
+import { getFeaturedArtistsAction } from '@/app/actions/artist';
 
 export default async function LandingPage() {
   const currentSeason = await getCurrentSeasonAction();
   const seasonName = currentSeason?.name || 'Season Zero';
+  const featuredArtists = await getFeaturedArtistsAction();
 
   return (
     <div className="min-h-screen bg-[#0b0b10] relative overflow-hidden font-sans text-white selection:bg-purple-500/30">
@@ -17,7 +19,7 @@ export default async function LandingPage() {
       <div className="absolute top-[20%] right-[10%] w-[30vw] h-[30vw] bg-pink-600/10 rounded-full blur-[100px]" />
 
       <Navbar />
-      <HeroSection seasonName={seasonName} />
+      <HeroSection seasonName={seasonName} featuredArtists={featuredArtists} />
 
       {/* Features Grid */}
       <section className="relative z-10 py-20 bg-black/20 backdrop-blur-sm border-t border-white/5">

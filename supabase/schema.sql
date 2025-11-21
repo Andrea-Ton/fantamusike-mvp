@@ -167,3 +167,20 @@ create policy "Season rankings are viewable by everyone."
 create policy "Admins can insert season rankings."
   on season_rankings for insert
   with check ( exists ( select 1 from profiles where id = auth.uid() and is_admin = true ) );
+
+-- Create featured_artists table
+create table featured_artists (
+  id uuid default uuid_generate_v4() primary key,
+  spotify_id text references artists_cache.spotify_id not null,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+alter table featured_artists enable row level security;
+
+create policy "Featured artists are viewable by everyone."
+  on featured_artists for select
+  using ( true );
+
+create policy "Admins can manage featured artists."
+  on featured_artists for all
+  using ( exists ( select 1 from profiles where id = auth.uid() and is_admin = true ) );

@@ -131,7 +131,12 @@ export async function calculateScoresAction(weekNumber: number) {
         // 6. Update Profiles (Bulk)
         // This is the heavy part. For MVP, let's run a SQL function if possible, 
         // or just iterate teams.
+        // 6. Update Profiles (Bulk)
         const { data: teams } = await supabase.from('teams').select('*');
+
+        // Fetch Featured Artists for Multiplier Check
+        const { data: featuredArtists } = await supabase.from('featured_artists').select('spotify_id');
+        const featuredIds = new Set(featuredArtists?.map(f => f.spotify_id) || []);
 
         if (teams) {
             for (const team of teams) {
@@ -141,12 +146,25 @@ export async function calculateScoresAction(weekNumber: number) {
                 // Fetch scores for these artists for this week
                 const { data: scores } = await supabase
                     .from('weekly_scores')
-                    .select('total_points')
+                    .select('artist_id, total_points')
                     .eq('week_number', weekNumber)
                     .in('artist_id', slots);
 
                 if (scores) {
-                    teamScore = scores.reduce((acc, curr) => acc + curr.total_points, 0);
+                    for (const score of scores) {
+                        let points = score.total_points;
+
+                        // Apply Multipliers
+                        if (team.captain_id === score.artist_id) {
+                            if (featuredIds.has(score.artist_id)) {
+                                points = Math.round(points * 2); // Featured Captain x2
+                            } else {
+                                points = Math.round(points * 1.5); // Regular Captain x1.5
+                            }
+                        }
+
+                        teamScore += points;
+                    }
 
                     // Update Profile
                     await supabase.rpc('increment_score', {

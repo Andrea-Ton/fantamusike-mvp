@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, LogOut, Loader2, X, Save, Trophy, Users, Zap, ChevronUp } from 'lucide-react';
+import { Search, Plus, LogOut, Loader2, X, Save, Trophy, Users, Zap, ChevronUp, Star, Crown } from 'lucide-react';
 import Image from 'next/image';
 import { searchArtistsAction } from '@/app/actions/spotify';
 import { saveTeamAction, TeamSlots } from '@/app/actions/team';
+import { getFeaturedArtistsAction } from '@/app/actions/artist';
 import { SpotifyArtist } from '@/lib/spotify';
 import { useRouter } from 'next/navigation';
 import LogoutButton from '@/components/logout-button';
@@ -44,11 +45,21 @@ export default function TalentScoutPage() {
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
     const [activeFilter, setActiveFilter] = useState('All');
     const [artists, setArtists] = useState<SpotifyArtist[]>([]);
+    const [featuredArtists, setFeaturedArtists] = useState<Set<string>>(new Set());
     const [isLoading, setIsLoading] = useState(false);
     const [draftTeam, setDraftTeam] = useState<TeamSlots>(INITIAL_SLOTS);
+    const [captainId, setCaptainId] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
     const [showMobileTeam, setShowMobileTeam] = useState(false);
+
+    useEffect(() => {
+        const fetchFeatured = async () => {
+            const featured = await getFeaturedArtistsAction();
+            setFeaturedArtists(new Set(featured.map(a => a.id)));
+        };
+        fetchFeatured();
+    }, []);
 
     useEffect(() => {
         const fetchArtists = async () => {
@@ -79,10 +90,22 @@ export default function TalentScoutPage() {
 
     const handleAddToSlot = (artist: SpotifyArtist, slotKey: keyof TeamSlots) => {
         setDraftTeam(prev => ({ ...prev, [slotKey]: artist }));
+        // Reset captain if the slot was the captain
+        if (draftTeam[slotKey]?.id === captainId) {
+            setCaptainId(null);
+        }
     };
 
     const handleRemoveFromSlot = (slotKey: keyof TeamSlots) => {
+        const artistId = draftTeam[slotKey]?.id;
+        if (artistId === captainId) {
+            setCaptainId(null);
+        }
         setDraftTeam(prev => ({ ...prev, [slotKey]: null }));
+    };
+
+    const handleSetCaptain = (artistId: string) => {
+        setCaptainId(artistId);
     };
 
     const handleSaveTeam = async () => {
@@ -97,7 +120,13 @@ export default function TalentScoutPage() {
             return;
         }
 
-        const result = await saveTeamAction(draftTeam);
+        if (!captainId) {
+            setSaveError('Devi selezionare un Capitano!');
+            setIsSaving(false);
+            return;
+        }
+
+        const result = await saveTeamAction(draftTeam, captainId);
 
         if (result.success) {
             router.push('/dashboard');
@@ -137,6 +166,9 @@ export default function TalentScoutPage() {
                 artist={draftTeam.slot_1}
                 onRemove={() => handleRemoveFromSlot('slot_1')}
                 icon={<Trophy size={14} className="text-yellow-500" />}
+                isCaptain={draftTeam.slot_1?.id === captainId}
+                onSetCaptain={() => draftTeam.slot_1 && handleSetCaptain(draftTeam.slot_1.id)}
+                isFeatured={draftTeam.slot_1 ? featuredArtists.has(draftTeam.slot_1.id) : false}
             />
 
             {/* Mid Tier */}
@@ -146,6 +178,9 @@ export default function TalentScoutPage() {
                 artist={draftTeam.slot_2}
                 onRemove={() => handleRemoveFromSlot('slot_2')}
                 icon={<Users size={14} className="text-blue-400" />}
+                isCaptain={draftTeam.slot_2?.id === captainId}
+                onSetCaptain={() => draftTeam.slot_2 && handleSetCaptain(draftTeam.slot_2.id)}
+                isFeatured={draftTeam.slot_2 ? featuredArtists.has(draftTeam.slot_2.id) : false}
             />
             <SlotPreview
                 label="Mid Tier 2"
@@ -153,6 +188,9 @@ export default function TalentScoutPage() {
                 artist={draftTeam.slot_3}
                 onRemove={() => handleRemoveFromSlot('slot_3')}
                 icon={<Users size={14} className="text-blue-400" />}
+                isCaptain={draftTeam.slot_3?.id === captainId}
+                onSetCaptain={() => draftTeam.slot_3 && handleSetCaptain(draftTeam.slot_3.id)}
+                isFeatured={draftTeam.slot_3 ? featuredArtists.has(draftTeam.slot_3.id) : false}
             />
 
             {/* New Gen */}
@@ -162,6 +200,9 @@ export default function TalentScoutPage() {
                 artist={draftTeam.slot_4}
                 onRemove={() => handleRemoveFromSlot('slot_4')}
                 icon={<Zap size={14} className="text-green-400" />}
+                isCaptain={draftTeam.slot_4?.id === captainId}
+                onSetCaptain={() => draftTeam.slot_4 && handleSetCaptain(draftTeam.slot_4.id)}
+                isFeatured={draftTeam.slot_4 ? featuredArtists.has(draftTeam.slot_4.id) : false}
             />
             <SlotPreview
                 label="New Gen 2"
@@ -169,6 +210,9 @@ export default function TalentScoutPage() {
                 artist={draftTeam.slot_5}
                 onRemove={() => handleRemoveFromSlot('slot_5')}
                 icon={<Zap size={14} className="text-green-400" />}
+                isCaptain={draftTeam.slot_5?.id === captainId}
+                onSetCaptain={() => draftTeam.slot_5 && handleSetCaptain(draftTeam.slot_5.id)}
+                isFeatured={draftTeam.slot_5 ? featuredArtists.has(draftTeam.slot_5.id) : false}
             />
 
             {saveError && (
@@ -179,8 +223,8 @@ export default function TalentScoutPage() {
 
             <button
                 onClick={handleSaveTeam}
-                disabled={filledSlotsCount < 5 || isSaving}
-                className={`w-full h-12 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${filledSlotsCount === 5
+                disabled={filledSlotsCount < 5 || !captainId || isSaving}
+                className={`w-full h-12 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${filledSlotsCount === 5 && captainId
                     ? 'bg-white text-black hover:bg-purple-400 shadow-lg shadow-purple-500/20'
                     : 'bg-white/5 text-gray-500 cursor-not-allowed'
                     }`}
@@ -267,9 +311,10 @@ export default function TalentScoutPage() {
                                     const category = getCategory(artist.popularity);
                                     const availableSlots = getAvailableSlots(artist);
                                     const isAlreadySelected = Object.values(draftTeam).some(slot => slot?.id === artist.id);
+                                    const isFeatured = featuredArtists.has(artist.id);
 
                                     return (
-                                        <div key={artist.id} className={`bg-[#1a1a24] p-4 rounded-2xl border transition-all group ${isAlreadySelected ? 'border-purple-500/50 opacity-50' : 'border-white/5 hover:border-purple-500/50'}`}>
+                                        <div key={artist.id} className={`bg-[#1a1a24] p-4 rounded-2xl border transition-all group ${isAlreadySelected ? 'border-purple-500/50 opacity-50' : isFeatured ? 'border-yellow-500/50 shadow-lg shadow-yellow-500/10' : 'border-white/5 hover:border-purple-500/50'}`}>
                                             <div className="flex items-start justify-between mb-4">
                                                 <div className="flex gap-4">
                                                     <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-800">
@@ -285,7 +330,10 @@ export default function TalentScoutPage() {
                                                         )}
                                                     </div>
                                                     <div>
-                                                        <h4 className="text-white font-bold text-lg group-hover:text-purple-400 transition-colors line-clamp-1">{artist.name}</h4>
+                                                        <div className="flex items-center gap-2">
+                                                            <h4 className="text-white font-bold text-lg group-hover:text-purple-400 transition-colors line-clamp-1">{artist.name}</h4>
+                                                            {isFeatured && <Star size={14} className="text-yellow-500 fill-yellow-500" />}
+                                                        </div>
                                                         <span className="text-xs text-gray-400 line-clamp-1">{artist.genres[0] || 'Artist'}</span>
                                                     </div>
                                                 </div>
@@ -385,9 +433,9 @@ export default function TalentScoutPage() {
     );
 }
 
-function SlotPreview({ label, subLabel, artist, onRemove, icon }: { label: string, subLabel: string, artist: SpotifyArtist | null, onRemove: () => void, icon: React.ReactNode }) {
+function SlotPreview({ label, subLabel, artist, onRemove, icon, isCaptain, onSetCaptain, isFeatured }: { label: string, subLabel: string, artist: SpotifyArtist | null, onRemove: () => void, icon: React.ReactNode, isCaptain: boolean, onSetCaptain: () => void, isFeatured: boolean }) {
     return (
-        <div className={`p-3 rounded-xl border transition-all ${artist ? 'bg-white/5 border-purple-500/30' : 'bg-black/20 border-white/5 border-dashed'}`}>
+        <div className={`p-3 rounded-xl border transition-all ${artist ? (isCaptain ? 'bg-purple-500/10 border-purple-500' : 'bg-white/5 border-purple-500/30') : 'bg-black/20 border-white/5 border-dashed'}`}>
             <div className="flex justify-between items-start mb-2">
                 <div className="flex items-center gap-2">
                     {icon}
@@ -404,12 +452,24 @@ function SlotPreview({ label, subLabel, artist, onRemove, icon }: { label: strin
                         )}
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-white truncate">{artist.name}</p>
+                        <div className="flex items-center gap-1">
+                            <p className="text-sm font-bold text-white truncate">{artist.name}</p>
+                            {isFeatured && <Star size={12} className="text-yellow-500 fill-yellow-500" />}
+                        </div>
                         <p className="text-[10px] text-gray-400">Pop: {artist.popularity}</p>
                     </div>
-                    <button onClick={onRemove} className="text-gray-500 hover:text-red-400 transition-colors">
-                        <X size={16} />
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={onSetCaptain}
+                            className={`p-1.5 rounded-lg transition-colors ${isCaptain ? 'bg-yellow-500 text-black' : 'bg-white/10 text-gray-400 hover:bg-white/20'}`}
+                            title="Imposta Capitano"
+                        >
+                            <Crown size={16} className={isCaptain ? 'fill-black' : ''} />
+                        </button>
+                        <button onClick={onRemove} className="text-gray-500 hover:text-red-400 transition-colors">
+                            <X size={16} />
+                        </button>
+                    </div>
                 </div>
             ) : (
                 <div className="h-10 flex items-center justify-center text-xs text-gray-600">

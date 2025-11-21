@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Plus, TrendingUp, ChevronRight } from 'lucide-react';
+import { Plus, TrendingUp, ChevronRight, Crown } from 'lucide-react';
 
 export type Artist = {
     id: string;
@@ -10,6 +10,7 @@ export type Artist = {
     popularity: number;
     category: 'Big' | 'Mid' | 'New Gen';
     trend: number;
+    isCaptain?: boolean;
 };
 
 export type Slot = {
@@ -36,11 +37,25 @@ export default function ArtistCard({ slot }: { slot: Slot }) {
     }
 
     return (
-        <div className="w-full h-20 md:h-24 rounded-2xl bg-[#1a1a24] flex items-center justify-between px-3 md:px-4 relative overflow-hidden border border-white/5 group hover:border-purple-500/30 transition-all">
+        <div className={`w-full h-20 md:h-24 rounded-2xl bg-[#1a1a24] flex items-center justify-between px-3 md:px-4 relative overflow-hidden border ${slot.artist.isCaptain ? 'border-yellow-500/50' : 'border-white/5'} group hover:border-purple-500/30 transition-all`}>
             <div className="flex items-center gap-3 md:gap-4 z-10">
-                <img src={slot.artist.image} alt={slot.artist.name} className="w-12 h-12 md:w-16 md:h-16 rounded-xl object-cover shadow-lg" />
+                <div className="relative">
+                    <img src={slot.artist.image} alt={slot.artist.name} className="w-12 h-12 md:w-16 md:h-16 rounded-xl object-cover shadow-lg" />
+                    {slot.artist.isCaptain && (
+                        <div className="absolute -top-2 -right-2 bg-yellow-500 text-black p-1 rounded-full shadow-lg">
+                            <Crown size={12} className="fill-black" />
+                        </div>
+                    )}
+                </div>
                 <div className="flex flex-col">
-                    <span className="text-sm md:text-lg font-bold text-white">{slot.artist.name}</span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm md:text-lg font-bold text-white">{slot.artist.name}</span>
+                        {slot.artist.isCaptain && (
+                            <span className="text-[10px] font-bold bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded uppercase tracking-wider border border-yellow-500/20">
+                                C
+                            </span>
+                        )}
+                    </div>
                     <div className="flex items-center gap-2">
                         <span className="text-[10px] md:text-xs px-1.5 py-0.5 rounded bg-white/10 text-gray-300 border border-white/5">Pop: {slot.artist.popularity}</span>
                         <span className="text-[10px] md:text-xs text-green-400 flex items-center gap-0.5">
@@ -57,7 +72,7 @@ export default function ArtistCard({ slot }: { slot: Slot }) {
             </div>
 
             {/* Background Gradient Glow */}
-            <div className={`absolute right-0 top-0 w-32 h-full bg-gradient-to-l ${slot.type === 'New Gen' ? 'from-green-500/10' : slot.type === 'Big' ? 'from-purple-500/10' : 'from-blue-500/10'} to-transparent pointer-events-none group-hover:opacity-100 transition-opacity`} />
+            <div className={`absolute right-0 top-0 w-32 h-full bg-gradient-to-l ${slot.artist.isCaptain ? 'from-yellow-500/10' : slot.type === 'New Gen' ? 'from-green-500/10' : slot.type === 'Big' ? 'from-purple-500/10' : 'from-blue-500/10'} to-transparent pointer-events-none group-hover:opacity-100 transition-opacity`} />
         </div>
     );
 }
