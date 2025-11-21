@@ -1,30 +1,130 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Search, Plus, LogOut } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Plus, LogOut, Loader2, X, Save, Trophy, Users, Zap } from 'lucide-react';
 import Image from 'next/image';
+import { searchArtistsAction } from '@/app/actions/spotify';
+import { saveTeamAction, TeamSlots } from '@/app/actions/team';
+import { SpotifyArtist } from '@/lib/spotify';
+import { useRouter } from 'next/navigation';
 
-// --- Mock Data for Search ---
-const MOCK_SEARCH_RESULTS = [
-    { id: '1', name: 'Niky Savage', image: 'https://i.scdn.co/image/ab6761610000e5eb269df46c9397453d37b44a1e', popularity: 62, category: 'Mid Tier', genre: 'Hip-Hop/Rap' },
-    { id: '2', name: 'Suspect CB', image: 'https://i.scdn.co/image/ab6761610000e5eb739569357a2e2240108738e5', popularity: 22, category: 'New Gen', genre: 'Drill' },
-    { id: '3', name: 'Sfera Ebbasta', image: 'https://i.scdn.co/image/ab6761610000e5eb82d5d954eb4222c411465699', popularity: 89, category: 'Big', genre: 'Trap' },
-    { id: '4', name: 'Artie 5ive', image: 'https://i.scdn.co/image/ab6761610000e5ebd1c62678c5547c41459c4927', popularity: 72, category: 'Mid Tier', genre: 'Rap' },
-    { id: '5', name: 'Nerissima Serpe', image: 'https://i.scdn.co/image/ab6761610000e5eb4c6e9a63a932e14617073921', popularity: 45, category: 'Mid Tier', genre: 'Rap' },
-];
+// Helper to categorize artists based on popularity
+const getCategory = (popularity: number) => {
+    if (popularity >= 76) return 'Big';
+    if (popularity >= 30) return 'Mid Tier';
+    return 'New Gen';
+};
+
+// Helper to debounce search
+function useDebounce<T>(value: T, delay: number): T {
+    const [debouncedValue, setDebouncedValue] = useState<T>(value);
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedValue(value);
+        }, delay);
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [value, delay]);
+    return debouncedValue;
+}
+
+const INITIAL_SLOTS: TeamSlots = {
+    slot_1: null,
+    slot_2: null,
+    slot_3: null,
+    slot_4: null,
+    slot_5: null,
+};
 
 export default function TalentScoutPage() {
+    const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
+    const debouncedSearchTerm = useDebounce(searchTerm, 500);
     const [activeFilter, setActiveFilter] = useState('All');
+    const [artists, setArtists] = useState<SpotifyArtist[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [draftTeam, setDraftTeam] = useState<TeamSlots>(INITIAL_SLOTS);
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveError, setSaveError] = useState<string | null>(null);
 
-    const filteredArtists = MOCK_SEARCH_RESULTS.filter(artist => {
-        const matchesSearch = artist.name.toLowerCase().includes(searchTerm.toLowerCase());
+    useEffect(() => {
+        const fetchArtists = async () => {
+            if (debouncedSearchTerm.length < 2) {
+                setArtists([]);
+                return;
+            }
+
+            setIsLoading(true);
+            const result = await searchArtistsAction(debouncedSearchTerm);
+            if (result.success && result.data) {
+                setArtists(result.data);
+            }
+            setIsLoading(false);
+        };
+
+        fetchArtists();
+    }, [debouncedSearchTerm]);
+
+    const filteredArtists = artists.filter(artist => {
+        const category = getCategory(artist.popularity);
         const matchesFilter = activeFilter === 'All' ||
-            (activeFilter === 'New Gen' && artist.category === 'New Gen') ||
-            (activeFilter === 'Mid Tier' && artist.category === 'Mid Tier') ||
-            (activeFilter === 'Big' && artist.category === 'Big');
-        return matchesSearch && matchesFilter;
+            (activeFilter === 'New Gen' && category === 'New Gen') ||
+            (activeFilter === 'Mid Tier' && category === 'Mid Tier') ||
+            (activeFilter === 'Big' && category === 'Big');
+        return matchesFilter;
     });
+
+    const handleAddToSlot = (artist: SpotifyArtist, slotKey: keyof TeamSlots) => {
+        setDraftTeam(prev => ({ ...prev, [slotKey]: artist }));
+    };
+
+    const handleRemoveFromSlot = (slotKey: keyof TeamSlots) => {
+        setDraftTeam(prev => ({ ...prev, [slotKey]: null }));
+    };
+
+    const handleSaveTeam = async () => {
+        setIsSaving(true);
+        setSaveError(null);
+
+        // Basic client-side validation check
+        const emptySlots = Object.values(draftTeam).some(slot => slot === null);
+        if (emptySlots) {
+            setSaveError('Devi riempire tutti gli slot prima di salvare!');
+            setIsSaving(false);
+            return;
+        }
+
+        const result = await saveTeamAction(draftTeam);
+
+        if (result.success) {
+            router.push('/dashboard');
+        } else {
+            setSaveError(result.message || 'Errore durante il salvataggio');
+            if (result.errors) {
+                console.error(result.errors);
+            }
+        }
+        setIsSaving(false);
+    };
+
+    const getAvailableSlots = (artist: SpotifyArtist) => {
+        const category = getCategory(artist.popularity);
+        const slots: { key: keyof TeamSlots; label: string }[] = [];
+
+        if (category === 'Big') {
+            if (!draftTeam.slot_1) slots.push({ key: 'slot_1', label: 'Headliner' });
+        } else if (category === 'Mid Tier') {
+            if (!draftTeam.slot_2) slots.push({ key: 'slot_2', label: 'Mid Tier 1' });
+            if (!draftTeam.slot_3) slots.push({ key: 'slot_3', label: 'Mid Tier 2' });
+        } else if (category === 'New Gen') {
+            if (!draftTeam.slot_4) slots.push({ key: 'slot_4', label: 'New Gen 1' });
+            if (!draftTeam.slot_5) slots.push({ key: 'slot_5', label: 'New Gen 2' });
+        }
+        return slots;
+    };
+
+    const filledSlotsCount = Object.values(draftTeam).filter(Boolean).length;
 
     return (
         <>
@@ -48,83 +148,222 @@ export default function TalentScoutPage() {
                 <button><LogOut className="text-gray-400" size={22} /></button>
             </div>
 
-            <main className="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full animate-fade-in">
-                <div className="mb-8">
-                    <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Talent Scout</h1>
-                    <p className="text-gray-400">Cerca le prossime star. Ricorda: hai un budget di popolarità da rispettare.</p>
-                </div>
+            <main className="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full animate-fade-in flex flex-col lg:flex-row gap-8">
 
-                {/* Search & Filter Bar */}
-                <div className="flex flex-col md:flex-row gap-4 mb-8 sticky top-4 z-40 bg-[#0b0b10]/80 backdrop-blur-xl p-2 -mx-2 rounded-2xl">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-4 top-3.5 text-gray-500" size={20} />
-                        <input
-                            type="text"
-                            placeholder="Cerca artista (es. Shiva, thasup...)"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full h-12 pl-12 pr-4 bg-[#1a1a24] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 border border-white/5 transition-all"
-                        />
+                {/* Left Column: Search */}
+                <div className="flex-1 order-2 lg:order-1">
+                    <div className="mb-8">
+                        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Talent Scout</h1>
+                        <p className="text-gray-400">Cerca le prossime star. Ricorda: hai un budget di popolarità da rispettare.</p>
                     </div>
-                    <div className="flex gap-2 overflow-x-auto md:overflow-visible no-scrollbar pb-2 md:pb-0">
-                        {['All', 'New Gen', 'Mid Tier', 'Big'].map((filter) => (
-                            <button
-                                key={filter}
-                                onClick={() => setActiveFilter(filter)}
-                                className={`px-5 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${activeFilter === filter
+
+                    {/* Search & Filter Bar */}
+                    <div className="flex flex-col md:flex-row gap-4 mb-8 sticky top-4 z-40 bg-[#0b0b10]/80 backdrop-blur-xl p-2 -mx-2 rounded-2xl">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-4 top-3.5 text-gray-500" size={20} />
+                            <input
+                                type="text"
+                                placeholder="Cerca artista (es. Shiva, thasup...)"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full h-12 pl-12 pr-4 bg-[#1a1a24] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 border border-white/5 transition-all"
+                            />
+                            {isLoading && (
+                                <div className="absolute right-4 top-3.5">
+                                    <Loader2 className="animate-spin text-purple-500" size={20} />
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto md:overflow-visible no-scrollbar pb-2 md:pb-0">
+                            {['All', 'New Gen', 'Mid Tier', 'Big'].map((filter) => (
+                                <button
+                                    key={filter}
+                                    onClick={() => setActiveFilter(filter)}
+                                    className={`px-5 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${activeFilter === filter
                                         ? 'bg-white text-black shadow-lg shadow-white/10'
                                         : 'bg-[#1a1a24] text-gray-400 border border-white/5 hover:text-white hover:border-white/20'
-                                    }`}
-                            >
-                                {filter === 'New Gen' ? 'New Gen < 30' : filter === 'Mid Tier' ? 'Mid Tier 30-75' : filter === 'Big' ? 'Big > 75' : 'Tutti'}
-                            </button>
-                        ))}
+                                        }`}
+                                >
+                                    {filter === 'New Gen' ? 'New Gen < 30' : filter === 'Mid Tier' ? 'Mid Tier 30-75' : filter === 'Big' ? 'Big > 75' : 'Tutti'}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                </div>
 
-                {/* Results Grid */}
-                <div className="space-y-6">
-                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider">Risultati Ricerca ({filteredArtists.length})</h3>
+                    {/* Results Grid */}
+                    <div className="space-y-6">
+                        <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider">
+                            {searchTerm.length < 2 ? 'Inizia a cercare...' : `Risultati Ricerca (${filteredArtists.length})`}
+                        </h3>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {filteredArtists.map((artist) => (
-                            <div key={artist.id} className="bg-[#1a1a24] p-4 rounded-2xl border border-white/5 hover:border-purple-500/50 transition-all cursor-pointer group">
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="flex gap-4">
-                                        <img src={artist.image} className="w-16 h-16 rounded-xl object-cover" alt={artist.name} />
-                                        <div>
-                                            <h4 className="text-white font-bold text-lg group-hover:text-purple-400 transition-colors">{artist.name}</h4>
-                                            <span className="text-xs text-gray-400">{artist.genre}</span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {filteredArtists.map((artist) => {
+                                const category = getCategory(artist.popularity);
+                                const availableSlots = getAvailableSlots(artist);
+                                const isAlreadySelected = Object.values(draftTeam).some(slot => slot?.id === artist.id);
+
+                                return (
+                                    <div key={artist.id} className={`bg-[#1a1a24] p-4 rounded-2xl border transition-all group ${isAlreadySelected ? 'border-purple-500/50 opacity-50' : 'border-white/5 hover:border-purple-500/50'}`}>
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div className="flex gap-4">
+                                                <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-800">
+                                                    {artist.images[0] ? (
+                                                        <Image
+                                                            src={artist.images[0].url}
+                                                            alt={artist.name}
+                                                            fill
+                                                            className="object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">No IMG</div>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-white font-bold text-lg group-hover:text-purple-400 transition-colors line-clamp-1">{artist.name}</h4>
+                                                    <span className="text-xs text-gray-400 line-clamp-1">{artist.genres[0] || 'Artist'}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex justify-between items-end">
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-[10px] text-gray-400 uppercase">Popolarità</span>
+                                                <span className="text-lg font-bold text-white">{artist.popularity}</span>
+                                            </div>
+
+                                            <div className="flex gap-2">
+                                                {isAlreadySelected ? (
+                                                    <span className="text-xs text-purple-400 font-bold px-3 py-1 bg-purple-500/10 rounded-lg">Selezionato</span>
+                                                ) : availableSlots.length > 0 ? (
+                                                    availableSlots.map(slot => (
+                                                        <button
+                                                            key={slot.key}
+                                                            onClick={() => handleAddToSlot(artist, slot.key)}
+                                                            className="px-3 py-1.5 bg-white text-black text-xs font-bold rounded-lg hover:bg-purple-400 transition-colors"
+                                                        >
+                                                            + {slot.label}
+                                                        </button>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-xs text-gray-500 px-3 py-1 bg-white/5 rounded-lg">Slot Pieni / Invalidi</span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white group-hover:bg-white group-hover:text-black transition-colors">
-                                        <Plus size={20} />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div className="bg-white/5 rounded-lg p-2 flex flex-col items-center">
-                                        <span className="text-[10px] text-gray-400 uppercase">Popolarità</span>
-                                        <span className="text-lg font-bold text-white">{artist.popularity}</span>
-                                    </div>
-                                    <div className={`rounded-lg p-2 flex flex-col items-center border ${artist.category === 'New Gen' ? 'bg-green-500/10 border-green-500/20' :
-                                            artist.category === 'Mid Tier' ? 'bg-orange-500/10 border-orange-500/20' :
-                                                'bg-purple-500/10 border-purple-500/20'
-                                        }`}>
-                                        <span className={`text-[10px] uppercase ${artist.category === 'New Gen' ? 'text-green-400' :
-                                                artist.category === 'Mid Tier' ? 'text-orange-400' :
-                                                    'text-purple-400'
-                                            }`}>Categoria</span>
-                                        <span className={`text-sm font-bold mt-1 ${artist.category === 'New Gen' ? 'text-green-400' :
-                                                artist.category === 'Mid Tier' ? 'text-orange-400' :
-                                                    'text-purple-400'
-                                            }`}>{artist.category}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
+
+                {/* Right Column: Team Preview (Sticky) */}
+                <div className="lg:w-80 flex-shrink-0 order-1 lg:order-2">
+                    <div className="sticky top-8 bg-[#1a1a24] border border-white/5 rounded-2xl p-6">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold text-white">La tua Label</h2>
+                            <span className="text-sm text-purple-400 font-bold">{filledSlotsCount}/5</span>
+                        </div>
+
+                        <div className="space-y-4 mb-6">
+                            {/* Headliner */}
+                            <SlotPreview
+                                label="Headliner"
+                                subLabel="Pop > 75"
+                                artist={draftTeam.slot_1}
+                                onRemove={() => handleRemoveFromSlot('slot_1')}
+                                icon={<Trophy size={14} className="text-yellow-500" />}
+                            />
+
+                            {/* Mid Tier */}
+                            <SlotPreview
+                                label="Mid Tier 1"
+                                subLabel="Pop 30-75"
+                                artist={draftTeam.slot_2}
+                                onRemove={() => handleRemoveFromSlot('slot_2')}
+                                icon={<Users size={14} className="text-blue-400" />}
+                            />
+                            <SlotPreview
+                                label="Mid Tier 2"
+                                subLabel="Pop 30-75"
+                                artist={draftTeam.slot_3}
+                                onRemove={() => handleRemoveFromSlot('slot_3')}
+                                icon={<Users size={14} className="text-blue-400" />}
+                            />
+
+                            {/* New Gen */}
+                            <SlotPreview
+                                label="New Gen 1"
+                                subLabel="Pop < 30"
+                                artist={draftTeam.slot_4}
+                                onRemove={() => handleRemoveFromSlot('slot_4')}
+                                icon={<Zap size={14} className="text-green-400" />}
+                            />
+                            <SlotPreview
+                                label="New Gen 2"
+                                subLabel="Pop < 30"
+                                artist={draftTeam.slot_5}
+                                onRemove={() => handleRemoveFromSlot('slot_5')}
+                                icon={<Zap size={14} className="text-green-400" />}
+                            />
+                        </div>
+
+                        {saveError && (
+                            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs">
+                                {saveError}
+                            </div>
+                        )}
+
+                        <button
+                            onClick={handleSaveTeam}
+                            disabled={filledSlotsCount < 5 || isSaving}
+                            className={`w-full h-12 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${filledSlotsCount === 5
+                                    ? 'bg-white text-black hover:bg-purple-400 shadow-lg shadow-purple-500/20'
+                                    : 'bg-white/5 text-gray-500 cursor-not-allowed'
+                                }`}
+                        >
+                            {isSaving ? <Loader2 className="animate-spin" /> : <Save size={18} />}
+                            {isSaving ? 'Salvataggio...' : 'Conferma Team'}
+                        </button>
+                    </div>
+                </div>
+
             </main>
         </>
     );
 }
+
+function SlotPreview({ label, subLabel, artist, onRemove, icon }: { label: string, subLabel: string, artist: SpotifyArtist | null, onRemove: () => void, icon: React.ReactNode }) {
+    return (
+        <div className={`p-3 rounded-xl border transition-all ${artist ? 'bg-white/5 border-purple-500/30' : 'bg-black/20 border-white/5 border-dashed'}`}>
+            <div className="flex justify-between items-start mb-2">
+                <div className="flex items-center gap-2">
+                    {icon}
+                    <span className="text-xs font-bold text-gray-300">{label}</span>
+                </div>
+                <span className="text-[10px] text-gray-500">{subLabel}</span>
+            </div>
+
+            {artist ? (
+                <div className="flex items-center gap-3">
+                    <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-gray-800 flex-shrink-0">
+                        {artist.images[0] && (
+                            <Image src={artist.images[0].url} alt={artist.name} fill className="object-cover" />
+                        )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-white truncate">{artist.name}</p>
+                        <p className="text-[10px] text-gray-400">Pop: {artist.popularity}</p>
+                    </div>
+                    <button onClick={onRemove} className="text-gray-500 hover:text-red-400 transition-colors">
+                        <X size={16} />
+                    </button>
+                </div>
+            ) : (
+                <div className="h-10 flex items-center justify-center text-xs text-gray-600">
+                    Vuoto
+                </div>
+            )}
+        </div>
+    );
+}
+

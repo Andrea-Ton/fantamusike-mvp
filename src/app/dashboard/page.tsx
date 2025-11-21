@@ -4,15 +4,8 @@ import ArtistCard, { Slot } from '@/components/dashboard/artist-card';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
-
-// --- Mock Data (To be replaced with real team data later) ---
-const MOCK_TEAM: Slot[] = [
-    { id: 1, type: 'Big', label: 'Headliner', requirement: 'Popolarità > 75', artist: { id: '1', name: 'Lazza', image: 'https://i.scdn.co/image/ab6761610000e5eb82d5d954eb4222c411465699', popularity: 88, category: 'Big', trend: +12 } },
-    { id: 2, type: 'Mid', label: 'Rising Star 1', requirement: 'Popolarità 30-75', artist: { id: '2', name: 'Anna', image: 'https://i.scdn.co/image/ab6761610000e5eb4c6e9a63a932e14617073921', popularity: 68, category: 'Mid', trend: +45 } },
-    { id: 3, type: 'Mid', label: 'Rising Star 2', requirement: 'Popolarità 30-75', artist: null },
-    { id: 4, type: 'New Gen', label: 'Scout Pick 1', requirement: 'Popolarità < 30', artist: { id: '4', name: 'Kid Yugi', image: 'https://i.scdn.co/image/ab6761610000e5ebd1c62678c5547c41459c4927', popularity: 28, category: 'New Gen', trend: +120 } },
-    { id: 5, type: 'New Gen', label: 'Scout Pick 2', requirement: 'Popolarità < 30', artist: null },
-];
+import { getUserTeamAction } from '@/app/actions/team';
+import Link from 'next/link';
 
 export default async function DashboardPage() {
     const supabase = await createClient();
@@ -30,6 +23,85 @@ export default async function DashboardPage() {
 
     const totalScore = profile?.total_score || 0;
     const musiCoins = profile?.musi_coins || 0;
+
+    // Fetch User Team
+    const userTeam = await getUserTeamAction();
+
+    // Transform to Slot format for UI
+    const teamSlots: Slot[] = [
+        {
+            id: 1,
+            type: 'Big',
+            label: 'Headliner',
+            requirement: 'Popolarità > 75',
+            artist: userTeam?.slot_1 ? {
+                id: userTeam.slot_1.id,
+                name: userTeam.slot_1.name,
+                image: userTeam.slot_1.images[0]?.url || '',
+                popularity: userTeam.slot_1.popularity,
+                category: 'Big',
+                trend: 0 // Placeholder for now
+            } : null
+        },
+        {
+            id: 2,
+            type: 'Mid',
+            label: 'Rising Star 1',
+            requirement: 'Popolarità 30-75',
+            artist: userTeam?.slot_2 ? {
+                id: userTeam.slot_2.id,
+                name: userTeam.slot_2.name,
+                image: userTeam.slot_2.images[0]?.url || '',
+                popularity: userTeam.slot_2.popularity,
+                category: 'Mid',
+                trend: 0
+            } : null
+        },
+        {
+            id: 3,
+            type: 'Mid',
+            label: 'Rising Star 2',
+            requirement: 'Popolarità 30-75',
+            artist: userTeam?.slot_3 ? {
+                id: userTeam.slot_3.id,
+                name: userTeam.slot_3.name,
+                image: userTeam.slot_3.images[0]?.url || '',
+                popularity: userTeam.slot_3.popularity,
+                category: 'Mid',
+                trend: 0
+            } : null
+        },
+        {
+            id: 4,
+            type: 'New Gen',
+            label: 'Scout Pick 1',
+            requirement: 'Popolarità < 30',
+            artist: userTeam?.slot_4 ? {
+                id: userTeam.slot_4.id,
+                name: userTeam.slot_4.name,
+                image: userTeam.slot_4.images[0]?.url || '',
+                popularity: userTeam.slot_4.popularity,
+                category: 'New Gen',
+                trend: 0
+            } : null
+        },
+        {
+            id: 5,
+            type: 'New Gen',
+            label: 'Scout Pick 2',
+            requirement: 'Popolarità < 30',
+            artist: userTeam?.slot_5 ? {
+                id: userTeam.slot_5.id,
+                name: userTeam.slot_5.name,
+                image: userTeam.slot_5.images[0]?.url || '',
+                popularity: userTeam.slot_5.popularity,
+                category: 'New Gen',
+                trend: 0
+            } : null
+        },
+    ];
+
+    const hasTeam = userTeam !== null;
 
     return (
         <>
@@ -129,18 +201,35 @@ export default async function DashboardPage() {
                     <div className="lg:col-span-7">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xl font-bold text-white">La Tua Etichetta</h3>
-                            <button
+                            <Link
+                                href="/dashboard/draft"
                                 className="px-4 py-2 rounded-full bg-[#1a1a24] border border-white/10 text-sm text-purple-400 font-medium hover:bg-purple-500 hover:text-white transition-all"
                             >
-                                Gestisci Roster
-                            </button>
+                                {hasTeam ? 'Gestisci Roster' : 'Crea Team'}
+                            </Link>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-4">
-                            {MOCK_TEAM.map((slot) => (
-                                <ArtistCard key={slot.id} slot={slot} />
-                            ))}
-                        </div>
+                        {hasTeam ? (
+                            <div className="grid grid-cols-1 gap-4">
+                                {teamSlots.map((slot) => (
+                                    <ArtistCard key={slot.id} slot={slot} />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="bg-[#1a1a24] border border-white/5 rounded-3xl p-8 text-center flex flex-col items-center justify-center min-h-[400px]">
+                                <div className="w-16 h-16 bg-purple-500/10 rounded-full flex items-center justify-center mb-4">
+                                    <Trophy className="text-purple-400" size={32} />
+                                </div>
+                                <h3 className="text-2xl font-bold text-white mb-2">Nessun Team Trovato</h3>
+                                <p className="text-gray-400 mb-6 max-w-md">Non hai ancora creato la tua etichetta discografica. Inizia subito a fare scouting per vincere la stagione!</p>
+                                <Link
+                                    href="/dashboard/draft"
+                                    className="px-8 py-3 bg-white text-black font-bold rounded-xl hover:bg-purple-400 hover:shadow-lg hover:shadow-purple-500/20 transition-all"
+                                >
+                                    Inizia il Draft
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>
