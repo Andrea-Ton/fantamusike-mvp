@@ -94,5 +94,31 @@ end;
 $$ language plpgsql security definer;
 
 create trigger on_auth_user_created
-  after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- Create weekly_snapshots table (Monday Baseline)
+create table weekly_snapshots (
+  id uuid default uuid_generate_v4() primary key,
+  week_number integer,
+  artist_id text references artists_cache.spotify_id,
+  popularity integer,
+  followers integer,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+alter table weekly_snapshots enable row level security;
+
+create policy "Weekly snapshots are viewable by everyone."
+  on weekly_snapshots for select
+  using ( true );
+
+-- RPC to increment score safely
+create or replace function increment_score(user_id_param uuid, score_delta integer)
+returns void as $$
+begin
+  update profiles
+  set total_score = total_score + score_delta
+  where id = user_id_param;
+end;
+$$ language plpgsql security definer;
+
