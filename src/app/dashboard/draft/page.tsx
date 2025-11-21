@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, LogOut, Loader2, X, Save, Trophy, Users, Zap } from 'lucide-react';
+import { Search, Plus, LogOut, Loader2, X, Save, Trophy, Users, Zap, ChevronUp } from 'lucide-react';
 import Image from 'next/image';
 import { searchArtistsAction } from '@/app/actions/spotify';
 import { saveTeamAction, TeamSlots } from '@/app/actions/team';
 import { SpotifyArtist } from '@/lib/spotify';
 import { useRouter } from 'next/navigation';
+import LogoutButton from '@/components/logout-button';
 
 // Helper to categorize artists based on popularity
 const getCategory = (popularity: number) => {
@@ -47,6 +48,7 @@ export default function TalentScoutPage() {
     const [draftTeam, setDraftTeam] = useState<TeamSlots>(INITIAL_SLOTS);
     const [isSaving, setIsSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
+    const [showMobileTeam, setShowMobileTeam] = useState(false);
 
     useEffect(() => {
         const fetchArtists = async () => {
@@ -126,6 +128,69 @@ export default function TalentScoutPage() {
 
     const filledSlotsCount = Object.values(draftTeam).filter(Boolean).length;
 
+    const TeamSummaryContent = () => (
+        <div className="space-y-4">
+            {/* Headliner */}
+            <SlotPreview
+                label="Headliner"
+                subLabel="Pop > 75"
+                artist={draftTeam.slot_1}
+                onRemove={() => handleRemoveFromSlot('slot_1')}
+                icon={<Trophy size={14} className="text-yellow-500" />}
+            />
+
+            {/* Mid Tier */}
+            <SlotPreview
+                label="Mid Tier 1"
+                subLabel="Pop 30-75"
+                artist={draftTeam.slot_2}
+                onRemove={() => handleRemoveFromSlot('slot_2')}
+                icon={<Users size={14} className="text-blue-400" />}
+            />
+            <SlotPreview
+                label="Mid Tier 2"
+                subLabel="Pop 30-75"
+                artist={draftTeam.slot_3}
+                onRemove={() => handleRemoveFromSlot('slot_3')}
+                icon={<Users size={14} className="text-blue-400" />}
+            />
+
+            {/* New Gen */}
+            <SlotPreview
+                label="New Gen 1"
+                subLabel="Pop < 30"
+                artist={draftTeam.slot_4}
+                onRemove={() => handleRemoveFromSlot('slot_4')}
+                icon={<Zap size={14} className="text-green-400" />}
+            />
+            <SlotPreview
+                label="New Gen 2"
+                subLabel="Pop < 30"
+                artist={draftTeam.slot_5}
+                onRemove={() => handleRemoveFromSlot('slot_5')}
+                icon={<Zap size={14} className="text-green-400" />}
+            />
+
+            {saveError && (
+                <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs">
+                    {saveError}
+                </div>
+            )}
+
+            <button
+                onClick={handleSaveTeam}
+                disabled={filledSlotsCount < 5 || isSaving}
+                className={`w-full h-12 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${filledSlotsCount === 5
+                    ? 'bg-white text-black hover:bg-purple-400 shadow-lg shadow-purple-500/20'
+                    : 'bg-white/5 text-gray-500 cursor-not-allowed'
+                    }`}
+            >
+                {isSaving ? <Loader2 className="animate-spin" /> : <Save size={18} />}
+                {isSaving ? 'Salvataggio...' : 'Conferma Team'}
+            </button>
+        </div>
+    );
+
     return (
         <>
             {/* Mobile Header */}
@@ -145,187 +210,175 @@ export default function TalentScoutPage() {
                         <p className="text-xs text-gray-400">Season Zero</p>
                     </div>
                 </div>
-                <button><LogOut className="text-gray-400" size={22} /></button>
+                <LogoutButton />
             </div>
 
-            <main className="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full animate-fade-in flex flex-col lg:flex-row gap-8">
+            <main className="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full animate-fade-in pb-40 lg:pb-10">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-                {/* Left Column: Search */}
-                <div className="flex-1 order-2 lg:order-1">
-                    <div className="mb-8">
-                        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Talent Scout</h1>
-                        <p className="text-gray-400">Cerca le prossime star. Ricorda: hai un budget di popolarità da rispettare.</p>
-                    </div>
-
-                    {/* Search & Filter Bar */}
-                    <div className="flex flex-col md:flex-row gap-4 mb-8 sticky top-4 z-40 bg-[#0b0b10]/80 backdrop-blur-xl p-2 -mx-2 rounded-2xl">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-4 top-3.5 text-gray-500" size={20} />
-                            <input
-                                type="text"
-                                placeholder="Cerca artista (es. Shiva, thasup...)"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full h-12 pl-12 pr-4 bg-[#1a1a24] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 border border-white/5 transition-all"
-                            />
-                            {isLoading && (
-                                <div className="absolute right-4 top-3.5">
-                                    <Loader2 className="animate-spin text-purple-500" size={20} />
-                                </div>
-                            )}
+                    {/* Left Column: Search */}
+                    <div className="lg:col-span-8">
+                        <div className="mb-8">
+                            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Talent Scout</h1>
+                            <p className="text-gray-400">Cerca le prossime star. Ricorda: hai un budget di popolarità da rispettare.</p>
                         </div>
-                        <div className="flex gap-2 overflow-x-auto md:overflow-visible no-scrollbar pb-2 md:pb-0">
-                            {['All', 'New Gen', 'Mid Tier', 'Big'].map((filter) => (
-                                <button
-                                    key={filter}
-                                    onClick={() => setActiveFilter(filter)}
-                                    className={`px-5 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${activeFilter === filter
-                                        ? 'bg-white text-black shadow-lg shadow-white/10'
-                                        : 'bg-[#1a1a24] text-gray-400 border border-white/5 hover:text-white hover:border-white/20'
-                                        }`}
-                                >
-                                    {filter === 'New Gen' ? 'New Gen < 30' : filter === 'Mid Tier' ? 'Mid Tier 30-75' : filter === 'Big' ? 'Big > 75' : 'Tutti'}
-                                </button>
-                            ))}
+
+                        {/* Search & Filter Bar */}
+                        <div className="flex flex-col md:flex-row gap-4 mb-8 sticky top-4 z-40 bg-[#0b0b10]/80 backdrop-blur-xl p-2 rounded-2xl border border-white/5">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-4 top-3.5 text-gray-500" size={20} />
+                                <input
+                                    type="text"
+                                    placeholder="Cerca artista (es. Shiva, thasup...)"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full h-12 pl-12 pr-4 bg-[#1a1a24] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 border border-white/5 transition-all"
+                                />
+                                {isLoading && (
+                                    <div className="absolute right-4 top-3.5">
+                                        <Loader2 className="animate-spin text-purple-500" size={20} />
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex gap-2 overflow-x-auto md:overflow-visible no-scrollbar pb-2 md:pb-0">
+                                {['All', 'New Gen', 'Mid Tier', 'Big'].map((filter) => (
+                                    <button
+                                        key={filter}
+                                        onClick={() => setActiveFilter(filter)}
+                                        className={`px-5 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${activeFilter === filter
+                                            ? 'bg-white text-black shadow-lg shadow-white/10'
+                                            : 'bg-[#1a1a24] text-gray-400 border border-white/5 hover:text-white hover:border-white/20'
+                                            }`}
+                                    >
+                                        {filter === 'New Gen' ? 'New Gen < 30' : filter === 'Mid Tier' ? 'Mid Tier 30-75' : filter === 'Big' ? 'Big > 75' : 'Tutti'}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    </div>
 
-                    {/* Results Grid */}
-                    <div className="space-y-6">
-                        <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider">
-                            {searchTerm.length < 2 ? 'Inizia a cercare...' : `Risultati Ricerca (${filteredArtists.length})`}
-                        </h3>
+                        {/* Results Grid */}
+                        <div className="space-y-6">
+                            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider">
+                                {searchTerm.length < 2 ? 'Inizia a cercare...' : `Risultati Ricerca (${filteredArtists.length})`}
+                            </h3>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {filteredArtists.map((artist) => {
-                                const category = getCategory(artist.popularity);
-                                const availableSlots = getAvailableSlots(artist);
-                                const isAlreadySelected = Object.values(draftTeam).some(slot => slot?.id === artist.id);
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {filteredArtists.map((artist) => {
+                                    const category = getCategory(artist.popularity);
+                                    const availableSlots = getAvailableSlots(artist);
+                                    const isAlreadySelected = Object.values(draftTeam).some(slot => slot?.id === artist.id);
 
-                                return (
-                                    <div key={artist.id} className={`bg-[#1a1a24] p-4 rounded-2xl border transition-all group ${isAlreadySelected ? 'border-purple-500/50 opacity-50' : 'border-white/5 hover:border-purple-500/50'}`}>
-                                        <div className="flex items-start justify-between mb-4">
-                                            <div className="flex gap-4">
-                                                <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-800">
-                                                    {artist.images[0] ? (
-                                                        <Image
-                                                            src={artist.images[0].url}
-                                                            alt={artist.name}
-                                                            fill
-                                                            className="object-cover"
-                                                        />
+                                    return (
+                                        <div key={artist.id} className={`bg-[#1a1a24] p-4 rounded-2xl border transition-all group ${isAlreadySelected ? 'border-purple-500/50 opacity-50' : 'border-white/5 hover:border-purple-500/50'}`}>
+                                            <div className="flex items-start justify-between mb-4">
+                                                <div className="flex gap-4">
+                                                    <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-800">
+                                                        {artist.images[0] ? (
+                                                            <Image
+                                                                src={artist.images[0].url}
+                                                                alt={artist.name}
+                                                                fill
+                                                                className="object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">No IMG</div>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-white font-bold text-lg group-hover:text-purple-400 transition-colors line-clamp-1">{artist.name}</h4>
+                                                        <span className="text-xs text-gray-400 line-clamp-1">{artist.genres[0] || 'Artist'}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex justify-between items-end">
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-[10px] text-gray-400 uppercase">Popolarità</span>
+                                                    <span className="text-lg font-bold text-white">{artist.popularity}</span>
+                                                </div>
+
+                                                <div className="flex gap-2">
+                                                    {isAlreadySelected ? (
+                                                        <span className="text-xs text-purple-400 font-bold px-3 py-1 bg-purple-500/10 rounded-lg">Selezionato</span>
+                                                    ) : availableSlots.length > 0 ? (
+                                                        availableSlots.map(slot => (
+                                                            <button
+                                                                key={slot.key}
+                                                                onClick={() => handleAddToSlot(artist, slot.key)}
+                                                                className="px-3 py-1.5 bg-white text-black text-xs font-bold rounded-lg hover:bg-purple-400 transition-colors"
+                                                            >
+                                                                + {slot.label}
+                                                            </button>
+                                                        ))
                                                     ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">No IMG</div>
+                                                        <span className="text-xs text-gray-500 px-3 py-1 bg-white/5 rounded-lg">Slot Pieni / Invalidi</span>
                                                     )}
                                                 </div>
-                                                <div>
-                                                    <h4 className="text-white font-bold text-lg group-hover:text-purple-400 transition-colors line-clamp-1">{artist.name}</h4>
-                                                    <span className="text-xs text-gray-400 line-clamp-1">{artist.genres[0] || 'Artist'}</span>
-                                                </div>
                                             </div>
                                         </div>
-
-                                        <div className="flex justify-between items-end">
-                                            <div className="flex flex-col gap-1">
-                                                <span className="text-[10px] text-gray-400 uppercase">Popolarità</span>
-                                                <span className="text-lg font-bold text-white">{artist.popularity}</span>
-                                            </div>
-
-                                            <div className="flex gap-2">
-                                                {isAlreadySelected ? (
-                                                    <span className="text-xs text-purple-400 font-bold px-3 py-1 bg-purple-500/10 rounded-lg">Selezionato</span>
-                                                ) : availableSlots.length > 0 ? (
-                                                    availableSlots.map(slot => (
-                                                        <button
-                                                            key={slot.key}
-                                                            onClick={() => handleAddToSlot(artist, slot.key)}
-                                                            className="px-3 py-1.5 bg-white text-black text-xs font-bold rounded-lg hover:bg-purple-400 transition-colors"
-                                                        >
-                                                            + {slot.label}
-                                                        </button>
-                                                    ))
-                                                ) : (
-                                                    <span className="text-xs text-gray-500 px-3 py-1 bg-white/5 rounded-lg">Slot Pieni / Invalidi</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Right Column: Team Preview (Sticky) */}
-                <div className="lg:w-80 flex-shrink-0 order-1 lg:order-2">
-                    <div className="sticky top-8 bg-[#1a1a24] border border-white/5 rounded-2xl p-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold text-white">La tua Label</h2>
-                            <span className="text-sm text-purple-400 font-bold">{filledSlotsCount}/5</span>
-                        </div>
-
-                        <div className="space-y-4 mb-6">
-                            {/* Headliner */}
-                            <SlotPreview
-                                label="Headliner"
-                                subLabel="Pop > 75"
-                                artist={draftTeam.slot_1}
-                                onRemove={() => handleRemoveFromSlot('slot_1')}
-                                icon={<Trophy size={14} className="text-yellow-500" />}
-                            />
-
-                            {/* Mid Tier */}
-                            <SlotPreview
-                                label="Mid Tier 1"
-                                subLabel="Pop 30-75"
-                                artist={draftTeam.slot_2}
-                                onRemove={() => handleRemoveFromSlot('slot_2')}
-                                icon={<Users size={14} className="text-blue-400" />}
-                            />
-                            <SlotPreview
-                                label="Mid Tier 2"
-                                subLabel="Pop 30-75"
-                                artist={draftTeam.slot_3}
-                                onRemove={() => handleRemoveFromSlot('slot_3')}
-                                icon={<Users size={14} className="text-blue-400" />}
-                            />
-
-                            {/* New Gen */}
-                            <SlotPreview
-                                label="New Gen 1"
-                                subLabel="Pop < 30"
-                                artist={draftTeam.slot_4}
-                                onRemove={() => handleRemoveFromSlot('slot_4')}
-                                icon={<Zap size={14} className="text-green-400" />}
-                            />
-                            <SlotPreview
-                                label="New Gen 2"
-                                subLabel="Pop < 30"
-                                artist={draftTeam.slot_5}
-                                onRemove={() => handleRemoveFromSlot('slot_5')}
-                                icon={<Zap size={14} className="text-green-400" />}
-                            />
-                        </div>
-
-                        {saveError && (
-                            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs">
-                                {saveError}
+                                    );
+                                })}
                             </div>
-                        )}
-
-                        <button
-                            onClick={handleSaveTeam}
-                            disabled={filledSlotsCount < 5 || isSaving}
-                            className={`w-full h-12 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${filledSlotsCount === 5
-                                    ? 'bg-white text-black hover:bg-purple-400 shadow-lg shadow-purple-500/20'
-                                    : 'bg-white/5 text-gray-500 cursor-not-allowed'
-                                }`}
-                        >
-                            {isSaving ? <Loader2 className="animate-spin" /> : <Save size={18} />}
-                            {isSaving ? 'Salvataggio...' : 'Conferma Team'}
-                        </button>
+                        </div>
                     </div>
+
+                    {/* Desktop Right Column: Team Preview (Sticky) */}
+                    <div className="hidden lg:block lg:col-span-4">
+                        <div className="sticky top-8 bg-[#1a1a24] border border-white/5 rounded-2xl p-6">
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-xl font-bold text-white">La tua Label</h2>
+                                <span className="text-sm text-purple-400 font-bold">{filledSlotsCount}/5</span>
+                            </div>
+                            <TeamSummaryContent />
+                        </div>
+                    </div>
+
                 </div>
+
+                {/* Mobile Bottom Bar */}
+                <div className="lg:hidden fixed bottom-[72px] left-4 right-4 bg-[#1a1a24] border border-white/10 p-4 z-40 flex justify-between items-center rounded-2xl shadow-2xl shadow-black/50">
+                    <div className="flex flex-col">
+                        <span className="text-gray-400 text-[10px] uppercase tracking-wider">La tua Label</span>
+                        <div className="font-bold text-white flex items-center gap-2">
+                            {filledSlotsCount}/5 Slot
+                            {filledSlotsCount === 5 && <span className="text-green-400 text-xs">● Completo</span>}
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setShowMobileTeam(true)}
+                        className="px-6 py-3 bg-purple-600 text-white font-bold rounded-xl shadow-lg shadow-purple-500/20 flex items-center gap-2"
+                    >
+                        <span>Vedi Team</span>
+                        <ChevronUp size={18} />
+                    </button>
+                </div>
+
+                {/* Mobile Team Modal/Sheet */}
+                {showMobileTeam && (
+                    <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+                        <div
+                            className="bg-[#1a1a24] w-full max-w-md rounded-t-3xl sm:rounded-3xl border-t sm:border border-white/10 p-6 animate-in slide-in-from-bottom-10 duration-300 max-h-[90vh] overflow-y-auto"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex justify-between items-center mb-6 sticky top-0 bg-[#1a1a24] z-10 pb-4 border-b border-white/5">
+                                <div>
+                                    <h2 className="text-xl font-bold text-white">La tua Label</h2>
+                                    <p className="text-xs text-gray-400">Gestisci il tuo roster</p>
+                                </div>
+                                <button
+                                    onClick={() => setShowMobileTeam(false)}
+                                    className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors"
+                                >
+                                    <X className="text-gray-400" size={20} />
+                                </button>
+                            </div>
+
+                            <TeamSummaryContent />
+                        </div>
+                        {/* Click outside to close */}
+                        <div className="absolute inset-0 -z-10" onClick={() => setShowMobileTeam(false)} />
+                    </div>
+                )}
 
             </main>
         </>

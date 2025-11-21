@@ -8,6 +8,7 @@ import { getUserTeamAction } from '@/app/actions/team';
 import { getLeaderboardAction } from '@/app/actions/leaderboard';
 import LeaderboardCard from '@/components/dashboard/leaderboard-card';
 import Link from 'next/link';
+import LogoutButton from '@/components/logout-button';
 
 export default async function DashboardPage() {
     const supabase = await createClient();
@@ -127,7 +128,7 @@ export default async function DashboardPage() {
                         <p className="text-xs text-gray-400">Season Zero</p>
                     </div>
                 </div>
-                <button><LogOut className="text-gray-400" size={22} /></button>
+                <LogoutButton />
             </div>
 
             {/* Content Area */}
@@ -193,8 +194,8 @@ export default async function DashboardPage() {
                             <LeaderboardCard entries={leaderboard} currentUserId={user.id} />
                         </div>
 
-                        {/* Info Box */}
-                        <div className="p-6 rounded-3xl bg-blue-500/5 border border-blue-500/20 flex gap-4 items-start">
+                        {/* Info Box - REMOVED as per user request */}
+                        {/* <div className="p-6 rounded-3xl bg-blue-500/5 border border-blue-500/20 flex gap-4 items-start">
                             <div className="p-2 bg-blue-500/10 rounded-lg">
                                 <Info className="text-blue-400" size={24} />
                             </div>
@@ -204,7 +205,7 @@ export default async function DashboardPage() {
                                     Gli artisti <span className="text-white font-bold">"New Gen"</span> stanno performando il 20% meglio questa settimana grazie ai nuovi release. Considera di scambiare il tuo slot Scout Pick 2.
                                 </p>
                             </div>
-                        </div>
+                        </div> */}
                     </div>
 
                     {/* Right Column: Roster */}

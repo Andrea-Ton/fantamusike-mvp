@@ -18,7 +18,7 @@ export default function LeaderboardCard({ entries, currentUserId }: LeaderboardC
     };
 
     return (
-        <div className="bg-[#1a1a24]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl h-full flex flex-col">
+        <div className="bg-[#1a1a24]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl flex flex-col h-[400px] lg:h-full">
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-yellow-500/10 rounded-lg">
@@ -43,8 +43,8 @@ export default function LeaderboardCard({ entries, currentUserId }: LeaderboardC
                             <div
                                 key={entry.id}
                                 className={`flex items-center justify-between p-3 rounded-xl transition-all ${isCurrentUser
-                                        ? 'bg-purple-500/20 border border-purple-500/40 shadow-lg shadow-purple-500/10'
-                                        : 'bg-white/5 border border-white/5 hover:bg-white/10'
+                                    ? 'bg-purple-500/20 border border-purple-500/40 shadow-lg shadow-purple-500/10'
+                                    : 'bg-white/5 border border-white/5 hover:bg-white/10'
                                     }`}
                             >
                                 <div className="flex items-center gap-3">
