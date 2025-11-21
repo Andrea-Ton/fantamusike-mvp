@@ -5,6 +5,8 @@ import Image from 'next/image';
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { getUserTeamAction } from '@/app/actions/team';
+import { getLeaderboardAction } from '@/app/actions/leaderboard';
+import LeaderboardCard from '@/components/dashboard/leaderboard-card';
 import Link from 'next/link';
 
 export default async function DashboardPage() {
@@ -26,6 +28,9 @@ export default async function DashboardPage() {
 
     // Fetch User Team
     const userTeam = await getUserTeamAction();
+
+    // Fetch Leaderboard
+    const leaderboard = await getLeaderboardAction(10);
 
     // Transform to Slot format for UI
     const teamSlots: Slot[] = [
@@ -181,6 +186,11 @@ export default async function DashboardPage() {
                                     <path d="M0 80 L40 40 L70 60 L100 10" stroke="white" strokeWidth="4" fill="none" />
                                 </svg>
                             </div>
+                        </div>
+
+                        {/* Leaderboard Card */}
+                        <div className="h-[400px]">
+                            <LeaderboardCard entries={leaderboard} currentUserId={user.id} />
                         </div>
 
                         {/* Info Box */}
