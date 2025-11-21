@@ -1,21 +1,30 @@
-'use client';
+
 
 import React from 'react';
-import { Zap, LogOut } from 'lucide-react';
+import { Zap, LogOut, Crown } from 'lucide-react';
 import Image from 'next/image';
+import { createClient } from '@/utils/supabase/server';
+import { getLeaderboardAction } from '@/app/actions/leaderboard';
+import { getCurrentSeasonAction } from '@/app/actions/season';
+import LogoutButton from '@/components/logout-button';
 
-// --- Mock Data ---
-const RANKING = [
-    { rank: 1, user: 'MusicGod_99', score: 1450, avatar: 'bg-pink-500' },
-    { rank: 2, user: 'TrapperKeeper', score: 1320, avatar: 'bg-purple-500' },
-    { rank: 3, user: 'IndieLover', score: 1280, avatar: 'bg-blue-500' },
-    { rank: 4, user: 'PopStar', score: 1200, avatar: 'bg-green-500' },
-    { rank: 5, user: 'RockFan', score: 1150, avatar: 'bg-red-500' },
-    { rank: 6, user: 'JazzCat', score: 1100, avatar: 'bg-yellow-500' },
-    { rank: 42, user: 'Tu (You)', score: 850, avatar: 'bg-gradient-to-br from-purple-600 to-blue-500' },
-];
+export default async function LeaderboardPage() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-export default function LeaderboardPage() {
+    // Fetch real leaderboard data (top 50)
+    const leaderboard = await getLeaderboardAction(50);
+
+    // Fetch Current Season
+    const currentSeason = await getCurrentSeasonAction();
+    const seasonName = currentSeason?.name || 'Season Zero';
+
+    const topThree = leaderboard.slice(0, 3);
+    const restOfLeaderboard = leaderboard.slice(3);
+
+    // Helper to get initials
+    const getInitials = (name: string) => name.substring(0, 1).toUpperCase();
+
     return (
         <>
             {/* Mobile Header */}
@@ -32,13 +41,13 @@ export default function LeaderboardPage() {
                     </div>
                     <div>
                         <h1 className="text-xl font-bold text-white tracking-tight">FantaMusiké</h1>
-                        <p className="text-xs text-gray-400">Season Zero</p>
+                        <p className="text-xs text-gray-400">{seasonName}</p>
                     </div>
                 </div>
-                <button><LogOut className="text-gray-400" size={22} /></button>
+                <LogoutButton />
             </div>
 
-            <main className="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full animate-fade-in">
+            <main className="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full animate-fade-in pb-24">
                 <div className="mb-8 flex items-end justify-between">
                     <div>
                         <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Classifica Globale</h1>
@@ -50,86 +59,138 @@ export default function LeaderboardPage() {
                     </div>
                 </div>
 
-                <div className="flex flex-col lg:flex-row gap-8">
-                    {/* Podium (Left/Top) */}
-                    <div className="lg:w-1/3">
-                        <div className="bg-[#1a1a24] rounded-3xl p-8 border border-white/5 relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-purple-500/20 to-transparent pointer-events-none"></div>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    {/* Podium (Left/Top on Desktop) */}
+                    <div className="lg:col-span-5 order-1 lg:order-1">
+                        <div className="bg-[#1a1a24]/60 backdrop-blur-xl rounded-3xl p-8 border border-white/10 relative overflow-hidden shadow-2xl shadow-purple-500/10">
+                            {/* Glassmorphic Glows */}
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-32 bg-purple-500/20 blur-3xl pointer-events-none"></div>
+                            <div className="absolute bottom-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl pointer-events-none"></div>
 
-                            <h3 className="text-center text-lg font-bold text-white mb-8 relative z-10">Top 3 della Settimana</h3>
+                            <h3 className="text-center text-lg font-bold text-white mb-12 pb-12 relative z-10 flex items-center justify-center gap-2">
+                                <Zap className="text-yellow-400 fill-yellow-400" size={20} />
+                                Top 3 Managers
+                            </h3>
 
-                            <div className="flex items-end justify-center gap-4 relative z-10">
-                                {/* 2nd */}
-                                <div className="flex flex-col items-center">
-                                    <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-purple-500 p-1 relative mb-2">
-                                        <div className="w-full h-full rounded-full bg-gray-800 overflow-hidden flex items-center justify-center">
-                                            <span className="text-xl font-bold text-white">2</span>
+                            <div className="flex items-end justify-center gap-2 sm:gap-4 relative z-10 pb-4">
+                                {/* 2nd Place */}
+                                {topThree[1] && (
+                                    <div className="flex flex-col items-center group">
+                                        <div className="relative mb-3 transition-transform duration-300 group-hover:-translate-y-2">
+                                            <div className="w-16 h-16 md:w-20 md:h-20 rounded-full p-[2px] bg-gradient-to-b from-gray-300 to-gray-600 shadow-lg shadow-gray-500/20">
+                                                <div className="w-full h-full rounded-full bg-[#1a1a24] overflow-hidden flex items-center justify-center relative">
+                                                    {topThree[1].avatar_url ? (
+                                                        <Image src={topThree[1].avatar_url} alt={topThree[1].username || ''} fill className="object-cover" />
+                                                    ) : (
+                                                        <span className="text-xl font-bold text-gray-300">{getInitials(topThree[1].username || 'U')}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gray-700 text-white text-xs font-bold px-2 py-0.5 rounded-full border border-gray-500 shadow-md">
+                                                #2
+                                            </div>
                                         </div>
-                                        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs font-bold px-2 py-0.5 rounded-full border border-gray-600">2</div>
+                                        <span className="text-sm font-bold text-white max-w-[80px] truncate text-center">{topThree[1].username}</span>
+                                        <span className="text-xs text-gray-400 font-mono">{topThree[1].total_score}</span>
                                     </div>
-                                    <span className="text-sm font-bold text-white">{RANKING[1].user}</span>
-                                    <span className="text-xs text-gray-400">{RANKING[1].score} pts</span>
-                                </div>
-                                {/* 1st */}
-                                <div className="flex flex-col items-center -mt-8">
-                                    <Zap className="text-yellow-400 fill-yellow-400 mb-2 animate-bounce" size={28} />
-                                    <div className="w-24 h-24 md:w-28 md:h-28 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 p-1 shadow-lg shadow-orange-500/30 relative mb-2">
-                                        <div className="w-full h-full rounded-full bg-gray-800 overflow-hidden flex items-center justify-center">
-                                            <span className="text-3xl font-bold text-white">1</span>
+                                )}
+
+                                {/* 1st Place */}
+                                {topThree[0] && (
+                                    <div className="flex flex-col items-center -mt-8 z-20 group">
+                                        <div className="relative mb-3 transition-transform duration-300 group-hover:-translate-y-2">
+                                            <Crown className="absolute -top-8 left-1/2 -translate-x-1/2 text-yellow-400 fill-yellow-400 animate-bounce" size={32} />
+                                            <div className="w-24 h-24 md:w-28 md:h-28 rounded-full p-[3px] bg-gradient-to-b from-yellow-300 via-yellow-500 to-orange-500 shadow-xl shadow-yellow-500/30">
+                                                <div className="w-full h-full rounded-full bg-[#1a1a24] overflow-hidden flex items-center justify-center relative">
+                                                    {topThree[0].avatar_url ? (
+                                                        <Image src={topThree[0].avatar_url} alt={topThree[0].username || ''} fill className="object-cover" />
+                                                    ) : (
+                                                        <span className="text-3xl font-bold text-yellow-500">{getInitials(topThree[0].username || 'U')}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black text-sm font-black px-4 py-0.5 rounded-full border-2 border-[#1a1a24] shadow-lg">
+                                                #1
+                                            </div>
                                         </div>
-                                        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-yellow-500 text-black text-sm font-black px-3 py-0.5 rounded-full border-2 border-[#1a1a24]">1</div>
+                                        <span className="text-lg font-bold text-white max-w-[100px] truncate text-center mt-1">{topThree[0].username}</span>
+                                        <span className="text-sm text-yellow-400 font-bold font-mono">{topThree[0].total_score} pts</span>
                                     </div>
-                                    <span className="text-lg font-bold text-white">{RANKING[0].user}</span>
-                                    <span className="text-sm text-yellow-500 font-bold">{RANKING[0].score} pts</span>
-                                </div>
-                                {/* 3rd */}
-                                <div className="flex flex-col items-center">
-                                    <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-blue-500 p-1 relative mb-2">
-                                        <div className="w-full h-full rounded-full bg-gray-800 overflow-hidden flex items-center justify-center">
-                                            <span className="text-xl font-bold text-white">3</span>
+                                )}
+
+                                {/* 3rd Place */}
+                                {topThree[2] && (
+                                    <div className="flex flex-col items-center group">
+                                        <div className="relative mb-3 transition-transform duration-300 group-hover:-translate-y-2">
+                                            <div className="w-16 h-16 md:w-20 md:h-20 rounded-full p-[2px] bg-gradient-to-b from-amber-600 to-amber-800 shadow-lg shadow-amber-700/20">
+                                                <div className="w-full h-full rounded-full bg-[#1a1a24] overflow-hidden flex items-center justify-center relative">
+                                                    {topThree[2].avatar_url ? (
+                                                        <Image src={topThree[2].avatar_url} alt={topThree[2].username || ''} fill className="object-cover" />
+                                                    ) : (
+                                                        <span className="text-xl font-bold text-amber-600">{getInitials(topThree[2].username || 'U')}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-amber-900 text-amber-100 text-xs font-bold px-2 py-0.5 rounded-full border border-amber-700 shadow-md">
+                                                #3
+                                            </div>
                                         </div>
-                                        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs font-bold px-2 py-0.5 rounded-full border border-gray-600">3</div>
+                                        <span className="text-sm font-bold text-white max-w-[80px] truncate text-center">{topThree[2].username}</span>
+                                        <span className="text-xs text-gray-400 font-mono">{topThree[2].total_score}</span>
                                     </div>
-                                    <span className="text-sm font-bold text-white">{RANKING[2].user}</span>
-                                    <span className="text-xs text-gray-400">{RANKING[2].score} pts</span>
-                                </div>
+                                )}
                             </div>
                         </div>
                     </div>
 
-                    {/* Ranking List (Right/Bottom) */}
-                    <div className="lg:w-2/3">
-                        <div className="bg-[#1a1a24] rounded-3xl border border-white/5 overflow-hidden">
+                    {/* Ranking List (Right/Bottom on Desktop) */}
+                    <div className="lg:col-span-7 order-2 lg:order-2">
+                        <div className="bg-[#1a1a24]/80 backdrop-blur-md rounded-3xl border border-white/5 overflow-hidden shadow-xl">
                             <div className="grid grid-cols-12 gap-4 p-4 bg-white/5 text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-white/5">
                                 <div className="col-span-2 text-center">#</div>
                                 <div className="col-span-7 md:col-span-7">Utente</div>
                                 <div className="col-span-3 md:col-span-3 text-right">Punteggio</div>
                             </div>
 
-                            <div className="max-h-[500px] overflow-y-auto">
-                                {RANKING.slice(3).map((user, i) => (
-                                    <div key={i} className={`grid grid-cols-12 gap-4 p-4 items-center border-b border-white/5 hover:bg-white/5 transition-colors ${user.rank === 42 ? 'bg-purple-500/10 border-l-4 border-l-purple-500' : ''}`}>
-                                        <div className="col-span-2 text-center font-mono text-gray-500">{user.rank}</div>
-                                        <div className="col-span-7 md:col-span-7 flex items-center gap-3">
-                                            <div className={`w-8 h-8 rounded-full ${user.avatar} flex items-center justify-center text-xs font-bold text-white`}>
-                                                {user.user.substring(0, 1)}
+                            <div className="max-h-[600px] overflow-y-auto custom-scrollbar">
+                                {restOfLeaderboard.length > 0 ? (
+                                    restOfLeaderboard.map((entry) => {
+                                        const isCurrentUser = entry.id === user?.id;
+                                        return (
+                                            <div
+                                                key={entry.id}
+                                                className={`grid grid-cols-12 gap-4 p-4 items-center border-b border-white/5 hover:bg-white/5 transition-colors ${isCurrentUser ? 'bg-purple-500/10 border-l-4 border-l-purple-500' : ''
+                                                    }`}
+                                            >
+                                                <div className="col-span-2 text-center font-mono text-gray-500 font-bold">{entry.rank}</div>
+                                                <div className="col-span-7 md:col-span-7 flex items-center gap-3">
+                                                    <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-white overflow-hidden ${isCurrentUser ? 'bg-purple-600' : 'bg-gray-700'}`}>
+                                                        {entry.avatar_url ? (
+                                                            <div className="relative w-full h-full">
+                                                                <Image src={entry.avatar_url} alt={entry.username || ''} fill className="object-cover" />
+                                                            </div>
+                                                        ) : (
+                                                            getInitials(entry.username || 'U')
+                                                        )}
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className={`font-bold text-sm truncate ${isCurrentUser ? 'text-purple-400' : 'text-white'}`}>
+                                                            {entry.username}
+                                                        </span>
+                                                        {isCurrentUser && <span className="text-[10px] text-gray-500 uppercase">Tu</span>}
+                                                    </div>
+                                                </div>
+                                                <div className="col-span-3 md:col-span-3 text-right font-mono font-bold text-white">
+                                                    {entry.total_score}
+                                                </div>
                                             </div>
-                                            <span className={`font-bold text-sm ${user.rank === 42 ? 'text-purple-400' : 'text-white'}`}>{user.user}</span>
-                                        </div>
-                                        <div className="col-span-3 md:col-span-3 text-right font-mono font-bold text-white">{user.score}</div>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="p-8 text-center text-gray-500">
+                                        Nessun altro utente in classifica.
                                     </div>
-                                ))}
-                                {/* Fillers for scrolling */}
-                                {[43, 44, 45, 46, 47, 48].map((rank) => (
-                                    <div key={rank} className="grid grid-cols-12 gap-4 p-4 items-center border-b border-white/5 hover:bg-white/5 transition-colors">
-                                        <div className="col-span-2 text-center font-mono text-gray-600">{rank}</div>
-                                        <div className="col-span-7 md:col-span-7 flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-500">U</div>
-                                            <span className="font-medium text-sm text-gray-500">User_{rank}</span>
-                                        </div>
-                                        <div className="col-span-3 md:col-span-3 text-right font-mono font-medium text-gray-600">{800 - (rank * 5)}</div>
-                                    </div>
-                                ))}
+                                )}
                             </div>
                         </div>
                     </div>

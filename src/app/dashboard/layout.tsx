@@ -4,6 +4,8 @@ import BottomNav from '@/components/dashboard/bottom-nav';
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 
+import { getCurrentSeasonAction } from '@/app/actions/season';
+
 export default async function DashboardLayout({
     children,
 }: {
@@ -25,10 +27,14 @@ export default async function DashboardLayout({
     const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url;
     const displayName = profile?.username || user?.user_metadata?.name || 'Manager';
 
+    // Fetch Current Season
+    const currentSeason = await getCurrentSeasonAction();
+    const seasonName = currentSeason?.name || 'Season Zero';
+
     return (
         <div className="flex min-h-screen bg-[#0b0b10] font-sans text-white">
             {/* Sidebar for Desktop */}
-            <Sidebar avatarUrl={avatarUrl} displayName={displayName} />
+            <Sidebar avatarUrl={avatarUrl} displayName={displayName} seasonName={seasonName} />
 
             {/* Main Content Wrapper */}
             <div className="flex-1 flex flex-col md:ml-64 mb-20 md:mb-0 transition-all duration-300">

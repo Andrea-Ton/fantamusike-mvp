@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { getUserTeamAction } from '@/app/actions/team';
 import { getLeaderboardAction } from '@/app/actions/leaderboard';
+import { getCurrentSeasonAction } from '@/app/actions/season';
 import LeaderboardCard from '@/components/dashboard/leaderboard-card';
 import Link from 'next/link';
 import LogoutButton from '@/components/logout-button';
@@ -32,6 +33,10 @@ export default async function DashboardPage() {
 
     // Fetch Leaderboard
     const leaderboard = await getLeaderboardAction(10);
+
+    // Fetch Current Season
+    const currentSeason = await getCurrentSeasonAction();
+    const seasonName = currentSeason?.name || 'Season Zero';
 
     // Transform to Slot format for UI
     const teamSlots: Slot[] = [
@@ -125,7 +130,7 @@ export default async function DashboardPage() {
                     </div>
                     <div>
                         <h1 className="text-xl font-bold text-white tracking-tight">FantaMusiké</h1>
-                        <p className="text-xs text-gray-400">Season Zero</p>
+                        <p className="text-xs text-gray-400">{seasonName}</p>
                     </div>
                 </div>
                 <LogoutButton />

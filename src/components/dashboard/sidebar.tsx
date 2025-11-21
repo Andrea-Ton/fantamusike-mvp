@@ -17,9 +17,10 @@ const NAV_ITEMS = [
 interface SidebarProps {
     avatarUrl?: string;
     displayName?: string;
+    seasonName?: string;
 }
 
-export default function Sidebar({ avatarUrl, displayName }: SidebarProps) {
+export default function Sidebar({ avatarUrl, displayName, seasonName }: SidebarProps) {
     const pathname = usePathname();
     const router = useRouter();
     const supabase = createClient();
@@ -31,6 +32,7 @@ export default function Sidebar({ avatarUrl, displayName }: SidebarProps) {
     };
 
     const display = displayName || 'Manager';
+    const season = seasonName || 'Season Zero';
 
     return (
         <div className="hidden md:flex flex-col w-64 h-screen bg-[#0f0f15] border-r border-white/5 fixed left-0 top-0 z-50">
@@ -44,7 +46,10 @@ export default function Sidebar({ avatarUrl, displayName }: SidebarProps) {
                         priority
                     />
                 </div>
-                <span className="text-xl font-bold text-white tracking-tight">FantaMusiké</span>
+                <div>
+                    <span className="block text-xl font-bold text-white tracking-tight leading-none">FantaMusiké</span>
+                    <span className="text-xs text-gray-500 font-medium">{season}</span>
+                </div>
             </div>
 
             <div className="flex-1 px-4 py-6 space-y-2">

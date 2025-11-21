@@ -4,7 +4,7 @@ import React from 'react';
 import { ArrowRight, Music, Plus, TrendingUp } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 
-export default function HeroSection() {
+export default function HeroSection({ seasonName = 'Season Zero' }: { seasonName?: string }) {
     const handleLogin = async () => {
         const supabase = createClient();
         await supabase.auth.signInWithOAuth({
@@ -20,7 +20,7 @@ export default function HeroSection() {
             {/* Text Content */}
             <div className="flex-1 text-center lg:text-left space-y-8 animate-fade-in-up">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 backdrop-blur-sm text-purple-300 text-xs font-bold uppercase tracking-wider mb-4">
-                    <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" /> Season Zero Live
+                    <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" /> {seasonName} Live
                 </div>
                 <h1 className="text-5xl lg:text-7xl font-black tracking-tighter leading-[1.1] text-white">
                     Il Fantacalcio <br />

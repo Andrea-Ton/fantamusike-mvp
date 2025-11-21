@@ -122,3 +122,48 @@ begin
 end;
 $$ language plpgsql security definer;
 
+
+-- Create seasons table
+create table seasons (
+  id uuid default uuid_generate_v4() primary key,
+  name text not null,
+  start_date timestamp with time zone not null,
+  end_date timestamp with time zone not null,
+  is_active boolean default false,
+  status text check (status in ('upcoming', 'active', 'calculating', 'completed')) default 'upcoming',
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+alter table seasons enable row level security;
+
+create policy "Seasons are viewable by everyone."
+  on seasons for select
+  using ( true );
+
+create policy "Admins can insert seasons."
+  on seasons for insert
+  with check ( exists ( select 1 from profiles where id = auth.uid() and is_admin = true ) );
+
+create policy "Admins can update seasons."
+  on seasons for update
+  using ( exists ( select 1 from profiles where id = auth.uid() and is_admin = true ) );
+
+-- Create season_rankings table (Historical Data)
+create table season_rankings (
+  id uuid default uuid_generate_v4() primary key,
+  season_id uuid references seasons.id not null,
+  user_id uuid references profiles.id not null,
+  rank integer not null,
+  total_score integer not null,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+alter table season_rankings enable row level security;
+
+create policy "Season rankings are viewable by everyone."
+  on season_rankings for select
+  using ( true );
+
+create policy "Admins can insert season rankings."
+  on season_rankings for insert
+  with check ( exists ( select 1 from profiles where id = auth.uid() and is_admin = true ) );
