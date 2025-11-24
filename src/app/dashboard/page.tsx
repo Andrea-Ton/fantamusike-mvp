@@ -146,7 +146,7 @@ export default async function DashboardPage() {
                 <header className="hidden md:flex justify-between items-end mb-10">
                     <div>
                         <h1 className="text-4xl font-bold text-white mb-2">Dashboard</h1>
-                        <p className="text-gray-400">Benvenuto, Manager. Ecco come sta andando la tua etichetta.</p>
+                        <p className="text-gray-400">Benvenuto, Manager. Ecco come sta andando la tua Label.</p>
                     </div>
                     <div className="flex gap-4">
                         <div className="px-4 py-2 bg-[#1a1a24] rounded-lg border border-white/10 text-sm font-medium text-yellow-400 flex items-center gap-2">
@@ -221,7 +221,7 @@ export default async function DashboardPage() {
                     {/* Right Column: Roster */}
                     <div className="lg:col-span-7">
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-bold text-white">La Tua Etichetta</h3>
+                            <h3 className="text-xl font-bold text-white">La tua Label</h3>
                             <Link
                                 href="/dashboard/draft"
                                 className="px-4 py-2 rounded-full bg-[#1a1a24] border border-white/10 text-sm text-purple-400 font-medium hover:bg-purple-500 hover:text-white transition-all"

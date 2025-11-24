@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Search, Trophy, LogOut } from 'lucide-react';
+import { Home, Search, Trophy, LogOut, Shield } from 'lucide-react';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -18,9 +18,10 @@ interface SidebarProps {
     avatarUrl?: string;
     displayName?: string;
     seasonName?: string;
+    isAdmin?: boolean;
 }
 
-export default function Sidebar({ avatarUrl, displayName, seasonName }: SidebarProps) {
+export default function Sidebar({ avatarUrl, displayName, seasonName, isAdmin }: SidebarProps) {
     const pathname = usePathname();
     const router = useRouter();
     const supabase = createClient();
@@ -70,6 +71,23 @@ export default function Sidebar({ avatarUrl, displayName, seasonName }: SidebarP
                         </Link>
                     );
                 })}
+
+                {isAdmin && (
+                    <>
+                        <div className="my-4 border-t border-white/5 mx-4" />
+                        <p className="text-xs font-bold text-gray-500 uppercase px-4 mb-2">Admin</p>
+                        <Link
+                            href="/admin"
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${pathname === '/admin'
+                                ? 'bg-red-500/10 text-red-400 border border-red-500/20'
+                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                }`}
+                        >
+                            <Shield size={20} />
+                            <span className="font-medium text-sm">Pannello Admin</span>
+                        </Link>
+                    </>
+                )}
             </div>
 
             <div className="p-4 mt-auto">

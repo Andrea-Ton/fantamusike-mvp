@@ -1,22 +1,12 @@
 'use client';
 
 import React from 'react';
-import { ArrowRight, Music, Plus, TrendingUp, Star } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
+import { ArrowRight, Music, Plus, TrendingUp, Star, PlayCircle } from 'lucide-react';
 import { SpotifyArtist } from '@/lib/spotify';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function HeroSection({ seasonName = 'Season Zero', featuredArtists = [] }: { seasonName?: string, featuredArtists?: SpotifyArtist[] }) {
-    const handleLogin = async () => {
-        const supabase = createClient();
-        await supabase.auth.signInWithOAuth({
-            provider: 'spotify',
-            options: {
-                redirectTo: 'http://localhost:3000/auth/callback',
-            },
-        });
-    };
-
     return (
         <main className="relative z-10 max-w-7xl mx-auto px-6 pt-32 pb-9 lg:pt-52 lg:pb-32 flex flex-col lg:flex-row items-center gap-16">
             {/* Text Content */}
@@ -31,24 +21,21 @@ export default function HeroSection({ seasonName = 'Season Zero', featuredArtist
                     </span>
                 </h1>
                 <p className="text-lg text-gray-400 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                    Non basta ascoltare. Devi scoprire. Crea la tua etichetta, scova i talenti emergenti prima dei tuoi amici e scala la classifica italiana.
+                    Non basta ascoltare. Devi scoprire. Crea la tua Label, scova i talenti emergenti prima dei tuoi amici e scala la classifica italiana.
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
-                    <button
-                        onClick={handleLogin}
-                        className="group relative px-8 py-4 bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold rounded-full transition-all shadow-[0_0_40px_-10px_rgba(29,185,84,0.5)] hover:shadow-[0_0_60px_-10px_rgba(29,185,84,0.6)] flex items-center justify-center gap-3 cursor-pointer"
-                    >
-                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" /></svg>
-                        Entra con Spotify
-                    </button>
+                    <Link href="/signup">
+                        <button className="group relative px-8 py-4 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-all shadow-xl shadow-white/10 hover:shadow-white/20 flex items-center justify-center gap-3 cursor-pointer">
+                            <span className="text-lg">Inizia la Carriera</span>
+                            <ArrowRight className="group-hover:translate-x-1 transition-transform" />
+                        </button>
+                    </Link>
                     <button className="px-8 py-4 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold transition-all backdrop-blur-md flex items-center justify-center gap-2 cursor-pointer">
-                        Come funziona
-                        <ArrowRight size={18} className="opacity-60" />
+                        <PlayCircle size={20} />
+                        <span>Come funziona</span>
                     </button>
                 </div>
-
-
             </div>
 
             {/* Visual Mockup / Glass Cards */}
@@ -131,8 +118,6 @@ export default function HeroSection({ seasonName = 'Season Zero', featuredArtist
                             </div>
                         </div>
                     </div>
-
-
                 </div>
 
                 {/* Decorative Elements behind */}

@@ -1,0 +1,34 @@
+# **Feature Request: "Scout Report" (Discovery Helper)**
+
+Problem: Users struggle to find valid "New Gen" artists (Popularity \< 30\) and leave the app.  
+Solution: Implement a suggestion mechanism that presents 3 vetted options from a curated list.
+
+## **1\. Database Schema Updates**
+
+Create a new table curated\_roster in Supabase:
+
+* spotify\_id: text (Primary Key)  
+* name: text  
+* image\_url: text  
+* genre: text (optional, e.g., "Rap", "Indie")  
+* is\_active: boolean (Default: true)
+
+## **2\. Backend Logic (API)**
+
+Create an endpoint GET /api/scout/suggest:
+
+1. Query the curated\_roster table.  
+2. Select 3 random artists using PostgreSQL ORDER BY RANDOM() LIMIT 3.  
+3. Return these 3 artists to the frontend.
+
+## **3\. Frontend UX (Drafting Screen)**
+
+* In the TeamSelector component, specifically for "New Gen" slots:  
+* Add a button: **"🔎 Suggerisci Talenti"** (Suggest Talent).  
+* **Action:** When clicked, fetch the 3 artists from the API.  
+* **Display:** Show them in a modal/overlay as 3 cards.  
+  * Show Name, Image, and Genre.  
+  * Button: "Ingaggia" (Sign) \-\> Adds that artist to the slot.  
+  * Button: "Riprova" (Reroll) \-\> Fetches 3 new ones.
+
+**Note for AI:** Do not attempt to query Spotify's Search API for random artists. We will populate the curated\_roster table manually via SQL or Supabase Dashboard.

@@ -1,14 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, LogOut, Loader2, X, Save, Trophy, Users, Zap, ChevronUp, Star, Crown } from 'lucide-react';
+import { Search, Plus, LogOut, Loader2, X, Save, Trophy, Users, Zap, ChevronUp, Star, Crown, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import { searchArtistsAction } from '@/app/actions/spotify';
 import { saveTeamAction, TeamSlots } from '@/app/actions/team';
 import { getFeaturedArtistsAction } from '@/app/actions/artist';
+import { getScoutSuggestionsAction, ScoutSuggestion } from '@/app/actions/scout';
 import { SpotifyArtist } from '@/lib/spotify';
 import { useRouter } from 'next/navigation';
 import LogoutButton from '@/components/logout-button';
+import ScoutSuggestionModal from '@/components/dashboard/scout-suggestion-modal';
 
 // Helper to categorize artists based on popularity
 const getCategory = (popularity: number) => {
@@ -52,6 +54,12 @@ export default function TalentScoutPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
     const [showMobileTeam, setShowMobileTeam] = useState(false);
+
+    // Scout Report State
+    const [isScoutModalOpen, setIsScoutModalOpen] = useState(false);
+    const [scoutSuggestions, setScoutSuggestions] = useState<ScoutSuggestion[]>([]);
+    const [isScoutLoading, setIsScoutLoading] = useState(false);
+    const [activeScoutSlotId, setActiveScoutSlotId] = useState<keyof TeamSlots | null>(null);
 
     useEffect(() => {
         const fetchFeatured = async () => {
@@ -157,6 +165,50 @@ export default function TalentScoutPage() {
 
     const filledSlotsCount = Object.values(draftTeam).filter(Boolean).length;
 
+    // Scout Handlers
+    const handleOpenScout = async (slotKey: keyof TeamSlots) => {
+        setActiveScoutSlotId(slotKey);
+        setIsScoutModalOpen(true);
+        setIsScoutLoading(true);
+        try {
+            const suggestions = await getScoutSuggestionsAction();
+            setScoutSuggestions(suggestions);
+        } catch (error) {
+            console.error("Failed to fetch suggestions", error);
+        } finally {
+            setIsScoutLoading(false);
+        }
+    };
+
+    const handleRerollScout = async () => {
+        setIsScoutLoading(true);
+        try {
+            const suggestions = await getScoutSuggestionsAction();
+            setScoutSuggestions(suggestions);
+        } catch (error) {
+            console.error("Failed to fetch suggestions", error);
+        } finally {
+            setIsScoutLoading(false);
+        }
+    };
+
+    const handleSignScout = (artist: ScoutSuggestion) => {
+        if (!activeScoutSlotId) return;
+
+        const newArtist: SpotifyArtist = {
+            id: artist.spotify_id,
+            name: artist.name,
+            images: [{ url: artist.image_url, height: 0, width: 0 }],
+            popularity: artist.popularity, // Use the mocked popularity from the scout action
+            genres: artist.genre ? [artist.genre] : [],
+            followers: { total: 0 }
+        };
+
+        handleAddToSlot(newArtist, activeScoutSlotId);
+        setIsScoutModalOpen(false);
+        setActiveScoutSlotId(null);
+    };
+
     const TeamSummaryContent = () => (
         <div className="space-y-4">
             {/* Headliner */}
@@ -203,6 +255,8 @@ export default function TalentScoutPage() {
                 isCaptain={draftTeam.slot_4?.id === captainId}
                 onSetCaptain={() => draftTeam.slot_4 && handleSetCaptain(draftTeam.slot_4.id)}
                 isFeatured={draftTeam.slot_4 ? featuredArtists.has(draftTeam.slot_4.id) : false}
+                onOpenScout={() => handleOpenScout('slot_4')}
+                showScoutBtn={!draftTeam.slot_4}
             />
             <SlotPreview
                 label="New Gen 2"
@@ -213,6 +267,8 @@ export default function TalentScoutPage() {
                 isCaptain={draftTeam.slot_5?.id === captainId}
                 onSetCaptain={() => draftTeam.slot_5 && handleSetCaptain(draftTeam.slot_5.id)}
                 isFeatured={draftTeam.slot_5 ? featuredArtists.has(draftTeam.slot_5.id) : false}
+                onOpenScout={() => handleOpenScout('slot_5')}
+                showScoutBtn={!draftTeam.slot_5}
             />
 
             {saveError && (
@@ -428,35 +484,63 @@ export default function TalentScoutPage() {
                     </div>
                 )}
 
+                {/* Scout Modal */}
+                <ScoutSuggestionModal
+                    isOpen={isScoutModalOpen}
+                    onClose={() => setIsScoutModalOpen(false)}
+                    suggestions={scoutSuggestions}
+                    onSign={handleSignScout}
+                    onReroll={handleRerollScout}
+                    isLoading={isScoutLoading}
+                    maxPopularity={30}
+                />
+
             </main>
         </>
     );
 }
 
-function SlotPreview({ label, subLabel, artist, onRemove, icon, isCaptain, onSetCaptain, isFeatured }: { label: string, subLabel: string, artist: SpotifyArtist | null, onRemove: () => void, icon: React.ReactNode, isCaptain: boolean, onSetCaptain: () => void, isFeatured: boolean }) {
+function SlotPreview({
+    label,
+    subLabel,
+    artist,
+    onRemove,
+    icon,
+    isCaptain,
+    onSetCaptain,
+    isFeatured,
+    onOpenScout,
+    showScoutBtn
+}: {
+    label: string,
+    subLabel: string,
+    artist: SpotifyArtist | null,
+    onRemove: () => void,
+    icon: React.ReactNode,
+    isCaptain: boolean,
+    onSetCaptain: () => void,
+    isFeatured: boolean,
+    onOpenScout?: () => void,
+    showScoutBtn?: boolean
+}) {
     return (
-        <div className={`p-3 rounded-xl border transition-all ${artist ? (isCaptain ? 'bg-purple-500/10 border-purple-500' : 'bg-white/5 border-purple-500/30') : 'bg-black/20 border-white/5 border-dashed'}`}>
-            <div className="flex justify-between items-start mb-2">
-                <div className="flex items-center gap-2">
-                    {icon}
-                    <span className="text-xs font-bold text-gray-300">{label}</span>
-                </div>
-                <span className="text-[10px] text-gray-500">{subLabel}</span>
-            </div>
-
+        <div className={`relative p-4 rounded-xl border transition-all ${artist ? (isFeatured ? 'bg-yellow-500/5 border-yellow-500/50' : 'bg-white/5 border-white/10') : 'bg-white/5 border-dashed border-white/10 hover:border-white/20'}`}>
             {artist ? (
-                <div className="flex items-center gap-3">
-                    <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-gray-800 flex-shrink-0">
-                        {artist.images[0] && (
-                            <Image src={artist.images[0].url} alt={artist.name} fill className="object-cover" />
+                <div className="flex items-center gap-4">
+                    <div className="relative">
+                        <img src={artist.images[0]?.url} alt={artist.name} className="w-12 h-12 rounded-lg object-cover" />
+                        {isCaptain && (
+                            <div className="absolute -top-2 -right-2 bg-yellow-500 text-black p-1 rounded-full shadow-lg z-10">
+                                <Crown size={12} className="fill-black" />
+                            </div>
                         )}
                     </div>
                     <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1">
-                            <p className="text-sm font-bold text-white truncate">{artist.name}</p>
+                        <div className="flex items-center gap-2">
+                            <div className="font-bold text-white truncate">{artist.name}</div>
                             {isFeatured && <Star size={12} className="text-yellow-500 fill-yellow-500" />}
                         </div>
-                        <p className="text-[10px] text-gray-400">Pop: {artist.popularity}</p>
+                        <div className="text-xs text-gray-400">{subLabel}</div>
                     </div>
                     <div className="flex gap-2">
                         <button
@@ -466,17 +550,36 @@ function SlotPreview({ label, subLabel, artist, onRemove, icon, isCaptain, onSet
                         >
                             <Crown size={16} className={isCaptain ? 'fill-black' : ''} />
                         </button>
-                        <button onClick={onRemove} className="text-gray-500 hover:text-red-400 transition-colors">
+                        <button
+                            onClick={onRemove}
+                            className="p-1.5 rounded-lg bg-white/10 text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-colors"
+                        >
                             <X size={16} />
                         </button>
                     </div>
                 </div>
             ) : (
-                <div className="h-10 flex items-center justify-center text-xs text-gray-600">
-                    Vuoto
+                <div className="flex items-center justify-between h-12">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-500">
+                            {icon}
+                        </div>
+                        <div>
+                            <div className="font-medium text-gray-400">{label}</div>
+                            <div className="text-xs text-gray-500">{subLabel}</div>
+                        </div>
+                    </div>
+                    {showScoutBtn && (
+                        <button
+                            onClick={onOpenScout}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-colors text-xs font-bold border border-purple-500/20"
+                        >
+                            <Sparkles size={14} />
+                            Suggerisci
+                        </button>
+                    )}
                 </div>
             )}
         </div>
     );
 }
-

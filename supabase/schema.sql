@@ -88,7 +88,11 @@ create or replace function public.handle_new_user()
 returns trigger as $$
 begin
   insert into public.profiles (id, username, avatar_url)
-  values (new.id, new.raw_user_meta_data->>'name', new.raw_user_meta_data->>'avatar_url');
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'name', new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+    new.raw_user_meta_data->>'avatar_url'
+  );
   return new;
 end;
 $$ language plpgsql security definer;
@@ -183,4 +187,25 @@ create policy "Featured artists are viewable by everyone."
 
 create policy "Admins can manage featured artists."
   on featured_artists for all
+  using ( exists ( select 1 from profiles where id = auth.uid() and is_admin = true ) );
+
+-- Curated Roster for Scout Report
+create table curated_roster (
+  spotify_id text primary key,
+  name text not null,
+  image_url text,
+  genre text,
+  popularity integer default 0,
+  is_active boolean default true,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+alter table curated_roster enable row level security;
+
+create policy "Curated roster is viewable by everyone."
+  on curated_roster for select
+  using ( true );
+
+create policy "Admins can manage curated roster."
+  on curated_roster for all
   using ( exists ( select 1 from profiles where id = auth.uid() and is_admin = true ) );

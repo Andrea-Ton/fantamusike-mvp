@@ -26,6 +26,7 @@ export default async function DashboardLayout({
 
     const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url;
     const displayName = profile?.username || user?.user_metadata?.name || 'Manager';
+    const isAdmin = profile?.is_admin || false;
 
     // Fetch Current Season
     const currentSeason = await getCurrentSeasonAction();
@@ -34,7 +35,7 @@ export default async function DashboardLayout({
     return (
         <div className="flex min-h-screen bg-[#0b0b10] font-sans text-white">
             {/* Sidebar for Desktop */}
-            <Sidebar avatarUrl={avatarUrl} displayName={displayName} seasonName={seasonName} />
+            <Sidebar avatarUrl={avatarUrl} displayName={displayName} seasonName={seasonName} isAdmin={isAdmin} />
 
             {/* Main Content Wrapper */}
             <div className="flex-1 flex flex-col md:ml-64 mb-20 md:mb-0 transition-all duration-300">
@@ -42,7 +43,7 @@ export default async function DashboardLayout({
             </div>
 
             {/* Bottom Nav for Mobile */}
-            <BottomNav />
+            <BottomNav isAdmin={isAdmin} />
         </div>
     );
 }

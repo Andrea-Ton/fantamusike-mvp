@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Search, Trophy } from 'lucide-react';
+import { Home, Search, Trophy, Shield } from 'lucide-react';
 
 const NAV_ITEMS = [
     { href: '/dashboard', label: 'Dashboard', icon: Home },
@@ -11,7 +11,7 @@ const NAV_ITEMS = [
     { href: '/dashboard/leaderboard', label: 'Classifica', icon: Trophy },
 ];
 
-export default function BottomNav() {
+export default function BottomNav({ isAdmin }: { isAdmin?: boolean }) {
     const pathname = usePathname();
 
     return (
@@ -30,6 +30,16 @@ export default function BottomNav() {
                     </Link>
                 );
             })}
+            {isAdmin && (
+                <Link
+                    href="/admin"
+                    className={`flex flex-col items-center gap-1 ${pathname === '/admin' ? 'text-red-400' : 'text-gray-500'
+                        }`}
+                >
+                    <Shield size={24} strokeWidth={pathname === '/admin' ? 2.5 : 2} />
+                    <span className="text-[10px] font-medium">Admin</span>
+                </Link>
+            )}
         </div>
     );
 }
