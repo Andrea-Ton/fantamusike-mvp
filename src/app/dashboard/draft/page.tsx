@@ -55,6 +55,7 @@ export default function TalentScoutPage() {
     const [saveError, setSaveError] = useState<string | null>(null);
     const [showMobileTeam, setShowMobileTeam] = useState(false);
     const [isTeamLoaded, setIsTeamLoaded] = useState(false);
+    const [viewMode, setViewMode] = useState<'search' | 'featured'>('search');
 
     // Scout Report State
     const [isScoutModalOpen, setIsScoutModalOpen] = useState(false);
@@ -121,6 +122,8 @@ export default function TalentScoutPage() {
 
     useEffect(() => {
         const fetchArtists = async () => {
+            if (viewMode === 'featured') return;
+
             if (debouncedSearchTerm.length < 2) {
                 setArtists([]);
                 return;
@@ -135,7 +138,23 @@ export default function TalentScoutPage() {
         };
 
         fetchArtists();
-    }, [debouncedSearchTerm]);
+    }, [debouncedSearchTerm, viewMode]);
+
+    const handleLoadFeatured = async () => {
+        setIsLoading(true);
+        setViewMode('featured');
+        setSearchTerm('');
+        const featured = await getFeaturedArtistsAction();
+        setArtists(featured);
+        setIsLoading(false);
+    };
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(e.target.value);
+        if (viewMode === 'featured') {
+            setViewMode('search');
+        }
+    };
 
     const filteredArtists = artists.filter(artist => {
         const category = getCategory(artist.popularity);
@@ -376,14 +395,14 @@ export default function TalentScoutPage() {
                         </div>
 
                         {/* Search & Filter Bar */}
-                        <div className="flex flex-col md:flex-row gap-4 mb-8 sticky top-4 z-40 bg-[#0b0b10]/80 backdrop-blur-xl p-2 rounded-2xl border border-white/5">
+                        <div className="flex flex-col gap-4 mb-8 sticky top-4 z-40 bg-[#0b0b10]/80 backdrop-blur-xl p-2 rounded-2xl border border-white/5">
                             <div className="relative flex-1">
                                 <Search className="absolute left-4 top-3.5 text-gray-500" size={20} />
                                 <input
                                     type="text"
                                     placeholder="Cerca artista (es. Shiva, thasup...)"
                                     value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onChange={handleSearchChange}
                                     className="w-full h-12 pl-12 pr-4 bg-[#1a1a24] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 border border-white/5 transition-all"
                                 />
                                 {isLoading && (
@@ -393,6 +412,16 @@ export default function TalentScoutPage() {
                                 )}
                             </div>
                             <div className="flex gap-2 overflow-x-auto md:overflow-visible no-scrollbar pb-2 md:pb-0">
+                                <button
+                                    onClick={handleLoadFeatured}
+                                    className={`px-5 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all flex items-center gap-2 ${viewMode === 'featured'
+                                        ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/20'
+                                        : 'bg-[#1a1a24] text-yellow-500 border border-yellow-500/20 hover:bg-yellow-500/10'
+                                        }`}
+                                >
+                                    <Star size={16} className={viewMode === 'featured' ? 'fill-black' : 'fill-yellow-500'} />
+                                    Consigliati
+                                </button>
                                 {['All', 'New Gen', 'Mid Tier', 'Big'].map((filter) => (
                                     <button
                                         key={filter}
@@ -411,7 +440,12 @@ export default function TalentScoutPage() {
                         {/* Results Grid */}
                         <div className="space-y-6">
                             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider">
-                                {searchTerm.length < 2 ? 'Inizia a cercare...' : `Risultati Ricerca (${filteredArtists.length})`}
+                                {viewMode === 'featured'
+                                    ? `Artisti Consigliati (${filteredArtists.length})`
+                                    : searchTerm.length < 2
+                                        ? 'Inizia a cercare...'
+                                        : `Risultati Ricerca (${filteredArtists.length})`
+                                }
                             </h3>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
