@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, TrendingUp, Info, LogOut } from 'lucide-react';
+import { Trophy, TrendingUp, Info, LogOut, Share2 } from 'lucide-react';
 import ArtistCard, { Slot } from '@/components/dashboard/artist-card';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/server';
@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation';
 import { getUserTeamAction } from '@/app/actions/team';
 import { getLeaderboardAction } from '@/app/actions/leaderboard';
 import { getCurrentSeasonAction } from '@/app/actions/season';
+import { getWeeklyScoresAction } from '@/app/actions/dashboard';
 import LeaderboardCard from '@/components/dashboard/leaderboard-card';
 import Link from 'next/link';
 import LogoutButton from '@/components/logout-button';
@@ -31,6 +32,26 @@ export default async function DashboardPage() {
     // Fetch User Team
     const userTeam = await getUserTeamAction();
 
+    // Fetch Weekly Scores
+    let weeklyScores: Record<string, number> = {};
+    let weeklyTrend = 0;
+
+    if (userTeam) {
+        const artistIds = [
+            userTeam.slot_1?.id,
+            userTeam.slot_2?.id,
+            userTeam.slot_3?.id,
+            userTeam.slot_4?.id,
+            userTeam.slot_5?.id
+        ].filter(Boolean) as string[];
+
+        const { scores } = await getWeeklyScoresAction(artistIds);
+        weeklyScores = scores;
+
+        // Calculate total trend (sum of all artists)
+        weeklyTrend = Object.values(scores).reduce((a, b) => a + b, 0);
+    }
+
     // Fetch Leaderboard
     const leaderboard = await getLeaderboardAction(10);
 
@@ -51,7 +72,7 @@ export default async function DashboardPage() {
                 image: userTeam.slot_1.images[0]?.url || '',
                 popularity: userTeam.slot_1.popularity,
                 category: 'Big',
-                trend: 0, // Placeholder for now
+                trend: weeklyScores[userTeam.slot_1.id] || 0,
                 isCaptain: userTeam.captain_id === userTeam.slot_1.id
             } : null
         },
@@ -66,7 +87,7 @@ export default async function DashboardPage() {
                 image: userTeam.slot_2.images[0]?.url || '',
                 popularity: userTeam.slot_2.popularity,
                 category: 'Mid',
-                trend: 0,
+                trend: weeklyScores[userTeam.slot_2.id] || 0,
                 isCaptain: userTeam.captain_id === userTeam.slot_2.id
             } : null
         },
@@ -81,7 +102,7 @@ export default async function DashboardPage() {
                 image: userTeam.slot_3.images[0]?.url || '',
                 popularity: userTeam.slot_3.popularity,
                 category: 'Mid',
-                trend: 0,
+                trend: weeklyScores[userTeam.slot_3.id] || 0,
                 isCaptain: userTeam.captain_id === userTeam.slot_3.id
             } : null
         },
@@ -96,7 +117,7 @@ export default async function DashboardPage() {
                 image: userTeam.slot_4.images[0]?.url || '',
                 popularity: userTeam.slot_4.popularity,
                 category: 'New Gen',
-                trend: 0,
+                trend: weeklyScores[userTeam.slot_4.id] || 0,
                 isCaptain: userTeam.captain_id === userTeam.slot_4.id
             } : null
         },
@@ -111,7 +132,7 @@ export default async function DashboardPage() {
                 image: userTeam.slot_5.images[0]?.url || '',
                 popularity: userTeam.slot_5.popularity,
                 category: 'New Gen',
-                trend: 0,
+                trend: weeklyScores[userTeam.slot_5.id] || 0,
                 isCaptain: userTeam.captain_id === userTeam.slot_5.id
             } : null
         },
@@ -169,10 +190,10 @@ export default async function DashboardPage() {
                                         <p className="text-purple-200 text-sm font-medium mb-2">Punteggio Totale</p>
                                         <h2 className="text-5xl md:text-6xl font-bold tracking-tighter">{totalScore}</h2>
                                     </div>
-                                    <div className="bg-white/20 backdrop-blur-md px-4 py-2 rounded-full flex items-center gap-2">
-                                        <Trophy size={16} className="text-yellow-300" />
-                                        <span className="text-sm font-bold">#-- Global</span>
-                                    </div>
+                                    <button className="bg-white/20 backdrop-blur-md px-4 py-2 rounded-full flex items-center gap-2 hover:bg-white/30 transition-colors cursor-pointer">
+                                        <Share2 size={16} className="text-white" />
+                                        <span className="text-sm font-bold">Share</span>
+                                    </button>
                                 </div>
 
                                 <div className="mt-8 flex gap-6">
@@ -180,13 +201,8 @@ export default async function DashboardPage() {
                                         <span className="text-xs text-purple-200 uppercase tracking-wider mb-1">Trend Settimanale</span>
                                         <div className="flex items-center gap-1 text-lg font-bold">
                                             <TrendingUp size={18} className="text-green-300" />
-                                            +0 pts
+                                            +{weeklyTrend} pts
                                         </div>
-                                    </div>
-                                    <div className="w-px h-10 bg-white/20"></div>
-                                    <div className="flex flex-col">
-                                        <span className="text-xs text-purple-200 uppercase tracking-wider mb-1">Prossimo Update</span>
-                                        <span className="text-lg font-bold">Venerdì 00:00</span>
                                     </div>
                                 </div>
                             </div>

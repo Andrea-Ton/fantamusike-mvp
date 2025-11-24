@@ -361,87 +361,100 @@ export default function TalentScoutPage() {
         setActiveScoutSlotId(null);
     };
 
-    const TeamSummaryContent = () => (
-        <div className="space-y-4">
-            {/* Headliner */}
-            <SlotPreview
-                label="Headliner"
-                subLabel="Pop > 75"
-                artist={draftTeam.slot_1}
-                onRemove={() => handleRemoveFromSlot('slot_1')}
-                icon={<Trophy size={14} className="text-yellow-500" />}
-                isCaptain={draftTeam.slot_1?.id === captainId}
-                onSetCaptain={() => draftTeam.slot_1 && handleSetCaptain(draftTeam.slot_1.id)}
-                isFeatured={draftTeam.slot_1 ? featuredArtists.has(draftTeam.slot_1.id) : false}
-            />
-
-            {/* Mid Tier */}
-            <SlotPreview
-                label="Mid Tier 1"
-                subLabel="Pop 30-75"
-                artist={draftTeam.slot_2}
-                onRemove={() => handleRemoveFromSlot('slot_2')}
-                icon={<Users size={14} className="text-blue-400" />}
-                isCaptain={draftTeam.slot_2?.id === captainId}
-                onSetCaptain={() => draftTeam.slot_2 && handleSetCaptain(draftTeam.slot_2.id)}
-                isFeatured={draftTeam.slot_2 ? featuredArtists.has(draftTeam.slot_2.id) : false}
-            />
-            <SlotPreview
-                label="Mid Tier 2"
-                subLabel="Pop 30-75"
-                artist={draftTeam.slot_3}
-                onRemove={() => handleRemoveFromSlot('slot_3')}
-                icon={<Users size={14} className="text-blue-400" />}
-                isCaptain={draftTeam.slot_3?.id === captainId}
-                onSetCaptain={() => draftTeam.slot_3 && handleSetCaptain(draftTeam.slot_3.id)}
-                isFeatured={draftTeam.slot_3 ? featuredArtists.has(draftTeam.slot_3.id) : false}
-            />
-
-            {/* New Gen */}
-            <SlotPreview
-                label="New Gen 1"
-                subLabel="Pop < 30"
-                artist={draftTeam.slot_4}
-                onRemove={() => handleRemoveFromSlot('slot_4')}
-                icon={<Zap size={14} className="text-green-400" />}
-                isCaptain={draftTeam.slot_4?.id === captainId}
-                onSetCaptain={() => draftTeam.slot_4 && handleSetCaptain(draftTeam.slot_4.id)}
-                isFeatured={draftTeam.slot_4 ? featuredArtists.has(draftTeam.slot_4.id) : false}
-                onOpenScout={() => handleOpenScout('slot_4')}
-                showScoutBtn={!draftTeam.slot_4}
-            />
-            <SlotPreview
-                label="New Gen 2"
-                subLabel="Pop < 30"
-                artist={draftTeam.slot_5}
-                onRemove={() => handleRemoveFromSlot('slot_5')}
-                icon={<Zap size={14} className="text-green-400" />}
-                isCaptain={draftTeam.slot_5?.id === captainId}
-                onSetCaptain={() => draftTeam.slot_5 && handleSetCaptain(draftTeam.slot_5.id)}
-                isFeatured={draftTeam.slot_5 ? featuredArtists.has(draftTeam.slot_5.id) : false}
-                onOpenScout={() => handleOpenScout('slot_5')}
-                showScoutBtn={!draftTeam.slot_5}
-            />
-
-            {saveError && (
-                <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs">
-                    {saveError}
+    const TeamSummaryContent = () => {
+        if (!isTeamLoaded) {
+            return (
+                <div className="space-y-4 animate-pulse">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                        <div key={i} className="h-20 bg-white/5 rounded-xl border border-white/5"></div>
+                    ))}
+                    <div className="h-12 bg-white/5 rounded-xl mt-4"></div>
                 </div>
-            )}
+            );
+        }
 
-            <button
-                onClick={handleSaveClick}
-                disabled={filledSlotsCount < 5 || !captainId || isSaving}
-                className={`w-full h-12 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${filledSlotsCount === 5 && captainId
-                    ? 'bg-white text-black hover:bg-purple-400 shadow-lg shadow-purple-500/20'
-                    : 'bg-white/5 text-gray-500 cursor-not-allowed'
-                    }`}
-            >
-                {isSaving ? <Loader2 className="animate-spin" /> : <Save size={18} />}
-                {isSaving ? 'Salvataggio...' : cost > 0 ? `Salva (${cost} MusiCoin)` : 'Conferma Team (Gratis)'}
-            </button>
-        </div>
-    );
+        return (
+            <div className="space-y-4">
+                {/* Headliner */}
+                <SlotPreview
+                    label="Headliner"
+                    subLabel="Pop > 75"
+                    artist={draftTeam.slot_1}
+                    onRemove={() => handleRemoveFromSlot('slot_1')}
+                    icon={<Trophy size={14} className="text-yellow-500" />}
+                    isCaptain={draftTeam.slot_1?.id === captainId}
+                    onSetCaptain={() => draftTeam.slot_1 && handleSetCaptain(draftTeam.slot_1.id)}
+                    isFeatured={draftTeam.slot_1 ? featuredArtists.has(draftTeam.slot_1.id) : false}
+                />
+
+                {/* Mid Tier */}
+                <SlotPreview
+                    label="Mid Tier 1"
+                    subLabel="Pop 30-75"
+                    artist={draftTeam.slot_2}
+                    onRemove={() => handleRemoveFromSlot('slot_2')}
+                    icon={<Users size={14} className="text-blue-400" />}
+                    isCaptain={draftTeam.slot_2?.id === captainId}
+                    onSetCaptain={() => draftTeam.slot_2 && handleSetCaptain(draftTeam.slot_2.id)}
+                    isFeatured={draftTeam.slot_2 ? featuredArtists.has(draftTeam.slot_2.id) : false}
+                />
+                <SlotPreview
+                    label="Mid Tier 2"
+                    subLabel="Pop 30-75"
+                    artist={draftTeam.slot_3}
+                    onRemove={() => handleRemoveFromSlot('slot_3')}
+                    icon={<Users size={14} className="text-blue-400" />}
+                    isCaptain={draftTeam.slot_3?.id === captainId}
+                    onSetCaptain={() => draftTeam.slot_3 && handleSetCaptain(draftTeam.slot_3.id)}
+                    isFeatured={draftTeam.slot_3 ? featuredArtists.has(draftTeam.slot_3.id) : false}
+                />
+
+                {/* New Gen */}
+                <SlotPreview
+                    label="New Gen 1"
+                    subLabel="Pop < 30"
+                    artist={draftTeam.slot_4}
+                    onRemove={() => handleRemoveFromSlot('slot_4')}
+                    icon={<Zap size={14} className="text-green-400" />}
+                    isCaptain={draftTeam.slot_4?.id === captainId}
+                    onSetCaptain={() => draftTeam.slot_4 && handleSetCaptain(draftTeam.slot_4.id)}
+                    isFeatured={draftTeam.slot_4 ? featuredArtists.has(draftTeam.slot_4.id) : false}
+                    onOpenScout={() => handleOpenScout('slot_4')}
+                    showScoutBtn={!draftTeam.slot_4}
+                />
+                <SlotPreview
+                    label="New Gen 2"
+                    subLabel="Pop < 30"
+                    artist={draftTeam.slot_5}
+                    onRemove={() => handleRemoveFromSlot('slot_5')}
+                    icon={<Zap size={14} className="text-green-400" />}
+                    isCaptain={draftTeam.slot_5?.id === captainId}
+                    onSetCaptain={() => draftTeam.slot_5 && handleSetCaptain(draftTeam.slot_5.id)}
+                    isFeatured={draftTeam.slot_5 ? featuredArtists.has(draftTeam.slot_5.id) : false}
+                    onOpenScout={() => handleOpenScout('slot_5')}
+                    showScoutBtn={!draftTeam.slot_5}
+                />
+
+                {saveError && (
+                    <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs">
+                        {saveError}
+                    </div>
+                )}
+
+                <button
+                    onClick={handleSaveClick}
+                    disabled={filledSlotsCount < 5 || !captainId || isSaving}
+                    className={`w-full h-12 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${filledSlotsCount === 5 && captainId
+                        ? 'bg-white text-black hover:bg-purple-400 shadow-lg shadow-purple-500/20'
+                        : 'bg-white/5 text-gray-500 cursor-not-allowed'
+                        }`}
+                >
+                    {isSaving ? <Loader2 className="animate-spin" /> : <Save size={18} />}
+                    {isSaving ? 'Salvataggio...' : cost > 0 ? `Salva (${cost} MusiCoin)` : 'Conferma Team (Gratis)'}
+                </button>
+            </div>
+        );
+    };
 
     return (
         <>

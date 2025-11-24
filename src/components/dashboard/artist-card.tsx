@@ -65,11 +65,7 @@ export default function ArtistCard({ slot }: { slot: Slot }) {
                 </div>
             </div>
 
-            <div className="z-10">
-                <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer">
-                    <ChevronRight size={16} className="text-gray-400" />
-                </div>
-            </div>
+
 
             {/* Background Gradient Glow */}
             <div className={`absolute right-0 top-0 w-32 h-full bg-gradient-to-l ${slot.artist.isCaptain ? 'from-yellow-500/10' : slot.type === 'New Gen' ? 'from-green-500/10' : slot.type === 'Big' ? 'from-purple-500/10' : 'from-blue-500/10'} to-transparent pointer-events-none group-hover:opacity-100 transition-opacity`} />
