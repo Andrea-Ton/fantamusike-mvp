@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Plus, LogOut, Loader2, X, Save, Trophy, Users, Zap, ChevronUp, Star, Crown, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import { searchArtistsAction } from '@/app/actions/spotify';
-import { saveTeamAction, TeamSlots } from '@/app/actions/team';
+import { saveTeamAction, TeamSlots, getUserTeamAction } from '@/app/actions/team';
 import { getFeaturedArtistsAction } from '@/app/actions/artist';
 import { getScoutSuggestionsAction, ScoutSuggestion } from '@/app/actions/scout';
 import { SpotifyArtist } from '@/lib/spotify';
@@ -54,6 +54,7 @@ export default function TalentScoutPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
     const [showMobileTeam, setShowMobileTeam] = useState(false);
+    const [isTeamLoaded, setIsTeamLoaded] = useState(false);
 
     // Scout Report State
     const [isScoutModalOpen, setIsScoutModalOpen] = useState(false);
@@ -61,13 +62,62 @@ export default function TalentScoutPage() {
     const [isScoutLoading, setIsScoutLoading] = useState(false);
     const [activeScoutSlotId, setActiveScoutSlotId] = useState<keyof TeamSlots | null>(null);
 
+    // Load Team (DB or LocalStorage)
     useEffect(() => {
+        const loadTeam = async () => {
+            // 1. Try fetching from DB
+            const dbTeam = await getUserTeamAction();
+
+            if (dbTeam) {
+                setDraftTeam({
+                    slot_1: dbTeam.slot_1,
+                    slot_2: dbTeam.slot_2,
+                    slot_3: dbTeam.slot_3,
+                    slot_4: dbTeam.slot_4,
+                    slot_5: dbTeam.slot_5,
+                });
+                if (dbTeam.captain_id) {
+                    setCaptainId(dbTeam.captain_id);
+                }
+            } else {
+                // 2. If no DB team, try LocalStorage
+                const savedDraft = localStorage.getItem('draftTeam');
+                const savedCaptain = localStorage.getItem('captainId');
+
+                if (savedDraft) {
+                    try {
+                        setDraftTeam(JSON.parse(savedDraft));
+                    } catch (e) {
+                        console.error('Failed to parse draft team', e);
+                    }
+                }
+                if (savedCaptain) {
+                    setCaptainId(savedCaptain);
+                }
+            }
+            setIsTeamLoaded(true);
+        };
+
         const fetchFeatured = async () => {
             const featured = await getFeaturedArtistsAction();
             setFeaturedArtists(new Set(featured.map(a => a.id)));
         };
+
+        loadTeam();
         fetchFeatured();
     }, []);
+
+    // Save to LocalStorage on change (only if loaded)
+    useEffect(() => {
+        if (isTeamLoaded) {
+            localStorage.setItem('draftTeam', JSON.stringify(draftTeam));
+            if (captainId) {
+                localStorage.setItem('captainId', captainId);
+            } else {
+                localStorage.removeItem('captainId');
+            }
+        }
+    }, [draftTeam, captainId, isTeamLoaded]);
 
     useEffect(() => {
         const fetchArtists = async () => {
@@ -137,6 +187,8 @@ export default function TalentScoutPage() {
         const result = await saveTeamAction(draftTeam, captainId);
 
         if (result.success) {
+            localStorage.removeItem('draftTeam');
+            localStorage.removeItem('captainId');
             router.push('/dashboard');
         } else {
             setSaveError(result.message || 'Errore durante il salvataggio');

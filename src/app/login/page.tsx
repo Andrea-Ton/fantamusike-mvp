@@ -109,7 +109,7 @@ export default function LoginPage() {
                     <button
                         onClick={() => handleOAuth('apple')}
                         disabled={isLoading}
-                        aria-hidden={true}
+                        hidden={true}
                         className="w-full h-12 bg-black text-white border border-white/20 font-bold rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center gap-2 cursor-pointer"
                     >
                         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
