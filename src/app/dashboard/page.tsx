@@ -8,6 +8,7 @@ import { getUserTeamAction } from '@/app/actions/team';
 import { getLeaderboardAction } from '@/app/actions/leaderboard';
 import { getCurrentSeasonAction } from '@/app/actions/season';
 import { getWeeklyScoresAction } from '@/app/actions/dashboard';
+import { getFeaturedArtistsAction } from '@/app/actions/artist';
 import LeaderboardCard from '@/components/dashboard/leaderboard-card';
 import Link from 'next/link';
 import LogoutButton from '@/components/logout-button';
@@ -59,6 +60,10 @@ export default async function DashboardPage() {
     const currentSeason = await getCurrentSeasonAction();
     const seasonName = currentSeason?.name || 'Season Zero';
 
+    // Fetch Featured Artists for Multiplier Calculation
+    const featuredArtists = await getFeaturedArtistsAction();
+    const featuredIds = new Set(featuredArtists.map(a => a.id));
+
     // Transform to Slot format for UI
     const teamSlots: Slot[] = [
         {
@@ -73,7 +78,8 @@ export default async function DashboardPage() {
                 popularity: userTeam.slot_1.popularity,
                 category: 'Big',
                 trend: weeklyScores[userTeam.slot_1.id] || 0,
-                isCaptain: userTeam.captain_id === userTeam.slot_1.id
+                isCaptain: userTeam.captain_id === userTeam.slot_1.id,
+                multiplier: userTeam.captain_id === userTeam.slot_1.id ? (featuredIds.has(userTeam.slot_1.id) ? 2 : 1.5) : undefined
             } : null
         },
         {
@@ -88,7 +94,8 @@ export default async function DashboardPage() {
                 popularity: userTeam.slot_2.popularity,
                 category: 'Mid',
                 trend: weeklyScores[userTeam.slot_2.id] || 0,
-                isCaptain: userTeam.captain_id === userTeam.slot_2.id
+                isCaptain: userTeam.captain_id === userTeam.slot_2.id,
+                multiplier: userTeam.captain_id === userTeam.slot_2.id ? (featuredIds.has(userTeam.slot_2.id) ? 2 : 1.5) : undefined
             } : null
         },
         {
@@ -103,7 +110,8 @@ export default async function DashboardPage() {
                 popularity: userTeam.slot_3.popularity,
                 category: 'Mid',
                 trend: weeklyScores[userTeam.slot_3.id] || 0,
-                isCaptain: userTeam.captain_id === userTeam.slot_3.id
+                isCaptain: userTeam.captain_id === userTeam.slot_3.id,
+                multiplier: userTeam.captain_id === userTeam.slot_3.id ? (featuredIds.has(userTeam.slot_3.id) ? 2 : 1.5) : undefined
             } : null
         },
         {
@@ -118,7 +126,8 @@ export default async function DashboardPage() {
                 popularity: userTeam.slot_4.popularity,
                 category: 'New Gen',
                 trend: weeklyScores[userTeam.slot_4.id] || 0,
-                isCaptain: userTeam.captain_id === userTeam.slot_4.id
+                isCaptain: userTeam.captain_id === userTeam.slot_4.id,
+                multiplier: userTeam.captain_id === userTeam.slot_4.id ? (featuredIds.has(userTeam.slot_4.id) ? 2 : 1.5) : undefined
             } : null
         },
         {
@@ -133,7 +142,8 @@ export default async function DashboardPage() {
                 popularity: userTeam.slot_5.popularity,
                 category: 'New Gen',
                 trend: weeklyScores[userTeam.slot_5.id] || 0,
-                isCaptain: userTeam.captain_id === userTeam.slot_5.id
+                isCaptain: userTeam.captain_id === userTeam.slot_5.id,
+                multiplier: userTeam.captain_id === userTeam.slot_5.id ? (featuredIds.has(userTeam.slot_5.id) ? 2 : 1.5) : undefined
             } : null
         },
     ];

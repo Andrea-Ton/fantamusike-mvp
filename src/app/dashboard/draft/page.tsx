@@ -385,6 +385,7 @@ export default function TalentScoutPage() {
                     isCaptain={draftTeam.slot_1?.id === captainId}
                     onSetCaptain={() => draftTeam.slot_1 && handleSetCaptain(draftTeam.slot_1.id)}
                     isFeatured={draftTeam.slot_1 ? featuredArtists.has(draftTeam.slot_1.id) : false}
+                    multiplier={draftTeam.slot_1?.id === captainId ? (featuredArtists.has(draftTeam.slot_1.id) ? 2 : 1.5) : undefined}
                 />
 
                 {/* Mid Tier */}
@@ -397,6 +398,7 @@ export default function TalentScoutPage() {
                     isCaptain={draftTeam.slot_2?.id === captainId}
                     onSetCaptain={() => draftTeam.slot_2 && handleSetCaptain(draftTeam.slot_2.id)}
                     isFeatured={draftTeam.slot_2 ? featuredArtists.has(draftTeam.slot_2.id) : false}
+                    multiplier={draftTeam.slot_2?.id === captainId ? (featuredArtists.has(draftTeam.slot_2.id) ? 2 : 1.5) : undefined}
                 />
                 <SlotPreview
                     label="Mid Tier 2"
@@ -407,6 +409,7 @@ export default function TalentScoutPage() {
                     isCaptain={draftTeam.slot_3?.id === captainId}
                     onSetCaptain={() => draftTeam.slot_3 && handleSetCaptain(draftTeam.slot_3.id)}
                     isFeatured={draftTeam.slot_3 ? featuredArtists.has(draftTeam.slot_3.id) : false}
+                    multiplier={draftTeam.slot_3?.id === captainId ? (featuredArtists.has(draftTeam.slot_3.id) ? 2 : 1.5) : undefined}
                 />
 
                 {/* New Gen */}
@@ -421,6 +424,7 @@ export default function TalentScoutPage() {
                     isFeatured={draftTeam.slot_4 ? featuredArtists.has(draftTeam.slot_4.id) : false}
                     onOpenScout={() => handleOpenScout('slot_4')}
                     showScoutBtn={!draftTeam.slot_4}
+                    multiplier={draftTeam.slot_4?.id === captainId ? (featuredArtists.has(draftTeam.slot_4.id) ? 2 : 1.5) : undefined}
                 />
                 <SlotPreview
                     label="New Gen 2"
@@ -433,6 +437,7 @@ export default function TalentScoutPage() {
                     isFeatured={draftTeam.slot_5 ? featuredArtists.has(draftTeam.slot_5.id) : false}
                     onOpenScout={() => handleOpenScout('slot_5')}
                     showScoutBtn={!draftTeam.slot_5}
+                    multiplier={draftTeam.slot_5?.id === captainId ? (featuredArtists.has(draftTeam.slot_5.id) ? 2 : 1.5) : undefined}
                 />
 
                 {saveError && (
@@ -719,7 +724,8 @@ function SlotPreview({
     onSetCaptain,
     isFeatured,
     onOpenScout,
-    showScoutBtn
+    showScoutBtn,
+    multiplier
 }: {
     label: string,
     subLabel: string,
@@ -730,7 +736,8 @@ function SlotPreview({
     onSetCaptain: () => void,
     isFeatured: boolean,
     onOpenScout?: () => void,
-    showScoutBtn?: boolean
+    showScoutBtn?: boolean,
+    multiplier?: number
 }) {
     return (
         <div className={`relative p-4 rounded-xl border transition-all ${artist ? (isFeatured ? 'bg-yellow-500/5 border-yellow-500/50' : 'bg-white/5 border-white/10') : 'bg-white/5 border-dashed border-white/10 hover:border-white/20'}`}>
@@ -748,6 +755,11 @@ function SlotPreview({
                         <div className="flex items-center gap-2">
                             <div className="font-bold text-white truncate">{artist.name}</div>
                             {isFeatured && <Star size={12} className="text-yellow-500 fill-yellow-500" />}
+                            {multiplier && multiplier > 1 && (
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider border ${multiplier === 2 ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/20' : 'bg-purple-500/20 text-purple-400 border-purple-500/20'}`}>
+                                    x{multiplier}
+                                </span>
+                            )}
                         </div>
                         <div className="text-xs text-gray-400">{subLabel}</div>
                     </div>

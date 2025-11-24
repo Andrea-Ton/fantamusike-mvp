@@ -11,6 +11,7 @@ export type Artist = {
     category: 'Big' | 'Mid' | 'New Gen';
     trend: number;
     isCaptain?: boolean;
+    multiplier?: number;
 };
 
 export type Slot = {
@@ -53,6 +54,11 @@ export default function ArtistCard({ slot }: { slot: Slot }) {
                         {slot.artist.isCaptain && (
                             <span className="text-[10px] font-bold bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded uppercase tracking-wider border border-yellow-500/20">
                                 C
+                            </span>
+                        )}
+                        {slot.artist.multiplier && slot.artist.multiplier > 1 && (
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider border ${slot.artist.multiplier === 2 ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/20' : 'bg-purple-500/20 text-purple-400 border-purple-500/20'}`}>
+                                x{slot.artist.multiplier}
                             </span>
                         )}
                     </div>
