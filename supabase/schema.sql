@@ -48,6 +48,7 @@ create table teams (
   slot_4_id text references artists_cache.spotify_id,
   slot_5_id text references artists_cache.spotify_id,
   captain_id text,
+  season_id uuid references seasons.id,
   locked_at timestamp with time zone
 );
 

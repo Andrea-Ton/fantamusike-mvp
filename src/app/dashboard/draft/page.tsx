@@ -7,6 +7,7 @@ import { searchArtistsAction } from '@/app/actions/spotify';
 import { saveTeamAction, TeamSlots, getUserTeamAction } from '@/app/actions/team';
 import { getFeaturedArtistsAction } from '@/app/actions/artist';
 import { getScoutSuggestionsAction, ScoutSuggestion } from '@/app/actions/scout';
+import { getCurrentSeasonAction } from '@/app/actions/season';
 import { SpotifyArtist } from '@/lib/spotify';
 import { useRouter } from 'next/navigation';
 import LogoutButton from '@/components/logout-button';
@@ -57,6 +58,14 @@ export default function TalentScoutPage() {
     const [isTeamLoaded, setIsTeamLoaded] = useState(false);
     const [viewMode, setViewMode] = useState<'search' | 'featured'>('search');
 
+    // MusiCoin & Season State
+    const [initialTeam, setInitialTeam] = useState<TeamSlots | null>(null);
+    const [initialCaptainId, setInitialCaptainId] = useState<string | null>(null);
+    const [cost, setCost] = useState(0);
+    const [showCostModal, setShowCostModal] = useState(false);
+    const [currentSeasonId, setCurrentSeasonId] = useState<string | null>(null);
+    const [isNewSeasonEntry, setIsNewSeasonEntry] = useState(false);
+
     // Scout Report State
     const [isScoutModalOpen, setIsScoutModalOpen] = useState(false);
     const [scoutSuggestions, setScoutSuggestions] = useState<ScoutSuggestion[]>([]);
@@ -65,20 +74,37 @@ export default function TalentScoutPage() {
 
     // Load Team (DB or LocalStorage)
     useEffect(() => {
-        const loadTeam = async () => {
+        const loadData = async () => {
+            // 0. Get Current Season
+            const season = await getCurrentSeasonAction();
+            if (season) setCurrentSeasonId(season.id);
+
             // 1. Try fetching from DB
             const dbTeam = await getUserTeamAction();
 
             if (dbTeam) {
-                setDraftTeam({
+                const loadedTeam = {
                     slot_1: dbTeam.slot_1,
                     slot_2: dbTeam.slot_2,
                     slot_3: dbTeam.slot_3,
                     slot_4: dbTeam.slot_4,
                     slot_5: dbTeam.slot_5,
-                });
+                };
+                setDraftTeam(loadedTeam);
+                setInitialTeam(loadedTeam);
+
                 if (dbTeam.captain_id) {
                     setCaptainId(dbTeam.captain_id);
+                    setInitialCaptainId(dbTeam.captain_id);
+                } else {
+                    setInitialCaptainId(null);
+                }
+
+                // Check if new season entry
+                if (season && (!dbTeam.season_id || dbTeam.season_id !== season.id)) {
+                    setIsNewSeasonEntry(true);
+                } else {
+                    setIsNewSeasonEntry(false);
                 }
             } else {
                 // 2. If no DB team, try LocalStorage
@@ -87,14 +113,26 @@ export default function TalentScoutPage() {
 
                 if (savedDraft) {
                     try {
-                        setDraftTeam(JSON.parse(savedDraft));
+                        const parsedDraft = JSON.parse(savedDraft);
+                        setDraftTeam(parsedDraft);
+                        setInitialTeam(parsedDraft);
                     } catch (e) {
                         console.error('Failed to parse draft team', e);
+                        setInitialTeam(INITIAL_SLOTS);
                     }
+                } else {
+                    setInitialTeam(INITIAL_SLOTS);
                 }
+
                 if (savedCaptain) {
                     setCaptainId(savedCaptain);
+                    setInitialCaptainId(savedCaptain);
+                } else {
+                    setInitialCaptainId(null);
                 }
+
+                // No DB team means it's a new entry (free)
+                setIsNewSeasonEntry(true);
             }
             setIsTeamLoaded(true);
         };
@@ -104,9 +142,45 @@ export default function TalentScoutPage() {
             setFeaturedArtists(new Set(featured.map(a => a.id)));
         };
 
-        loadTeam();
+        loadData();
         fetchFeatured();
     }, []);
+
+    // Calculate Cost
+    useEffect(() => {
+        if (isNewSeasonEntry) {
+            setCost(0);
+            return;
+        }
+
+        if (!initialTeam) {
+            setCost(0);
+            return;
+        }
+
+        let newCost = 0;
+
+        // Check artist changes (20 coins each)
+        const slots: (keyof TeamSlots)[] = ['slot_1', 'slot_2', 'slot_3', 'slot_4', 'slot_5'];
+        let changedArtists = 0;
+
+        slots.forEach(slot => {
+            const initialId = initialTeam[slot]?.id;
+            const currentId = draftTeam[slot]?.id;
+            if (initialId !== currentId) {
+                changedArtists++;
+            }
+        });
+
+        newCost += changedArtists * 20;
+
+        // Check captain change (10 coins)
+        if (initialCaptainId && captainId && initialCaptainId !== captainId) {
+            newCost += 10;
+        }
+
+        setCost(newCost);
+    }, [draftTeam, captainId, initialTeam, initialCaptainId, isNewSeasonEntry]);
 
     // Save to LocalStorage on change (only if loaded)
     useEffect(() => {
@@ -185,23 +259,30 @@ export default function TalentScoutPage() {
         setCaptainId(artistId);
     };
 
-    const handleSaveTeam = async () => {
-        setIsSaving(true);
-        setSaveError(null);
-
+    const handleSaveClick = () => {
         // Basic client-side validation check
         const emptySlots = Object.values(draftTeam).some(slot => slot === null);
         if (emptySlots) {
             setSaveError('Devi riempire tutti gli slot prima di salvare!');
-            setIsSaving(false);
             return;
         }
 
         if (!captainId) {
             setSaveError('Devi selezionare un Capitano!');
-            setIsSaving(false);
             return;
         }
+
+        if (cost > 0) {
+            setShowCostModal(true);
+        } else {
+            handleConfirmSave();
+        }
+    };
+
+    const handleConfirmSave = async () => {
+        setIsSaving(true);
+        setSaveError(null);
+        setShowCostModal(false);
 
         const result = await saveTeamAction(draftTeam, captainId);
 
@@ -349,7 +430,7 @@ export default function TalentScoutPage() {
             )}
 
             <button
-                onClick={handleSaveTeam}
+                onClick={handleSaveClick}
                 disabled={filledSlotsCount < 5 || !captainId || isSaving}
                 className={`w-full h-12 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${filledSlotsCount === 5 && captainId
                     ? 'bg-white text-black hover:bg-purple-400 shadow-lg shadow-purple-500/20'
@@ -357,13 +438,42 @@ export default function TalentScoutPage() {
                     }`}
             >
                 {isSaving ? <Loader2 className="animate-spin" /> : <Save size={18} />}
-                {isSaving ? 'Salvataggio...' : 'Conferma Team'}
+                {isSaving ? 'Salvataggio...' : cost > 0 ? `Salva (${cost} MusiCoin)` : 'Conferma Team (Gratis)'}
             </button>
         </div>
     );
 
     return (
         <>
+            {/* Cost Confirmation Modal */}
+            {showCostModal && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-[#1a1a24] border border-white/10 rounded-3xl w-full max-w-md p-6 shadow-2xl shadow-purple-500/20 animate-scale-in">
+                        <h3 className="text-xl font-bold text-white mb-4">Conferma Modifiche</h3>
+                        <p className="text-gray-400 mb-6">
+                            Hai apportato modifiche al tuo team.
+                            <br />
+                            Costo totale: <span className="text-yellow-400 font-bold">{cost} MusiCoin</span>.
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowCostModal(false)}
+                                className="flex-1 py-3 rounded-xl font-bold bg-white/5 text-white hover:bg-white/10 transition-colors"
+                            >
+                                Annulla
+                            </button>
+                            <button
+                                onClick={handleConfirmSave}
+                                disabled={isSaving}
+                                className="flex-1 py-3 rounded-xl font-bold bg-yellow-500 text-black hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2"
+                            >
+                                {isSaving ? <Loader2 className="animate-spin" /> : <Zap size={18} className="fill-black" />}
+                                Paga e Salva
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* Mobile Header */}
             <div className="md:hidden pt-12 px-6 flex justify-between items-center mb-2">
                 <div className="flex items-center gap-3">

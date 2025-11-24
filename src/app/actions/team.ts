@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { SpotifyArtist } from '@/lib/spotify';
 import { revalidatePath } from 'next/cache';
+import { getCurrentSeasonAction } from './season';
 
 export type TeamSlots = {
     slot_1: SpotifyArtist | null;
@@ -62,8 +63,73 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
     }
 
     try {
-        // 3. Cache Artists
-        // We need to upsert artists to ensure they exist in artists_cache before referencing them
+        // 3. Get Active Season
+        const currentSeason = await getCurrentSeasonAction();
+        if (!currentSeason) {
+            return { success: false, message: 'No active season found' };
+        }
+
+        // 4. Fetch Current Team & Profile (for coins)
+        const { data: currentTeam } = await supabase
+            .from('teams')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('musi_coins')
+            .eq('id', user.id)
+            .single();
+
+        if (!profile) {
+            return { success: false, message: 'Profile not found' };
+        }
+
+        // 5. Calculate Cost
+        let cost = 0;
+        const isNewSeasonEntry = !currentTeam?.season_id || currentTeam.season_id !== currentSeason.id;
+
+        if (!isNewSeasonEntry && currentTeam) {
+            // Calculate changes
+            let changedArtists = 0;
+            const newIds = [slots.slot_1!.id, slots.slot_2!.id, slots.slot_3!.id, slots.slot_4!.id, slots.slot_5!.id];
+            const oldIds = [currentTeam.slot_1_id, currentTeam.slot_2_id, currentTeam.slot_3_id, currentTeam.slot_4_id, currentTeam.slot_5_id];
+
+            // Simple index-based comparison as slots are fixed positions
+            for (let i = 0; i < 5; i++) {
+                if (newIds[i] !== oldIds[i]) {
+                    changedArtists++;
+                }
+            }
+
+            cost += changedArtists * 20;
+
+            // Captain change cost
+            if (currentTeam.captain_id && captainId && currentTeam.captain_id !== captainId) {
+                cost += 10;
+            }
+        }
+
+        // 6. Check Balance & Deduct
+        if (cost > 0) {
+            if (profile.musi_coins < cost) {
+                return { success: false, message: `Insufficient MusiCoins. Cost: ${cost}, Available: ${profile.musi_coins}` };
+            }
+
+            // Deduct coins
+            const { error: deductError } = await supabase
+                .from('profiles')
+                .update({ musi_coins: profile.musi_coins - cost })
+                .eq('id', user.id);
+
+            if (deductError) {
+                console.error('Coin Deduction Error:', deductError);
+                return { success: false, message: 'Failed to process payment' };
+            }
+        }
+
+        // 7. Cache Artists
         const artistsToUpsert = artists.map(artist => ({
             spotify_id: artist.id,
             name: artist.name,
@@ -82,7 +148,7 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
             return { success: false, message: 'Failed to cache artists' };
         }
 
-        // 4. Save Team
+        // 8. Save Team
         const teamData = {
             user_id: user.id,
             slot_1_id: slots.slot_1!.id,
@@ -91,6 +157,7 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
             slot_4_id: slots.slot_4!.id,
             slot_5_id: slots.slot_5!.id,
             captain_id: captainId,
+            season_id: currentSeason.id, // Always update to current season
             locked_at: new Date().toISOString()
         };
 
@@ -119,6 +186,7 @@ export type UserTeamResponse = {
     slot_4: SpotifyArtist | null;
     slot_5: SpotifyArtist | null;
     captain_id?: string | null;
+    season_id?: string | null;
 } | null;
 
 export async function getUserTeamAction(): Promise<UserTeamResponse> {
@@ -176,6 +244,7 @@ export async function getUserTeamAction(): Promise<UserTeamResponse> {
         slot_3: getArtist(team.slot_3_id),
         slot_4: getArtist(team.slot_4_id),
         slot_5: getArtist(team.slot_5_id),
-        captain_id: team.captain_id
+        captain_id: team.captain_id,
+        season_id: team.season_id
     };
 }
