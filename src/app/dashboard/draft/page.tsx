@@ -351,6 +351,7 @@ export default function TalentScoutPage() {
     const handleOpenScout = async (slotKey: keyof TeamSlots) => {
         setActiveScoutSlotId(slotKey);
         setIsScoutModalOpen(true);
+        setShowMobileTeam(false); // Close mobile team sheet if open
         setIsScoutLoading(true);
         try {
             const suggestions = await getScoutSuggestionsAction();
