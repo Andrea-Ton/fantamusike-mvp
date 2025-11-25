@@ -66,3 +66,33 @@ export async function searchArtists(query: string): Promise<SpotifyArtist[]> {
     const data: SearchArtistsResponse = await response.json();
     return data.artists.items;
 }
+
+export type SpotifyAlbum = {
+    id: string;
+    name: string;
+    release_date: string;
+    album_type: 'album' | 'single' | 'compilation';
+    total_tracks: number;
+};
+
+export async function getArtistReleases(artistId: string): Promise<SpotifyAlbum[]> {
+    const token = await getAccessToken();
+
+    const response = await fetch(
+        `https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=album,single&limit=5&market=IT`,
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            next: { revalidate: 3600 }
+        }
+    );
+
+    if (!response.ok) {
+        console.error(`Failed to fetch releases for ${artistId}: ${response.statusText}`);
+        return [];
+    }
+
+    const data = await response.json();
+    return data.items;
+}

@@ -92,17 +92,41 @@ export async function calculateScoresAction(weekNumber: number) {
             const hypeScore = popDelta * 10;
 
             // B. Fanbase Score (% Growth)
-            // Avoid division by zero
+            // Formula: ((Current - Start) / Start) * 100
             const startFollowers = snapshot.followers > 0 ? snapshot.followers : 1;
             const followerDelta = current.current_followers - snapshot.followers;
             const growthPercent = (followerDelta / startFollowers) * 100;
-            const fanbaseScore = Math.round(growthPercent * 10); // 10 points per 1% growth? 
-            // Spec says: ((Current - Start) / Start) * 100 -> This is just the percentage.
-            // Example: 1000 -> 1100 (+10%). Score = 10. 
-            // So Fanbase Score = Growth Percent.
+            // Score is the percentage itself (e.g. 10% growth = 10 points)
             const finalFanbaseScore = Math.round(growthPercent);
 
-            const totalPoints = hypeScore + finalFanbaseScore;
+            // C. Release Bonus
+            // Fetch releases from Spotify
+            // In a real scenario, we might want to batch this or cache it better, 
+            // but for MVP with < 50 artists in roster, it's manageable.
+            let releaseBonus = 0;
+            try {
+                const { getArtistReleases } = await import('@/lib/spotify');
+                const releases = await getArtistReleases(snapshot.artist_id);
+
+                // Check for releases since the snapshot was created (start of week)
+                const weekStart = new Date(snapshot.created_at);
+
+                for (const release of releases) {
+                    const releaseDate = new Date(release.release_date);
+                    // Check if release is after week start
+                    if (releaseDate >= weekStart) {
+                        if (release.album_type === 'single') {
+                            releaseBonus += 20;
+                        } else if (release.album_type === 'album') {
+                            releaseBonus += 50;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error(`Failed to fetch releases for ${snapshot.artist_id}`, e);
+            }
+
+            const totalPoints = hypeScore + finalFanbaseScore + releaseBonus;
 
             // 4. Save Weekly Score
             await supabase.from('weekly_scores').insert({
@@ -110,7 +134,7 @@ export async function calculateScoresAction(weekNumber: number) {
                 artist_id: snapshot.artist_id,
                 popularity_gain: popDelta,
                 follower_gain_percent: growthPercent,
-                release_bonus: 0, // TODO: Implement Release Radar
+                release_bonus: releaseBonus,
                 total_points: totalPoints
             });
 
