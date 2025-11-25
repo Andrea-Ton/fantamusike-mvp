@@ -41,20 +41,10 @@ create policy "Artists cache is viewable by everyone."
 
 -- Create teams table
 create table teams (
-  user_id uuid references profiles.id primary key,
+  user_id uuid references profiles.id,
+  week_number integer default 1,
   slot_1_id text references artists_cache.spotify_id,
   slot_2_id text references artists_cache.spotify_id,
-  slot_3_id text references artists_cache.spotify_id,
-  slot_4_id text references artists_cache.spotify_id,
-  slot_5_id text references artists_cache.spotify_id,
-  captain_id text,
-  season_id uuid references seasons.id,
-  locked_at timestamp with time zone
-);
-
-alter table teams enable row level security;
-
-create policy "Teams are viewable by everyone."
   on teams for select
   using ( true );
 

@@ -35,6 +35,6 @@ export async function getScoutSuggestionsAction(): Promise<ScoutSuggestion[]> {
         name: a.name,
         image_url: a.image_url,
         genre: a.genre,
-        popularity: a.popularity
+        popularity: a.popularity,
     }));
 }

@@ -223,14 +223,27 @@ export async function calculateScoresAction(weekNumber: number) {
         // This is the heavy part. For MVP, let's run a SQL function if possible, 
         // or just iterate teams.
         // 6. Update Profiles (Bulk)
-        const { data: teams } = await supabase.from('teams').select('*');
+        // Fetch ALL teams valid for this week (week_number <= current)
+        const { data: allTeams } = await supabase
+            .from('teams')
+            .select('*')
+            .lte('week_number', weekNumber)
+            .order('week_number', { ascending: true }); // Ascending to overwrite with latest
+
+        // Filter to get the LATEST effective team for each user
+        const effectiveTeams = new Map<string, any>();
+        if (allTeams) {
+            for (const team of allTeams) {
+                effectiveTeams.set(team.user_id, team);
+            }
+        }
 
         // Fetch Featured Artists for Multiplier Check
         const { data: featuredArtists } = await supabase.from('featured_artists').select('spotify_id');
         const featuredIds = new Set(featuredArtists?.map(f => f.spotify_id) || []);
 
-        if (teams) {
-            for (const team of teams) {
+        if (effectiveTeams.size > 0) {
+            for (const team of effectiveTeams.values()) {
                 let teamScore = 0;
                 const slots = [team.slot_1_id, team.slot_2_id, team.slot_3_id, team.slot_4_id, team.slot_5_id];
 
@@ -271,5 +284,52 @@ export async function calculateScoresAction(weekNumber: number) {
     } catch (error) {
         console.error('Unexpected Error:', error);
         return { success: false, message: 'An unexpected error occurred' };
+    }
+}
+
+export async function getScoringStatusAction() {
+    const supabase = await createClient();
+
+    // 1. Admin Check
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, message: 'Unauthorized' };
+
+    const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
+    if (!profile?.is_admin) return { success: false, message: 'Unauthorized' };
+
+    try {
+        // Fetch Latest Snapshot
+        const { data: latestSnapshot } = await supabase
+            .from('weekly_snapshots')
+            .select('week_number, created_at')
+            .order('week_number', { ascending: false })
+            .limit(1)
+            .single();
+
+        // Fetch Latest Score
+        const { data: latestScore } = await supabase
+            .from('weekly_scores')
+            .select('week_number, created_at')
+            .order('week_number', { ascending: false })
+            .limit(1)
+            .single();
+
+        return {
+            success: true,
+            data: {
+                latestSnapshot: latestSnapshot ? {
+                    week: latestSnapshot.week_number,
+                    date: latestSnapshot.created_at
+                } : null,
+                latestScore: latestScore ? {
+                    week: latestScore.week_number,
+                    date: latestScore.created_at
+                } : null
+            }
+        };
+
+    } catch (error) {
+        console.error('Status Fetch Error:', error);
+        return { success: false, message: 'Failed to fetch status' };
     }
 }

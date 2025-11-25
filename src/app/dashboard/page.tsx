@@ -31,8 +31,18 @@ export default async function DashboardPage() {
     const totalScore = profile?.total_score || 0;
     const musiCoins = profile?.musi_coins || 0;
 
-    // Fetch User Team
-    const userTeam = await getUserTeamAction();
+    // Determine Current Week
+    const { data: latestSnap } = await supabase
+        .from('weekly_snapshots')
+        .select('week_number')
+        .order('week_number', { ascending: false })
+        .limit(1)
+        .single();
+
+    const currentWeek = latestSnap?.week_number || 1;
+
+    // Fetch User Team for Current Week
+    const userTeam = await getUserTeamAction(currentWeek);
 
     // Fetch Weekly Scores
     let weeklyScores: Record<string, number> = {};
