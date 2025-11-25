@@ -32,13 +32,27 @@ export async function createWeeklySnapshotAction(weekNumber: number) {
             return { success: false, message: 'Failed to fetch artists' };
         }
 
-        // 3. Create Snapshots
-        const snapshots = artists.map(artist => ({
-            week_number: weekNumber,
-            artist_id: artist.spotify_id,
-            popularity: artist.current_popularity,
-            followers: artist.current_followers
-        }));
+        // 3. Check for existing snapshots (Prevent Duplicates)
+        const { data: existingSnapshots } = await supabase
+            .from('weekly_snapshots')
+            .select('artist_id')
+            .eq('week_number', weekNumber);
+
+        const existingIds = new Set(existingSnapshots?.map(s => s.artist_id) || []);
+
+        // 4. Create Snapshots for NEW artists only
+        const snapshots = artists
+            .filter(artist => !existingIds.has(artist.spotify_id))
+            .map(artist => ({
+                week_number: weekNumber,
+                artist_id: artist.spotify_id,
+                popularity: artist.current_popularity,
+                followers: artist.current_followers
+            }));
+
+        if (snapshots.length === 0) {
+            return { success: true, message: `No new artists to snapshot for Week ${weekNumber}.` };
+        }
 
         const { error: insertError } = await supabase
             .from('weekly_snapshots')
@@ -91,20 +105,63 @@ export async function calculateScoresAction(weekNumber: number) {
         }
 
         let totalUpdates = 0;
+        const processedArtists = new Set<string>();
 
         // 3. Calculate Scores
         for (const snapshot of snapshots) {
-            const current = currentArtists.find(a => a.spotify_id === snapshot.artist_id);
-            if (!current) continue;
+            // Skip if already processed (prevents duplicates)
+            if (processedArtists.has(snapshot.artist_id)) continue;
+            processedArtists.add(snapshot.artist_id);
+
+            // Fetch FRESH data from Spotify
+            // We use the search function or a dedicated getArtist function if available.
+            // Since we don't have getArtist(id) exported yet, let's use searchArtistsAction or implement a quick fetch.
+            // Actually, we should update the cache with fresh data first.
+
+            let currentPop = 0;
+            let currentFollowers = 0;
+
+            try {
+                // Import dynamically to avoid circular deps if any
+                const { getArtist } = await import('@/lib/spotify');
+                const freshData = await getArtist(snapshot.artist_id);
+
+                if (freshData) {
+                    currentPop = freshData.popularity;
+                    currentFollowers = freshData.followers.total;
+
+                    // Update Cache while we are at it
+                    await supabase.from('artists_cache').update({
+                        current_popularity: currentPop,
+                        current_followers: currentFollowers,
+                        last_updated: new Date().toISOString()
+                    }).eq('spotify_id', snapshot.artist_id);
+                } else {
+                    // Fallback to cache if Spotify fails
+                    const current = currentArtists.find(a => a.spotify_id === snapshot.artist_id);
+                    if (current) {
+                        currentPop = current.current_popularity;
+                        currentFollowers = current.current_followers;
+                    }
+                }
+            } catch (e) {
+                console.error(`Failed to fetch fresh data for ${snapshot.artist_id}`, e);
+                // Fallback
+                const current = currentArtists.find(a => a.spotify_id === snapshot.artist_id);
+                if (current) {
+                    currentPop = current.current_popularity;
+                    currentFollowers = current.current_followers;
+                }
+            }
 
             // A. Hype Score (Pop Delta)
-            const popDelta = current.current_popularity - snapshot.popularity;
+            const popDelta = currentPop - snapshot.popularity;
             const hypeScore = popDelta * 10;
 
             // B. Fanbase Score (% Growth)
             // Formula: ((Current - Start) / Start) * 100
             const startFollowers = snapshot.followers > 0 ? snapshot.followers : 1;
-            const followerDelta = current.current_followers - snapshot.followers;
+            const followerDelta = currentFollowers - snapshot.followers;
             const growthPercent = (followerDelta / startFollowers) * 100;
             // Score is the percentage itself (e.g. 10% growth = 10 points)
             const finalFanbaseScore = Math.round(growthPercent);
