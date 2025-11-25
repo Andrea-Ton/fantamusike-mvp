@@ -723,7 +723,7 @@ export default function TalentScoutPage() {
                 </div>
 
                 {/* Mobile Bottom Bar */}
-                <div className="lg:hidden fixed bottom-[72px] left-4 right-4 bg-[#1a1a24] border border-white/10 p-4 z-40 flex justify-between items-center rounded-2xl shadow-2xl shadow-black/50">
+                <div className="lg:hidden fixed bottom-[90px] left-4 right-4 bg-[#1a1a24] border border-white/10 p-4 z-40 flex justify-between items-center rounded-2xl shadow-2xl shadow-black/50">
                     <div className="flex flex-col">
                         <span className="text-gray-400 text-[10px] uppercase tracking-wider">La tua Label</span>
                         <div className="font-bold text-white flex items-center gap-2">
