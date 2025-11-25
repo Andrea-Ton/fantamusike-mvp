@@ -65,7 +65,7 @@ export default function ArtistCard({ slot }: { slot: Slot }) {
                     <div className="flex items-center gap-2">
                         <span className="text-[10px] md:text-xs px-1.5 py-0.5 rounded bg-white/10 text-gray-300 border border-white/5">Pop: {slot.artist.popularity}</span>
                         <span className="text-[10px] md:text-xs text-green-400 flex items-center gap-0.5">
-                            <TrendingUp size={12} /> +{slot.artist.trend} pts
+                            <TrendingUp size={12} /> +{Math.round(slot.artist.trend * (slot.artist.multiplier || 1))} pts
                         </span>
                     </div>
                 </div>

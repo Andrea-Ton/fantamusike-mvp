@@ -96,3 +96,25 @@ export async function getArtistReleases(artistId: string): Promise<SpotifyAlbum[
     const data = await response.json();
     return data.items;
 }
+
+export async function getArtist(artistId: string): Promise<SpotifyArtist | null> {
+    const token = await getAccessToken();
+
+    const response = await fetch(
+        `https://api.spotify.com/v1/artists/${artistId}`,
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            next: { revalidate: 3600 }
+        }
+    );
+
+    if (!response.ok) {
+        console.error(`Failed to fetch artist ${artistId}: ${response.statusText}`);
+        return null;
+    }
+
+    const data: SpotifyArtist = await response.json();
+    return data;
+}
