@@ -109,6 +109,15 @@ export default function SignupPage() {
                             className="w-full h-12 bg-[#1a1a24] border border-white/10 rounded-xl px-4 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors"
                         />
                     </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Codice Invito (Opzionale)</label>
+                        <input
+                            name="referralCode"
+                            type="text"
+                            placeholder="Hai un codice amico?"
+                            className="w-full h-12 bg-[#1a1a24] border border-white/10 rounded-xl px-4 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors"
+                        />
+                    </div>
 
                     {error && (
                         <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm text-center">

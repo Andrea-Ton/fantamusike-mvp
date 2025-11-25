@@ -12,6 +12,7 @@ import { getFeaturedArtistsAction } from '@/app/actions/artist';
 import LeaderboardCard from '@/components/dashboard/leaderboard-card';
 import Link from 'next/link';
 import LogoutButton from '@/components/logout-button';
+import InviteButton from '@/components/dashboard/invite-button';
 
 export default async function DashboardPage() {
     const supabase = await createClient();
@@ -184,7 +185,7 @@ export default async function DashboardPage() {
                             <span>MusiCoins:</span>
                             <span className="font-bold">{musiCoins}</span>
                         </div>
-                        <button className="px-4 py-2 bg-purple-600 rounded-lg text-white text-sm font-bold hover:bg-purple-700 transition shadow-lg shadow-purple-500/20">Invita Amico</button>
+                        <InviteButton referralCode={profile?.referral_code} />
                     </div>
                 </header>
 

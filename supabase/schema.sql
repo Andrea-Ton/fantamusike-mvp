@@ -101,6 +101,81 @@ $$ language plpgsql security definer;
 create trigger on_auth_user_created
   for each row execute procedure public.handle_new_user();
 
+-- REFERRAL SYSTEM UPDATES (Added for Invite a Friend Feature)
+
+-- 1. Add columns to profiles
+alter table profiles add column if not exists referral_code text unique;
+alter table profiles add column if not exists referred_by uuid references profiles(id);
+
+-- 2. Function to generate random code
+create or replace function generate_referral_code() returns text as $$
+declare
+  chars text[] := '{A,B,C,D,E,F,G,H,J,K,L,M,N,P,Q,R,S,T,U,V,W,X,Y,Z,2,3,4,5,6,7,8,9}';
+  result text := '';
+  i integer := 0;
+begin
+  for i in 1..8 loop
+    result := result || chars[1+floor(random()*array_length(chars, 1))];
+  end loop;
+  return result;
+end;
+$$ language plpgsql;
+
+-- 3. Update Trigger Function to handle referrals
+create or replace function public.handle_new_user()
+returns trigger as $$
+declare
+  new_referral_code text;
+  referrer_id uuid;
+  bonus_coins int := 30;
+  default_coins int := 50;
+  used_code text;
+begin
+  -- Generate unique referral code
+  loop
+    new_referral_code := public.generate_referral_code();
+    if not exists (select 1 from public.profiles where referral_code = new_referral_code) then
+      exit;
+    end if;
+  end loop;
+
+  -- Check for used referral code
+  used_code := new.raw_user_meta_data->>'referral_code_used';
+  referrer_id := null;
+
+  if used_code is not null then
+    select id into referrer_id from public.profiles where referral_code = used_code;
+  end if;
+
+  -- Insert profile
+  insert into public.profiles (
+    id,
+    username,
+    avatar_url,
+    musi_coins,
+    referral_code,
+    referred_by
+  )
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'name', new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+    new.raw_user_meta_data->>'avatar_url',
+    case when referrer_id is not null then default_coins + bonus_coins else default_coins end,
+    new_referral_code,
+    referrer_id
+  );
+
+  -- Award bonus to referrer
+  if referrer_id is not null then
+    update public.profiles
+    set musi_coins = musi_coins + bonus_coins
+    where id = referrer_id;
+  end if;
+
+  return new;
+end;
+$$ language plpgsql security definer;
+
 -- Create weekly_snapshots table (Monday Baseline)
 create table weekly_snapshots (
   id uuid default uuid_generate_v4() primary key,
