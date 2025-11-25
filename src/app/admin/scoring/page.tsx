@@ -2,12 +2,30 @@
 
 import React, { useState } from 'react';
 import { Play, Save, Activity, Database } from 'lucide-react';
-import { createWeeklySnapshotAction, calculateScoresAction } from '@/app/actions/admin';
+import { createWeeklySnapshotAction, calculateScoresAction, getScoringStatusAction } from '@/app/actions/admin';
 
 export default function ScoringPage() {
     const [loading, setLoading] = useState(false);
     const [logs, setLogs] = useState<string[]>([]);
     const [weekNumber, setWeekNumber] = useState(1);
+    const [status, setStatus] = useState<{
+        latestSnapshot: { week: number; date: string } | null;
+        latestScore: { week: number; date: string } | null;
+    } | null>(null);
+
+    React.useEffect(() => {
+        const fetchStatus = async () => {
+            const result = await getScoringStatusAction();
+            if (result.success && result.data) {
+                setStatus(result.data);
+                // Auto-set week number to next logical step
+                if (result.data.latestSnapshot) {
+                    setWeekNumber(result.data.latestSnapshot.week + (result.data.latestScore?.week === result.data.latestSnapshot.week ? 1 : 0));
+                }
+            }
+        };
+        fetchStatus();
+    }, [loading]); // Refresh on action completion
 
     const addLog = (message: string) => {
         setLogs(prev => [`[${new Date().toLocaleTimeString()}] ${message}`, ...prev]);
@@ -54,6 +72,25 @@ export default function ScoringPage() {
                 <div>
                     <h1 className="text-3xl font-bold text-white">Scoring System</h1>
                     <p className="text-gray-400 mt-1">Manage weekly snapshots and score calculations.</p>
+                </div>
+                {/* Status Badge */}
+                <div className="flex gap-4 text-xs font-mono">
+                    <div className="bg-[#1a1a24] border border-white/10 px-3 py-2 rounded-lg">
+                        <span className="text-gray-400 block">Latest Snapshot</span>
+                        {status?.latestSnapshot ? (
+                            <span className="text-blue-400 font-bold">Week {status.latestSnapshot.week} ({new Date(status.latestSnapshot.date).toLocaleDateString()})</span>
+                        ) : (
+                            <span className="text-gray-600">None</span>
+                        )}
+                    </div>
+                    <div className="bg-[#1a1a24] border border-white/10 px-3 py-2 rounded-lg">
+                        <span className="text-gray-400 block">Latest Scoring</span>
+                        {status?.latestScore ? (
+                            <span className="text-green-400 font-bold">Week {status.latestScore.week} ({new Date(status.latestScore.date).toLocaleDateString()})</span>
+                        ) : (
+                            <span className="text-gray-600">None</span>
+                        )}
+                    </div>
                 </div>
             </div>
 

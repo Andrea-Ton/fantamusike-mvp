@@ -32,13 +32,27 @@ export async function createWeeklySnapshotAction(weekNumber: number) {
             return { success: false, message: 'Failed to fetch artists' };
         }
 
-        // 3. Create Snapshots
-        const snapshots = artists.map(artist => ({
-            week_number: weekNumber,
-            artist_id: artist.spotify_id,
-            popularity: artist.current_popularity,
-            followers: artist.current_followers
-        }));
+        // 3. Check for existing snapshots (Prevent Duplicates)
+        const { data: existingSnapshots } = await supabase
+            .from('weekly_snapshots')
+            .select('artist_id')
+            .eq('week_number', weekNumber);
+
+        const existingIds = new Set(existingSnapshots?.map(s => s.artist_id) || []);
+
+        // 4. Create Snapshots for NEW artists only
+        const snapshots = artists
+            .filter(artist => !existingIds.has(artist.spotify_id))
+            .map(artist => ({
+                week_number: weekNumber,
+                artist_id: artist.spotify_id,
+                popularity: artist.current_popularity,
+                followers: artist.current_followers
+            }));
+
+        if (snapshots.length === 0) {
+            return { success: true, message: `No new artists to snapshot for Week ${weekNumber}.` };
+        }
 
         const { error: insertError } = await supabase
             .from('weekly_snapshots')
@@ -91,20 +105,63 @@ export async function calculateScoresAction(weekNumber: number) {
         }
 
         let totalUpdates = 0;
+        const processedArtists = new Set<string>();
 
         // 3. Calculate Scores
         for (const snapshot of snapshots) {
-            const current = currentArtists.find(a => a.spotify_id === snapshot.artist_id);
-            if (!current) continue;
+            // Skip if already processed (prevents duplicates)
+            if (processedArtists.has(snapshot.artist_id)) continue;
+            processedArtists.add(snapshot.artist_id);
+
+            // Fetch FRESH data from Spotify
+            // We use the search function or a dedicated getArtist function if available.
+            // Since we don't have getArtist(id) exported yet, let's use searchArtistsAction or implement a quick fetch.
+            // Actually, we should update the cache with fresh data first.
+
+            let currentPop = 0;
+            let currentFollowers = 0;
+
+            try {
+                // Import dynamically to avoid circular deps if any
+                const { getArtist } = await import('@/lib/spotify');
+                const freshData = await getArtist(snapshot.artist_id);
+
+                if (freshData) {
+                    currentPop = freshData.popularity;
+                    currentFollowers = freshData.followers.total;
+
+                    // Update Cache while we are at it
+                    await supabase.from('artists_cache').update({
+                        current_popularity: currentPop,
+                        current_followers: currentFollowers,
+                        last_updated: new Date().toISOString()
+                    }).eq('spotify_id', snapshot.artist_id);
+                } else {
+                    // Fallback to cache if Spotify fails
+                    const current = currentArtists.find(a => a.spotify_id === snapshot.artist_id);
+                    if (current) {
+                        currentPop = current.current_popularity;
+                        currentFollowers = current.current_followers;
+                    }
+                }
+            } catch (e) {
+                console.error(`Failed to fetch fresh data for ${snapshot.artist_id}`, e);
+                // Fallback
+                const current = currentArtists.find(a => a.spotify_id === snapshot.artist_id);
+                if (current) {
+                    currentPop = current.current_popularity;
+                    currentFollowers = current.current_followers;
+                }
+            }
 
             // A. Hype Score (Pop Delta)
-            const popDelta = current.current_popularity - snapshot.popularity;
+            const popDelta = currentPop - snapshot.popularity;
             const hypeScore = popDelta * 10;
 
             // B. Fanbase Score (% Growth)
             // Formula: ((Current - Start) / Start) * 100
             const startFollowers = snapshot.followers > 0 ? snapshot.followers : 1;
-            const followerDelta = current.current_followers - snapshot.followers;
+            const followerDelta = currentFollowers - snapshot.followers;
             const growthPercent = (followerDelta / startFollowers) * 100;
             // Score is the percentage itself (e.g. 10% growth = 10 points)
             const finalFanbaseScore = Math.round(growthPercent);
@@ -166,14 +223,27 @@ export async function calculateScoresAction(weekNumber: number) {
         // This is the heavy part. For MVP, let's run a SQL function if possible, 
         // or just iterate teams.
         // 6. Update Profiles (Bulk)
-        const { data: teams } = await supabase.from('teams').select('*');
+        // Fetch ALL teams valid for this week (week_number <= current)
+        const { data: allTeams } = await supabase
+            .from('teams')
+            .select('*')
+            .lte('week_number', weekNumber)
+            .order('week_number', { ascending: true }); // Ascending to overwrite with latest
+
+        // Filter to get the LATEST effective team for each user
+        const effectiveTeams = new Map<string, any>();
+        if (allTeams) {
+            for (const team of allTeams) {
+                effectiveTeams.set(team.user_id, team);
+            }
+        }
 
         // Fetch Featured Artists for Multiplier Check
         const { data: featuredArtists } = await supabase.from('featured_artists').select('spotify_id');
         const featuredIds = new Set(featuredArtists?.map(f => f.spotify_id) || []);
 
-        if (teams) {
-            for (const team of teams) {
+        if (effectiveTeams.size > 0) {
+            for (const team of effectiveTeams.values()) {
                 let teamScore = 0;
                 const slots = [team.slot_1_id, team.slot_2_id, team.slot_3_id, team.slot_4_id, team.slot_5_id];
 
@@ -214,5 +284,52 @@ export async function calculateScoresAction(weekNumber: number) {
     } catch (error) {
         console.error('Unexpected Error:', error);
         return { success: false, message: 'An unexpected error occurred' };
+    }
+}
+
+export async function getScoringStatusAction() {
+    const supabase = await createClient();
+
+    // 1. Admin Check
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, message: 'Unauthorized' };
+
+    const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
+    if (!profile?.is_admin) return { success: false, message: 'Unauthorized' };
+
+    try {
+        // Fetch Latest Snapshot
+        const { data: latestSnapshot } = await supabase
+            .from('weekly_snapshots')
+            .select('week_number, created_at')
+            .order('week_number', { ascending: false })
+            .limit(1)
+            .single();
+
+        // Fetch Latest Score
+        const { data: latestScore } = await supabase
+            .from('weekly_scores')
+            .select('week_number, created_at')
+            .order('week_number', { ascending: false })
+            .limit(1)
+            .single();
+
+        return {
+            success: true,
+            data: {
+                latestSnapshot: latestSnapshot ? {
+                    week: latestSnapshot.week_number,
+                    date: latestSnapshot.created_at
+                } : null,
+                latestScore: latestScore ? {
+                    week: latestScore.week_number,
+                    date: latestScore.created_at
+                } : null
+            }
+        };
+
+    } catch (error) {
+        console.error('Status Fetch Error:', error);
+        return { success: false, message: 'Failed to fetch status' };
     }
 }

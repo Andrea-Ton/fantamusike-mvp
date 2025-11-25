@@ -62,3 +62,26 @@ export async function toggleFeaturedArtistAction(artistId: string, shouldBeFeatu
 
     return { success: true };
 }
+
+export async function getArtistAction(artistId: string): Promise<SpotifyArtist | null> {
+    const supabase = await createClient();
+
+    const { data: artist, error } = await supabase
+        .from('artists_cache')
+        .select('*')
+        .eq('spotify_id', artistId)
+        .single();
+
+    if (error || !artist) {
+        return null;
+    }
+
+    return {
+        id: artist.spotify_id,
+        name: artist.name,
+        images: [{ url: artist.image_url, height: 0, width: 0 }],
+        popularity: artist.current_popularity,
+        genres: [],
+        followers: { total: artist.current_followers }
+    };
+}

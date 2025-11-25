@@ -5,7 +5,7 @@ import { Search, Plus, LogOut, Loader2, X, Save, Trophy, Users, Zap, ChevronUp, 
 import Image from 'next/image';
 import { searchArtistsAction } from '@/app/actions/spotify';
 import { saveTeamAction, TeamSlots, getUserTeamAction } from '@/app/actions/team';
-import { getFeaturedArtistsAction } from '@/app/actions/artist';
+import { getFeaturedArtistsAction, getArtistAction } from '@/app/actions/artist';
 import { getScoutSuggestionsAction, ScoutSuggestion } from '@/app/actions/scout';
 import { getCurrentSeasonAction } from '@/app/actions/season';
 import { SpotifyArtist } from '@/lib/spotify';
@@ -375,21 +375,35 @@ export default function TalentScoutPage() {
         }
     };
 
-    const handleSignScout = (artist: ScoutSuggestion) => {
+    const handleSignScout = async (artist: ScoutSuggestion) => {
         if (!activeScoutSlotId) return;
 
-        const newArtist: SpotifyArtist = {
-            id: artist.spotify_id,
-            name: artist.name,
-            images: [{ url: artist.image_url, height: 0, width: 0 }],
-            popularity: artist.popularity, // Use the mocked popularity from the scout action
-            genres: artist.genre ? [artist.genre] : [],
-            followers: { total: 0 }
-        };
+        setIsScoutLoading(true);
+        try {
+            // Fetch full artist data from cache (includes followers)
+            const fullArtist = await getArtistAction(artist.spotify_id);
 
-        handleAddToSlot(newArtist, activeScoutSlotId);
-        setIsScoutModalOpen(false);
-        setActiveScoutSlotId(null);
+            if (fullArtist) {
+                handleAddToSlot(fullArtist, activeScoutSlotId);
+            } else {
+                // Fallback if not found (shouldn't happen for scouted artists)
+                const fallbackArtist: SpotifyArtist = {
+                    id: artist.spotify_id,
+                    name: artist.name,
+                    images: [{ url: artist.image_url, height: 0, width: 0 }],
+                    popularity: artist.popularity,
+                    genres: artist.genre ? [artist.genre] : [],
+                    followers: { total: 0 }
+                };
+                handleAddToSlot(fallbackArtist, activeScoutSlotId);
+            }
+        } catch (error) {
+            console.error("Failed to sign scouted artist", error);
+        } finally {
+            setIsScoutLoading(false);
+            setIsScoutModalOpen(false);
+            setActiveScoutSlotId(null);
+        }
     };
 
     const TeamSummaryContent = () => {

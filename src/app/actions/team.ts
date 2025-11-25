@@ -69,11 +69,37 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
             return { success: false, message: 'No active season found' };
         }
 
-        // 4. Fetch Current Team & Profile (for coins)
-        const { data: currentTeam } = await supabase
+        // 4. Determine Target Week
+        // Fetch the latest snapshot week to determine current week
+        const { data: latestSnap } = await supabase
+            .from('weekly_snapshots')
+            .select('week_number')
+            .order('week_number', { ascending: false })
+            .limit(1)
+            .single();
+
+        const currentWeek = latestSnap?.week_number || 1;
+
+        // Check if user has ANY team for this season
+        const { data: existingSeasonTeam } = await supabase
+            .from('teams')
+            .select('week_number')
+            .eq('user_id', user.id)
+            .eq('season_id', currentSeason.id)
+            .limit(1);
+
+        // UX Nuance: If First Team of Season -> Current Week. Else -> Next Week.
+        const targetWeek = (!existingSeasonTeam || existingSeasonTeam.length === 0) ? currentWeek : currentWeek + 1;
+
+        // 5. Fetch Previous Team (Latest Saved) for Cost Calculation
+        // We compare against the *latest saved* team to calculate cost of changes
+        const { data: previousTeam } = await supabase
             .from('teams')
             .select('*')
             .eq('user_id', user.id)
+            .eq('season_id', currentSeason.id) // Filter by Season
+            .order('week_number', { ascending: false })
+            .limit(1)
             .single();
 
         const { data: profile } = await supabase
@@ -86,17 +112,26 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
             return { success: false, message: 'Profile not found' };
         }
 
-        // 5. Calculate Cost
+        // 6. Calculate Cost
         let cost = 0;
-        const isNewSeasonEntry = !currentTeam?.season_id || currentTeam.season_id !== currentSeason.id;
 
-        if (!isNewSeasonEntry && currentTeam) {
-            // Calculate changes
+        // Fetch "Active Team" (Week <= Current) for this season
+        const { data: activeTeam } = await supabase
+            .from('teams')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('season_id', currentSeason.id) // Filter by Season (New Season = Free)
+            .lte('week_number', currentWeek)
+            .order('week_number', { ascending: false })
+            .limit(1)
+            .single();
+
+        if (activeTeam) {
+            // Calculate changes from Active Team
             let changedArtists = 0;
             const newIds = [slots.slot_1!.id, slots.slot_2!.id, slots.slot_3!.id, slots.slot_4!.id, slots.slot_5!.id];
-            const oldIds = [currentTeam.slot_1_id, currentTeam.slot_2_id, currentTeam.slot_3_id, currentTeam.slot_4_id, currentTeam.slot_5_id];
+            const oldIds = [activeTeam.slot_1_id, activeTeam.slot_2_id, activeTeam.slot_3_id, activeTeam.slot_4_id, activeTeam.slot_5_id];
 
-            // Simple index-based comparison as slots are fixed positions
             for (let i = 0; i < 5; i++) {
                 if (newIds[i] !== oldIds[i]) {
                     changedArtists++;
@@ -105,13 +140,13 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
 
             cost += changedArtists * 20;
 
-            // Captain change cost
-            if (currentTeam.captain_id && captainId && currentTeam.captain_id !== captainId) {
+            if (activeTeam.captain_id && captainId && activeTeam.captain_id !== captainId) {
                 cost += 10;
             }
         }
+        // If no activeTeam (First team of season), cost remains 0 (Free)
 
-        // 6. Check Balance & Deduct
+        // 7. Check Balance & Deduct
         if (cost > 0) {
             if (profile.musi_coins < cost) {
                 return { success: false, message: `Insufficient MusiCoins. Cost: ${cost}, Available: ${profile.musi_coins}` };
@@ -148,22 +183,23 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
             return { success: false, message: 'Failed to cache artists' };
         }
 
-        // 8. Save Team
+        // 8. Save Team (Versioned)
         const teamData = {
             user_id: user.id,
+            week_number: targetWeek,
             slot_1_id: slots.slot_1!.id,
             slot_2_id: slots.slot_2!.id,
             slot_3_id: slots.slot_3!.id,
             slot_4_id: slots.slot_4!.id,
             slot_5_id: slots.slot_5!.id,
             captain_id: captainId,
-            season_id: currentSeason.id, // Always update to current season
+            season_id: currentSeason.id,
             locked_at: new Date().toISOString()
         };
 
         const { error: teamError } = await supabase
             .from('teams')
-            .upsert(teamData, { onConflict: 'user_id' });
+            .upsert(teamData, { onConflict: 'user_id, week_number, season_id' });
 
         if (teamError) {
             console.error('Team Save Error:', teamError);
@@ -171,7 +207,7 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
         }
 
         revalidatePath('/dashboard');
-        return { success: true, message: 'Team saved successfully!' };
+        return { success: true, message: `Team saved for Week ${targetWeek}!` };
 
     } catch (error) {
         console.error('Unexpected Error:', error);
@@ -187,23 +223,56 @@ export type UserTeamResponse = {
     slot_5: SpotifyArtist | null;
     captain_id?: string | null;
     season_id?: string | null;
+    week_number: number;
 } | null;
 
-export async function getUserTeamAction(): Promise<UserTeamResponse> {
+export async function getUserTeamAction(weekNumber?: number): Promise<UserTeamResponse> {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) return null;
 
-    // Fetch team
-    const { data: team } = await supabase
+    let query = supabase
         .from('teams')
         .select('*')
-        .eq('user_id', user.id)
-        .single();
+        .eq('user_id', user.id);
 
-    if (!team) return null;
+    if (weekNumber) {
+        // Fetch specific week
+        query = query.eq('week_number', weekNumber);
+    } else {
+        // Fetch latest week (Draft Mode default)
+        query = query.order('week_number', { ascending: false }).limit(1);
+    }
 
+    const { data: teams, error } = await query;
+
+    // Handle single result from array
+    const team = teams && teams.length > 0 ? teams[0] : null;
+
+    if (!team) {
+        // If requesting specific week and not found, try to find the latest previous week to "carry over"
+        if (weekNumber) {
+            const { data: prevTeams } = await supabase
+                .from('teams')
+                .select('*')
+                .eq('user_id', user.id)
+                .lt('week_number', weekNumber)
+                .order('week_number', { ascending: false })
+                .limit(1);
+
+            if (prevTeams && prevTeams.length > 0) {
+                const prevTeam = prevTeams[0];
+                return fetchArtistsForTeam(prevTeam, supabase);
+            }
+        }
+        return null;
+    }
+
+    return fetchArtistsForTeam(team, supabase);
+}
+
+async function fetchArtistsForTeam(team: any, supabase: any): Promise<UserTeamResponse> {
     // Fetch artists for all slots
     const artistIds = [
         team.slot_1_id,
@@ -225,7 +294,7 @@ export async function getUserTeamAction(): Promise<UserTeamResponse> {
     // Map artists back to slots
     const getArtist = (id: string | null): SpotifyArtist | null => {
         if (!id) return null;
-        const artistData = artists.find(a => a.spotify_id === id);
+        const artistData = artists.find((a: any) => a.spotify_id === id);
         if (!artistData) return null;
 
         return {
@@ -245,6 +314,7 @@ export async function getUserTeamAction(): Promise<UserTeamResponse> {
         slot_4: getArtist(team.slot_4_id),
         slot_5: getArtist(team.slot_5_id),
         captain_id: team.captain_id,
-        season_id: team.season_id
+        season_id: team.season_id,
+        week_number: team.week_number
     };
 }

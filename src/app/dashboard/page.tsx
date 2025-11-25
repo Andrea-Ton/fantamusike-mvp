@@ -31,12 +31,28 @@ export default async function DashboardPage() {
     const totalScore = profile?.total_score || 0;
     const musiCoins = profile?.musi_coins || 0;
 
-    // Fetch User Team
-    const userTeam = await getUserTeamAction();
+    // Determine Current Week
+    const { data: latestSnap } = await supabase
+        .from('weekly_snapshots')
+        .select('week_number')
+        .order('week_number', { ascending: false })
+        .limit(1)
+        .single();
+
+    const currentWeek = latestSnap?.week_number || 1;
+
+    // Fetch User Team for Current Week
+    const userTeam = await getUserTeamAction(currentWeek);
 
     // Fetch Weekly Scores
     let weeklyScores: Record<string, number> = {};
     let weeklyTrend = 0;
+
+
+
+    // Fetch Featured Artists for Multiplier Calculation - MOVED UP
+    const featuredArtists = await getFeaturedArtistsAction();
+    const featuredIds = new Set(featuredArtists.map(a => a.id));
 
     if (userTeam) {
         const artistIds = [
@@ -50,8 +66,16 @@ export default async function DashboardPage() {
         const { scores } = await getWeeklyScoresAction(artistIds);
         weeklyScores = scores;
 
-        // Calculate total trend (sum of all artists)
-        weeklyTrend = Object.values(scores).reduce((a, b) => a + b, 0);
+        weeklyTrend = artistIds.reduce((total, artistId) => {
+            const score = scores[artistId] || 0;
+            let multiplier = 1;
+
+            if (userTeam.captain_id === artistId) {
+                multiplier = featuredIds.has(artistId) ? 2 : 1.5;
+            }
+
+            return total + Math.round(score * multiplier);
+        }, 0);
     }
 
     // Fetch Leaderboard
@@ -61,9 +85,7 @@ export default async function DashboardPage() {
     const currentSeason = await getCurrentSeasonAction();
     const seasonName = currentSeason?.name || 'Season Zero';
 
-    // Fetch Featured Artists for Multiplier Calculation
-    const featuredArtists = await getFeaturedArtistsAction();
-    const featuredIds = new Set(featuredArtists.map(a => a.id));
+
 
     // Transform to Slot format for UI
     const teamSlots: Slot[] = [
