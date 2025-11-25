@@ -44,9 +44,9 @@ export default function ScoutSuggestionModal({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-            <div className="bg-[#1a1a24] border border-white/10 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl shadow-purple-500/20 animate-scale-in">
+            <div className="bg-[#1a1a24] border border-white/10 rounded-3xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl shadow-purple-500/20 animate-scale-in">
                 {/* Header */}
-                <div className="p-6 border-b border-white/5 flex justify-between items-center bg-gradient-to-r from-purple-900/20 to-blue-900/20">
+                <div className="p-6 border-b border-white/5 flex justify-between items-center bg-gradient-to-r from-purple-900/20 to-blue-900/20 flex-shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
                             <Music size={20} className="text-purple-400" />
@@ -65,7 +65,7 @@ export default function ScoutSuggestionModal({
                 </div>
 
                 {/* Content */}
-                <div className="p-6">
+                <div className="p-6 overflow-y-auto custom-scrollbar">
                     <p className="text-gray-400 mb-6 text-sm">
                         I nostri talent scout hanno selezionato questi artisti emergenti per la tua Label.
                         Scegli con saggezza, potrebbero essere le prossime star!
@@ -138,7 +138,7 @@ export default function ScoutSuggestionModal({
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 bg-black/20 border-t border-white/5 flex justify-center">
+                <div className="p-4 bg-black/20 border-t border-white/5 flex justify-center flex-shrink-0">
                     <button
                         onClick={onReroll}
                         disabled={isLoading}

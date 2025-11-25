@@ -25,11 +25,9 @@ export default function HeroSection({ seasonName = 'Season Zero', featuredArtist
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
-                    <Link href="/signup">
-                        <button className="group relative px-8 py-4 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-all shadow-xl shadow-white/10 hover:shadow-white/20 flex items-center justify-center gap-3 cursor-pointer">
-                            <span className="text-lg">Inizia la Carriera</span>
-                            <ArrowRight className="group-hover:translate-x-1 transition-transform" />
-                        </button>
+                    <Link href="/signup" className="group relative px-8 py-4 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-all shadow-xl shadow-white/10 hover:shadow-white/20 flex items-center justify-center gap-3 cursor-pointer">
+                        <span className="text-lg">Inizia la Carriera</span>
+                        <ArrowRight className="group-hover:translate-x-1 transition-transform" />
                     </Link>
                     <button className="px-8 py-4 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold transition-all backdrop-blur-md flex items-center justify-center gap-2 cursor-pointer">
                         <PlayCircle size={20} />
