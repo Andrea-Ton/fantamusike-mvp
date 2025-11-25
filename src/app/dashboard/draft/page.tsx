@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Search, Plus, LogOut, Loader2, X, Save, Trophy, Users, Zap, ChevronUp, Star, Crown, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Search, Plus, LogOut, Loader2, X, Save, Trophy, Users, Zap, ChevronUp, Star, Crown, Sparkles, RotateCcw } from 'lucide-react';
 import Image from 'next/image';
 import { searchArtistsAction } from '@/app/actions/spotify';
 import { saveTeamAction, TeamSlots, getUserTeamAction } from '@/app/actions/team';
@@ -271,6 +271,22 @@ export default function TalentScoutPage() {
 
     const handleSetCaptain = (artistId: string) => {
         setCaptainId(artistId);
+    };
+
+    const hasChanges = useMemo(() => {
+        if (!initialTeam) return false;
+        const slots = ['slot_1', 'slot_2', 'slot_3', 'slot_4', 'slot_5'] as const;
+        const teamChanged = slots.some(slot => draftTeam[slot]?.id !== initialTeam[slot]?.id);
+        const captainChanged = captainId !== initialCaptainId;
+        return teamChanged || captainChanged;
+    }, [draftTeam, captainId, initialTeam, initialCaptainId]);
+
+    const handleUndo = () => {
+        if (!initialTeam) return;
+        if (window.confirm('Vuoi annullare tutte le modifiche non salvate?')) {
+            setDraftTeam(initialTeam);
+            setCaptainId(initialCaptainId);
+        }
     };
 
     const handleSaveClick = () => {
@@ -684,7 +700,20 @@ export default function TalentScoutPage() {
                     <div className="hidden lg:block lg:col-span-4">
                         <div className="sticky top-8 bg-[#1a1a24] border border-white/5 rounded-2xl p-6">
                             <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-xl font-bold text-white">La tua Label</h2>
+                                <div className="flex items-center gap-3">
+                                    <h2 className="text-xl font-bold text-white">La tua Label</h2>
+                                    <button
+                                        onClick={handleUndo}
+                                        disabled={!hasChanges}
+                                        className={`p-1.5 rounded-lg transition-colors ${hasChanges
+                                            ? 'text-gray-400 hover:text-white hover:bg-white/10'
+                                            : 'text-gray-700 cursor-not-allowed'
+                                            }`}
+                                        title="Annulla modifiche"
+                                    >
+                                        <RotateCcw size={16} />
+                                    </button>
+                                </div>
                                 <span className="text-sm text-purple-400 font-bold">{filledSlotsCount}/5</span>
                             </div>
                             <TeamSummaryContent />
@@ -720,7 +749,20 @@ export default function TalentScoutPage() {
                         >
                             <div className="flex justify-between items-center mb-6 sticky top-0 bg-[#1a1a24] z-10 pb-4 border-b border-white/5">
                                 <div>
-                                    <h2 className="text-xl font-bold text-white">La tua Label</h2>
+                                    <div className="flex items-center gap-2">
+                                        <h2 className="text-xl font-bold text-white">La tua Label</h2>
+                                        <button
+                                            onClick={handleUndo}
+                                            disabled={!hasChanges}
+                                            className={`p-1.5 rounded-lg transition-colors ${hasChanges
+                                                ? 'text-gray-400 hover:text-white hover:bg-white/10'
+                                                : 'text-gray-700 cursor-not-allowed'
+                                                }`}
+                                            title="Annulla modifiche"
+                                        >
+                                            <RotateCcw size={16} />
+                                        </button>
+                                    </div>
                                     <p className="text-xs text-gray-400">Gestisci il tuo roster</p>
                                 </div>
                                 <button

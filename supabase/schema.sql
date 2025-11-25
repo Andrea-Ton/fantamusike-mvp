@@ -193,10 +193,15 @@ create policy "Weekly snapshots are viewable by everyone."
   using ( true );
 
 -- RPC to increment score safely
-create or replace function increment_score(user_id_param uuid, score_delta integer)
+create or replace function public.increment_score(user_id_param uuid, score_delta integer)
 returns void as $$
 begin
-  update profiles
+  -- Check if the executing user is an admin
+  if not exists (select 1 from public.profiles where id = auth.uid() and is_admin = true) then
+    raise exception 'Unauthorized';
+  end if;
+
+  update public.profiles
   set total_score = total_score + score_delta
   where id = user_id_param;
 end;

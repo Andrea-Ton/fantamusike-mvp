@@ -15,9 +15,12 @@ import { searchArtists } from '@/lib/spotify'; // We might need a getArtist(id) 
 export async function createWeeklySnapshotAction(weekNumber: number) {
     const supabase = await createClient();
 
-    // 1. Admin Check (TODO: Implement real admin check)
-    // const { data: { user } } = await supabase.auth.getUser();
-    // if (!user) return { success: false, message: 'Unauthorized' };
+    // 1. Admin Check
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, message: 'Unauthorized' };
+
+    const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
+    if (!profile?.is_admin) return { success: false, message: 'Unauthorized' };
 
     try {
         // 2. Fetch all cached artists
@@ -56,6 +59,13 @@ export async function createWeeklySnapshotAction(weekNumber: number) {
 
 export async function calculateScoresAction(weekNumber: number) {
     const supabase = await createClient();
+
+    // 1. Admin Check
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, message: 'Unauthorized' };
+
+    const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
+    if (!profile?.is_admin) return { success: false, message: 'Unauthorized' };
 
     try {
         // 1. Fetch Snapshots for the week

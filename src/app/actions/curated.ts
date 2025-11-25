@@ -35,6 +35,22 @@ export async function addToCuratedRosterAction(artist: SpotifyArtist): Promise<{
     const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
     if (!profile?.is_admin) return { success: false, message: 'Unauthorized' };
 
+    // 1. Ensure artist is in cache
+    const { error: cacheError } = await supabase.from('artists_cache').upsert({
+        spotify_id: artist.id,
+        name: artist.name,
+        image_url: artist.images[0]?.url || '',
+        current_popularity: artist.popularity,
+        current_followers: artist.followers.total,
+        last_updated: new Date().toISOString()
+    }, { onConflict: 'spotify_id' });
+
+    if (cacheError) {
+        console.error('Error caching artist:', cacheError);
+        return { success: false, message: 'Failed to cache artist' };
+    }
+
+    // 2. Add to Roster
     const { error } = await supabase.from('curated_roster').insert({
         spotify_id: artist.id,
         name: artist.name,
