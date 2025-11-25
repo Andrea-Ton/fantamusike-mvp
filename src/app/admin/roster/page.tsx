@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Trash2, Users, Loader2 } from 'lucide-react';
+import { Search, Plus, Trash2, Users, Loader2, Star } from 'lucide-react';
 import { searchArtistsAction } from '@/app/actions/spotify';
 import { getCuratedRosterAction, addToCuratedRosterAction, removeFromCuratedRosterAction } from '@/app/actions/curated';
+import { getFeaturedArtistsAction, toggleFeaturedArtistAction } from '@/app/actions/artist';
 import { SpotifyArtist } from '@/lib/spotify';
 import { ScoutSuggestion } from '@/app/actions/scout';
 import Image from 'next/image';
@@ -17,6 +18,7 @@ export default function CuratedRosterPage() {
     // Roster State
     const [roster, setRoster] = useState<ScoutSuggestion[]>([]);
     const [isLoadingRoster, setIsLoadingRoster] = useState(true);
+    const [featuredIds, setFeaturedIds] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         fetchRoster();
@@ -24,8 +26,12 @@ export default function CuratedRosterPage() {
 
     const fetchRoster = async () => {
         setIsLoadingRoster(true);
-        const data = await getCuratedRosterAction();
+        const [data, featured] = await Promise.all([
+            getCuratedRosterAction(),
+            getFeaturedArtistsAction()
+        ]);
         setRoster(data);
+        setFeaturedIds(new Set(featured.map(a => a.id)));
         setIsLoadingRoster(false);
     };
 
@@ -64,6 +70,23 @@ export default function CuratedRosterPage() {
             alert(result.message);
             // Revert on failure
             fetchRoster();
+        }
+    };
+
+    const handleToggleFeatured = async (artistId: string, currentStatus: boolean) => {
+        // Optimistic update
+        const newSet = new Set(featuredIds);
+        if (currentStatus) {
+            newSet.delete(artistId);
+        } else {
+            newSet.add(artistId);
+        }
+        setFeaturedIds(newSet);
+
+        const result = await toggleFeaturedArtistAction(artistId, !currentStatus);
+        if (!result.success) {
+            alert(result.message);
+            fetchRoster(); // Revert
         }
     };
 
@@ -175,14 +198,27 @@ export default function CuratedRosterPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemove(artist.spotify_id)}
-                                            className="p-2 rounded-lg bg-red-500/10 text-red-400 opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:text-white transition-all"
-                                            title="Remove from Roster"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleToggleFeatured(artist.spotify_id, featuredIds.has(artist.spotify_id))}
+                                                className={`p-2 rounded-lg transition-all ${featuredIds.has(artist.spotify_id)
+                                                    ? 'text-yellow-500 hover:bg-yellow-500/10'
+                                                    : 'text-gray-600 hover:text-yellow-500 hover:bg-yellow-500/10'
+                                                    }`}
+                                                title={featuredIds.has(artist.spotify_id) ? "Remove from Featured" : "Add to Featured"}
+                                            >
+                                                <Star size={16} className={featuredIds.has(artist.spotify_id) ? "fill-yellow-500" : ""} />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemove(artist.spotify_id)}
+                                                className="p-2 rounded-lg bg-red-500/10 text-red-400 opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:text-white transition-all"
+                                                title="Remove from Roster"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
                                     </div>
                                 ))
                             )}

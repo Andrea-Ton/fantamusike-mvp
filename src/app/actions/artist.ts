@@ -37,3 +37,28 @@ export async function getFeaturedArtistsAction(): Promise<SpotifyArtist[]> {
         followers: { total: a.current_followers }
     }));
 }
+
+export async function toggleFeaturedArtistAction(artistId: string, shouldBeFeatured: boolean) {
+    const supabase = await createClient();
+
+    // Check Admin
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, message: 'Unauthorized' };
+
+    const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
+    if (!profile?.is_admin) return { success: false, message: 'Unauthorized' };
+
+    if (shouldBeFeatured) {
+        const { error } = await supabase.from('featured_artists').insert({ spotify_id: artistId });
+        if (error) {
+            // Ignore duplicate key error
+            if (error.code === '23505') return { success: true };
+            return { success: false, message: error.message };
+        }
+    } else {
+        const { error } = await supabase.from('featured_artists').delete().eq('spotify_id', artistId);
+        if (error) return { success: false, message: error.message };
+    }
+
+    return { success: true };
+}
