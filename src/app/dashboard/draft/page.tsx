@@ -12,6 +12,8 @@ import { SpotifyArtist } from '@/lib/spotify';
 import { useRouter } from 'next/navigation';
 import LogoutButton from '@/components/logout-button';
 import ScoutSuggestionModal from '@/components/dashboard/scout-suggestion-modal';
+import { createClient } from '@/utils/supabase/client';
+import InviteButton from '@/components/dashboard/invite-button';
 
 // Helper to categorize artists based on popularity
 const getCategory = (popularity: number) => {
@@ -65,6 +67,8 @@ export default function TalentScoutPage() {
     const [showCostModal, setShowCostModal] = useState(false);
     const [currentSeasonId, setCurrentSeasonId] = useState<string | null>(null);
     const [isNewSeasonEntry, setIsNewSeasonEntry] = useState(false);
+    const [musiCoins, setMusiCoins] = useState(0);
+    const [referralCode, setReferralCode] = useState<string | undefined>(undefined);
 
     // Scout Report State
     const [isScoutModalOpen, setIsScoutModalOpen] = useState(false);
@@ -75,9 +79,19 @@ export default function TalentScoutPage() {
     // Load Team (DB or LocalStorage)
     useEffect(() => {
         const loadData = async () => {
-            // 0. Get Current Season
+            // 0. Get Current Season & Profile
             const season = await getCurrentSeasonAction();
             if (season) setCurrentSeasonId(season.id);
+
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { data: profile } = await supabase.from('profiles').select('musi_coins, referral_code').eq('id', user.id).single();
+                if (profile) {
+                    setMusiCoins(profile.musi_coins);
+                    setReferralCode(profile.referral_code);
+                }
+            }
 
             // 1. Try fetching from DB
             const dbTeam = await getUserTeamAction();
@@ -472,7 +486,21 @@ export default function TalentScoutPage() {
                             Hai apportato modifiche al tuo team.
                             <br />
                             Costo totale: <span className="text-yellow-400 font-bold">{cost} MusiCoin</span>.
+                            <br />
+                            Saldo attuale: <span className={musiCoins < cost ? "text-red-400 font-bold" : "text-white font-bold"}>{musiCoins} MusiCoin</span>.
                         </p>
+
+                        {musiCoins < cost ? (
+                            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
+                                <p className="text-red-400 font-bold text-sm mb-2">Saldo Insufficiente!</p>
+                                <p className="text-gray-300 text-xs mb-3">Non hai abbastanza MusiCoin per completare questa operazione.</p>
+                                <div className="flex flex-col gap-2">
+                                    <p className="text-white text-xs font-bold">Vuoi 30 MusiCoin gratis?</p>
+                                    <InviteButton referralCode={referralCode} />
+                                </div>
+                            </div>
+                        ) : null}
+
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setShowCostModal(false)}
@@ -482,10 +510,13 @@ export default function TalentScoutPage() {
                             </button>
                             <button
                                 onClick={handleConfirmSave}
-                                disabled={isSaving}
-                                className="flex-1 py-3 rounded-xl font-bold bg-yellow-500 text-black hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2"
+                                disabled={isSaving || musiCoins < cost}
+                                className={`flex-1 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 ${musiCoins < cost
+                                    ? 'bg-white/5 text-gray-500 cursor-not-allowed'
+                                    : 'bg-yellow-500 text-black hover:bg-yellow-400'
+                                    }`}
                             >
-                                {isSaving ? <Loader2 className="animate-spin" /> : <Zap size={18} className="fill-black" />}
+                                {isSaving ? <Loader2 className="animate-spin" /> : <Zap size={18} className={musiCoins < cost ? "text-gray-500" : "fill-black"} />}
                                 Paga e Salva
                             </button>
                         </div>
@@ -517,9 +548,18 @@ export default function TalentScoutPage() {
 
                     {/* Left Column: Search */}
                     <div className="lg:col-span-8">
-                        <div className="mb-8">
-                            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Talent Scout</h1>
-                            <p className="text-gray-400">Cerca le prossime star. Ricorda: hai un budget di popolarità da rispettare.</p>
+                        <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                            <div>
+                                <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Talent Scout</h1>
+                                <p className="text-gray-400">Cerca le prossime star. Ricorda: hai un budget di popolarità da rispettare.</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="px-4 py-2 bg-[#1a1a24] rounded-lg border border-white/10 text-sm font-medium text-yellow-400 flex items-center gap-2">
+                                    <span>MusiCoins:</span>
+                                    <span className="font-bold">{musiCoins}</span>
+                                </div>
+                                <InviteButton referralCode={referralCode} />
+                            </div>
                         </div>
 
                         {/* Search & Filter Bar */}

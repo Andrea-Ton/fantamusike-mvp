@@ -22,7 +22,7 @@ export default function InviteButton({ referralCode }: { referralCode?: string }
                 className="px-4 py-2 bg-purple-600 rounded-lg text-white text-sm font-bold hover:bg-purple-700 transition shadow-lg shadow-purple-500/20 flex items-center gap-2"
             >
                 <Share2 size={16} />
-                Invita Amico
+                <span>Invita&nbsp;Amico</span>
             </button>
 
             {isOpen && (
