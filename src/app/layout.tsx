@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "FantaMusiké",
   description: "Who's going to be the best Talent Scout?",
+  icons: {
+    apple: "/ios-icon.png",
+  },
 };
 
 export default function RootLayout({
