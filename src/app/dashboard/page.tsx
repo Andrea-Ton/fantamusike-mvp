@@ -13,6 +13,7 @@ import LeaderboardCard from '@/components/dashboard/leaderboard-card';
 import Link from 'next/link';
 import LogoutButton from '@/components/logout-button';
 import InviteButton from '@/components/dashboard/invite-button';
+import { getCurrentWeekAction } from '@/app/actions/game';
 
 export default async function DashboardPage() {
     const supabase = await createClient();
@@ -32,14 +33,7 @@ export default async function DashboardPage() {
     const musiCoins = profile?.musi_coins || 0;
 
     // Determine Current Week
-    const { data: latestSnap } = await supabase
-        .from('weekly_snapshots')
-        .select('week_number')
-        .order('week_number', { ascending: false })
-        .limit(1)
-        .single();
-
-    const currentWeek = latestSnap?.week_number || 1;
+    const currentWeek = await getCurrentWeekAction();
 
     // Fetch User Team for Current Week
     const userTeam = await getUserTeamAction(currentWeek);
@@ -270,7 +264,7 @@ export default async function DashboardPage() {
                     {/* Right Column: Roster */}
                     <div className="lg:col-span-7">
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-bold text-white">La tua Label</h3>
+                            <h3 className="text-xl font-bold text-white">La tua Label <span className="text-gray-400 text-sm font-normal ml-2">(Settimana Corrente)</span></h3>
                             <Link
                                 href="/dashboard/draft"
                                 className="px-4 py-2 rounded-full bg-[#1a1a24] border border-white/10 text-sm text-purple-400 font-medium hover:bg-purple-500 hover:text-white transition-all"
