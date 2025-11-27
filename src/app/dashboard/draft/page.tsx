@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Plus, LogOut, Loader2, X, Save, Trophy, Users, Zap, ChevronUp, Star, Crown, Sparkles, RotateCcw } from 'lucide-react';
+import { Search, Plus, LogOut, Loader2, X, Save, Trophy, Users, Zap, ChevronUp, Star, Crown, Sparkles, RotateCcw, Info } from 'lucide-react';
 import Image from 'next/image';
 import { searchArtistsAction } from '@/app/actions/spotify';
 import { saveTeamAction, TeamSlots, getUserTeamAction } from '@/app/actions/team';
 import { getFeaturedArtistsAction, getArtistAction } from '@/app/actions/artist';
 import { getScoutSuggestionsAction, ScoutSuggestion } from '@/app/actions/scout';
 import { getCurrentSeasonAction } from '@/app/actions/season';
+import { getCurrentWeekAction } from '@/app/actions/game';
 import { SpotifyArtist } from '@/lib/spotify';
 import { useRouter } from 'next/navigation';
 import LogoutButton from '@/components/logout-button';
@@ -66,6 +67,7 @@ export default function TalentScoutPage() {
     const [cost, setCost] = useState(0);
     const [showCostModal, setShowCostModal] = useState(false);
     const [currentSeasonId, setCurrentSeasonId] = useState<string | null>(null);
+    const [seasonName, setSeasonName] = useState<string>('Season Zero');
     const [isNewSeasonEntry, setIsNewSeasonEntry] = useState(false);
     const [musiCoins, setMusiCoins] = useState(0);
     const [referralCode, setReferralCode] = useState<string | undefined>(undefined);
@@ -76,12 +78,20 @@ export default function TalentScoutPage() {
     const [isScoutLoading, setIsScoutLoading] = useState(false);
     const [activeScoutSlotId, setActiveScoutSlotId] = useState<keyof TeamSlots | null>(null);
 
+    const [currentWeek, setCurrentWeek] = useState<number>(1);
+
     // Load Team (DB or LocalStorage)
     useEffect(() => {
         const loadData = async () => {
             // 0. Get Current Season & Profile
             const season = await getCurrentSeasonAction();
-            if (season) setCurrentSeasonId(season.id);
+            if (season) {
+                setCurrentSeasonId(season.id);
+                setSeasonName(season.name);
+            }
+
+            const week = await getCurrentWeekAction();
+            setCurrentWeek(week);
 
             const supabase = createClient();
             const { data: { user } } = await supabase.auth.getUser();
@@ -378,6 +388,13 @@ export default function TalentScoutPage() {
     const handleSignScout = async (artist: ScoutSuggestion) => {
         if (!activeScoutSlotId) return;
 
+        // Check if artist is already in the team
+        const isAlreadySelected = Object.values(draftTeam).some(slot => slot?.id === artist.spotify_id);
+        if (isAlreadySelected) {
+            alert("Questo artista è già presente nel tuo team!");
+            return;
+        }
+
         setIsScoutLoading(true);
         try {
             // Fetch full artist data from cache (includes followers)
@@ -568,7 +585,9 @@ export default function TalentScoutPage() {
                     </div>
                     <div>
                         <h1 className="text-xl font-bold text-white tracking-tight">FantaMusiké</h1>
-                        <p className="text-xs text-gray-400">Season Zero</p>
+                        <p className="text-xs text-gray-400">
+                            {seasonName} {isNewSeasonEntry ? '' : '- Prossima Settimana'}
+                        </p>
                     </div>
                 </div>
                 <LogoutButton />
@@ -584,157 +603,168 @@ export default function TalentScoutPage() {
                                 <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Talent Scout</h1>
                                 <p className="text-gray-400">Cerca le prossime star. Ricorda: hai un budget di popolarità da rispettare.</p>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <div className="px-4 py-2 bg-[#1a1a24] rounded-lg border border-white/10 text-sm font-medium text-yellow-400 flex items-center gap-2">
-                                    <span>MusiCoins:</span>
-                                    <span className="font-bold">{musiCoins}</span>
-                                </div>
-                                <InviteButton referralCode={referralCode} />
-                            </div>
-                        </div>
-
-                        {/* Search & Filter Bar */}
-                        <div className="flex flex-col gap-4 mb-8 sticky top-4 z-40 bg-[#0b0b10]/80 backdrop-blur-xl p-2 rounded-2xl border border-white/5">
-                            <div className="relative flex-1">
-                                <Search className="absolute left-4 top-3.5 text-gray-500" size={20} />
-                                <input
-                                    type="text"
-                                    placeholder="Cerca artista (es. Shiva, thasup...)"
-                                    value={searchTerm}
-                                    onChange={handleSearchChange}
-                                    className="w-full h-12 pl-12 pr-4 bg-[#1a1a24] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 border border-white/5 transition-all"
-                                />
-                                {isLoading && (
-                                    <div className="absolute right-4 top-3.5">
-                                        <Loader2 className="animate-spin text-purple-500" size={20} />
-                                    </div>
-                                )}
-                            </div>
-                            <div className="flex gap-2 overflow-x-auto md:overflow-visible no-scrollbar pb-2 md:pb-0">
+                            <div className="flex gap-2 bg-[#1a1a24] p-1 rounded-xl border border-white/10">
+                                <button
+                                    onClick={() => setViewMode('search')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'search' ? 'bg-white text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                                >
+                                    Cerca
+                                </button>
                                 <button
                                     onClick={handleLoadFeatured}
-                                    className={`px-5 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all flex items-center gap-2 ${viewMode === 'featured'
-                                        ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/20'
-                                        : 'bg-[#1a1a24] text-yellow-500 border border-yellow-500/20 hover:bg-yellow-500/10'
-                                        }`}
+                                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${viewMode === 'featured' ? 'bg-yellow-400 text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
                                 >
-                                    <Star size={16} className={viewMode === 'featured' ? 'fill-black' : 'fill-yellow-500'} />
-                                    Consigliati
+                                    <Sparkles size={14} />
+                                    Featured
                                 </button>
-                                {['All', 'New Gen', 'Mid Tier', 'Big'].map((filter) => (
-                                    <button
-                                        key={filter}
-                                        onClick={() => setActiveFilter(filter)}
-                                        className={`px-5 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${activeFilter === filter
-                                            ? 'bg-white text-black shadow-lg shadow-white/10'
-                                            : 'bg-[#1a1a24] text-gray-400 border border-white/5 hover:text-white hover:border-white/20'
-                                            }`}
-                                    >
-                                        {filter === 'New Gen' ? 'New Gen < 30' : filter === 'Mid Tier' ? 'Mid Tier 30-75' : filter === 'Big' ? 'Big > 75' : 'Tutti'}
-                                    </button>
-                                ))}
                             </div>
                         </div>
 
-                        {/* Results Grid */}
-                        <div className="space-y-6">
-                            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider">
-                                {viewMode === 'featured'
-                                    ? `Artisti Consigliati (${filteredArtists.length})`
-                                    : searchTerm.length < 2
-                                        ? 'Inizia a cercare...'
-                                        : `Risultati Ricerca (${filteredArtists.length})`
-                                }
-                            </h3>
+                        {/* Search Bar */}
+                        {viewMode === 'search' && (
+                            <div className="relative mb-6 group">
+                                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                    <Search className="text-gray-400 group-focus-within:text-purple-400 transition-colors" size={20} />
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Cerca artista..."
+                                    value={searchTerm}
+                                    onChange={handleSearchChange}
+                                    className="w-full h-14 pl-12 pr-4 bg-[#1a1a24] border border-white/10 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all shadow-xl"
+                                />
+                            </div>
+                        )}
 
+                        {/* Filters */}
+                        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+                            {['All', 'Big', 'Mid Tier', 'New Gen'].map((filter) => (
+                                <button
+                                    key={filter}
+                                    onClick={() => setActiveFilter(filter)}
+                                    className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all border ${activeFilter === filter
+                                        ? 'bg-white text-black border-white'
+                                        : 'bg-[#1a1a24] text-gray-400 border-white/10 hover:border-white/30'
+                                        }`}
+                                >
+                                    {filter}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Artist Grid */}
+                        {isLoading ? (
+                            <div className="flex justify-center py-20">
+                                <Loader2 className="animate-spin text-purple-500" size={40} />
+                            </div>
+                        ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {filteredArtists.map((artist) => {
-                                    const category = getCategory(artist.popularity);
                                     const availableSlots = getAvailableSlots(artist);
-                                    const isAlreadySelected = Object.values(draftTeam).some(slot => slot?.id === artist.id);
-                                    const isFeatured = featuredArtists.has(artist.id);
+                                    const isSelected = Object.values(draftTeam).some(slot => slot?.id === artist.id);
 
                                     return (
-                                        <div key={artist.id} className={`bg-[#1a1a24] p-4 rounded-2xl border transition-all group ${isAlreadySelected ? 'border-purple-500/50 opacity-50' : isFeatured ? 'border-yellow-500/50 shadow-lg shadow-yellow-500/10' : 'border-white/5 hover:border-purple-500/50'}`}>
-                                            <div className="flex items-start justify-between mb-4">
-                                                <div className="flex gap-4">
-                                                    <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-800">
-                                                        {artist.images[0] ? (
-                                                            <Image
-                                                                src={artist.images[0].url}
-                                                                alt={artist.name}
-                                                                fill
-                                                                className="object-cover"
-                                                            />
+                                        <div key={artist.id} className="bg-[#1a1a24] border border-white/5 rounded-2xl p-4 flex gap-4 hover:bg-[#23232f] transition-colors group">
+                                            <div className="relative w-20 h-20 rounded-xl overflow-hidden shadow-lg flex-shrink-0">
+                                                {artist.images[0] ? (
+                                                    <Image src={artist.images[0].url} alt={artist.name} fill className="object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                                                        <Users size={20} className="text-gray-600" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <h3 className="font-bold text-white truncate">{artist.name}</h3>
+                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${getCategory(artist.popularity) === 'Big' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                        getCategory(artist.popularity) === 'Mid Tier' ? 'bg-blue-500/20 text-blue-400' :
+                                                            'bg-green-500/20 text-green-400'
+                                                        }`}>
+                                                        {getCategory(artist.popularity)}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-3 text-xs text-gray-400 mb-3">
+                                                    <span>Pop: <span className="text-white font-bold">{artist.popularity}</span></span>
+                                                    <span>•</span>
+                                                    <span>{artist.followers.total.toLocaleString()} followers</span>
+                                                </div>
+
+                                                {isSelected ? (
+                                                    <div className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-500/10 text-green-400 text-xs font-bold">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+                                                        Selezionato
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {availableSlots.length > 0 ? (
+                                                            availableSlots.map(slot => (
+                                                                <button
+                                                                    key={slot.key}
+                                                                    onClick={() => handleAddToSlot(artist, slot.key)}
+                                                                    className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white text-white hover:text-black text-xs font-bold transition-all flex items-center gap-1"
+                                                                >
+                                                                    <Plus size={12} />
+                                                                    {slot.label}
+                                                                </button>
+                                                            ))
                                                         ) : (
-                                                            <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">No IMG</div>
+                                                            <span className="text-xs text-gray-500 italic">Nessuno slot disponibile</span>
                                                         )}
                                                     </div>
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <h4 className="text-white font-bold text-lg group-hover:text-purple-400 transition-colors line-clamp-1">{artist.name}</h4>
-                                                            {isFeatured && <Star size={14} className="text-yellow-500 fill-yellow-500" />}
-                                                        </div>
-                                                        <span className="text-xs text-gray-400 line-clamp-1">{artist.genres[0] || 'Artist'}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex justify-between items-end">
-                                                <div className="flex flex-col gap-1">
-                                                    <span className="text-[10px] text-gray-400 uppercase">Popolarità</span>
-                                                    <span className="text-lg font-bold text-white">{artist.popularity}</span>
-                                                </div>
-
-                                                <div className="flex gap-2">
-                                                    {isAlreadySelected ? (
-                                                        <span className="text-xs text-purple-400 font-bold px-3 py-1 bg-purple-500/10 rounded-lg">Selezionato</span>
-                                                    ) : availableSlots.length > 0 ? (
-                                                        availableSlots.map(slot => (
-                                                            <button
-                                                                key={slot.key}
-                                                                onClick={() => handleAddToSlot(artist, slot.key)}
-                                                                className="px-3 py-1.5 bg-white text-black text-xs font-bold rounded-lg hover:bg-purple-400 transition-colors"
-                                                            >
-                                                                + {slot.label}
-                                                            </button>
-                                                        ))
-                                                    ) : (
-                                                        <span className="text-xs text-gray-500 px-3 py-1 bg-white/5 rounded-lg">Slot Pieni / Invalidi</span>
-                                                    )}
-                                                </div>
+                                                )}
                                             </div>
                                         </div>
                                     );
                                 })}
                             </div>
-                        </div>
+                        )}
                     </div>
 
-                    {/* Desktop Right Column: Team Preview (Sticky) */}
-                    <div className="hidden lg:block lg:col-span-4">
-                        <div className="sticky top-8 bg-[#1a1a24] border border-white/5 rounded-2xl p-6">
+                    {/* Right Column: Team Summary (Desktop) */}
+                    <div className="hidden lg:block lg:col-span-4 space-y-6">
+                        <div className="bg-[#1a1a24] border border-white/10 rounded-3xl p-6 sticky top-6">
                             <div className="flex justify-between items-center mb-6">
-                                <div className="flex items-center gap-3">
-                                    <h2 className="text-xl font-bold text-white">La tua Label</h2>
-                                    <button
-                                        onClick={handleUndo}
-                                        disabled={!hasChanges}
-                                        className={`p-1.5 rounded-lg transition-colors ${hasChanges
-                                            ? 'text-gray-400 hover:text-white hover:bg-white/10'
-                                            : 'text-gray-700 cursor-not-allowed'
-                                            }`}
-                                        title="Annulla modifiche"
-                                    >
-                                        <RotateCcw size={16} />
-                                    </button>
+                                <div>
+                                    <h2 className="text-xl font-bold text-white">Il tuo Team</h2>
+                                    {!isNewSeasonEntry && (
+                                        <p className="text-xs text-blue-400 font-medium">Prossima Settimana</p>
+                                    )}
                                 </div>
-                                <span className="text-sm text-purple-400 font-bold">{filledSlotsCount}/5</span>
+                                <div className="flex items-center gap-2">
+                                    <div className="px-3 py-1 rounded-full bg-white/5 border border-white/10 flex items-center gap-2">
+                                        <Users size={14} className="text-gray-400" />
+                                        <span className="text-sm font-bold text-white">{filledSlotsCount}/5</span>
+                                    </div>
+                                    {hasChanges && (
+                                        <button
+                                            onClick={handleUndo}
+                                            className="p-2 rounded-full bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors"
+                                            title="Annulla modifiche"
+                                        >
+                                            <RotateCcw size={16} />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
+
+                            {/* Info Banner inside Team Card */}
+                            {hasChanges && !isNewSeasonEntry && (
+                                <div className="mb-6 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-start gap-3 animate-fade-in">
+                                    <div className="p-1.5 bg-blue-500/20 rounded-lg shrink-0">
+                                        <Info size={16} className="text-blue-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-300 text-xs leading-relaxed">
+                                            Le modifiche saranno attive dalla prossima settimana.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
                             <TeamSummaryContent />
                         </div>
                     </div>
-
                 </div>
 
                 {/* Mobile Bottom Bar */}
