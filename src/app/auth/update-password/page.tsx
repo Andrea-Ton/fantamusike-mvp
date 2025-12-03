@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { updatePassword } from '@/app/auth/actions';
 import { Loader2, Lock, Eye, EyeOff } from 'lucide-react';
 
 import { createClient } from '@/utils/supabase/client';
@@ -32,12 +31,22 @@ export default function UpdatePasswordPage() {
     const handleSubmit = async (formData: FormData) => {
         setIsLoading(true);
         setError(null);
-        const result = await updatePassword(formData);
-        if (result?.error) {
-            setError(result.error);
+
+        const password = formData.get('password') as string;
+        const supabase = createClient();
+
+        const { error } = await supabase.auth.updateUser({
+            password: password
+        });
+
+        if (error) {
+            setError(error.message);
             setIsLoading(false);
+        } else {
+            // Success
+            router.push('/dashboard');
+            router.refresh();
         }
-        // If success, server action redirects
     };
 
     return (
