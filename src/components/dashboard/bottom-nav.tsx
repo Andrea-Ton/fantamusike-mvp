@@ -3,12 +3,13 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Search, Trophy, Shield } from 'lucide-react';
+import { Home, Search, Trophy, Shield, User } from 'lucide-react';
 
 const NAV_ITEMS = [
     { href: '/dashboard', label: 'Dashboard', icon: Home },
     { href: '/dashboard/draft', label: 'Talent Scout', icon: Search },
     { href: '/dashboard/leaderboard', label: 'Classifica', icon: Trophy },
+    { href: '/dashboard/profile', label: 'Profilo', icon: User },
 ];
 
 export default function BottomNav({ isAdmin }: { isAdmin?: boolean }) {

@@ -6,7 +6,8 @@ create table profiles (
   total_score integer default 0,
   musi_coins integer default 50,
   is_admin boolean default false,
-  created_at timestamp with time zone default timezone('utc'::text, now())
+  created_at timestamp with time zone default timezone('utc'::text, now()),
+  updated_at timestamp with time zone default timezone('utc'::text, now())
 );
 
 alter table profiles enable row level security;
@@ -280,3 +281,23 @@ create policy "Curated roster is viewable by everyone."
 create policy "Admins can manage curated roster."
   on curated_roster for all
   using ( exists ( select 1 from profiles where id = auth.uid() and is_admin = true ) );
+
+-- STORAGE SETUP
+-- Create the storage bucket for avatars
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do nothing;
+
+-- Set up security policies for the avatars bucket
+create policy "Avatar images are publicly accessible."
+  on storage.objects for select
+  using ( bucket_id = 'avatars' );
+
+create policy "Anyone can upload an avatar."
+  on storage.objects for insert
+  with check ( bucket_id = 'avatars' );
+
+create policy "Anyone can update their own avatar."
+  on storage.objects for update
+  using ( auth.uid() = owner )
+  with check ( bucket_id = 'avatars' );
