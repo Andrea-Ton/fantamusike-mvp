@@ -187,6 +187,12 @@ export async function calculateScoresAction(weekNumber: number) {
             const totalPoints = hypeScore + finalFanbaseScore + releaseBonus;
 
             // 4. Save Weekly Score
+            // Prevent duplicates: Delete existing score for this artist/week first
+            await supabase.from('weekly_scores')
+                .delete()
+                .eq('week_number', weekNumber)
+                .eq('artist_id', snapshot.artist_id);
+
             await supabase.from('weekly_scores').insert({
                 week_number: weekNumber,
                 artist_id: snapshot.artist_id,
@@ -228,7 +234,6 @@ export async function calculateScoresAction(weekNumber: number) {
             if (!scoresMap[s.week_number]) scoresMap[s.week_number] = {};
             scoresMap[s.week_number][s.artist_id] = s.total_points;
         });
-        console.log("scoresMap", scoresMap);
         // B. Fetch ALL teams for the season (up to current week)
         const { data: allTeams } = await supabase
             .from('teams')
@@ -300,8 +305,6 @@ export async function calculateScoresAction(weekNumber: number) {
         }
 
         // E. Update Profiles
-        console.log("userTotals", userTotals);
-
         // We update each profile with the calculated total
         // Use Admin Client to bypass RLS
         const supabaseAdmin = createSupabaseAdmin(

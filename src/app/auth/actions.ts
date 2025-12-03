@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
-import { Provider } from '@supabase/supabase-js';
+import { Provider, createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 export async function login(formData: FormData) {
     const supabase = await createClient();
@@ -80,9 +80,22 @@ export async function signOut() {
 }
 
 export async function forgotPassword(formData: FormData) {
-    const supabase = await createClient();
+    // Use a separate client with Implicit Flow to avoid PKCE issues on iOS PWA
+    // This ensures the link works even if opened in a different browser (Safari)
+    const supabase = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            auth: {
+                flowType: 'implicit',
+            }
+        }
+    );
+
     const email = formData.get('email') as string;
-    const callbackUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/auth/callback?next=/auth/update-password`;
+    // Redirect directly to the update password page, skipping the server-side callback
+    // The client-side page will handle the hash fragment
+    const callbackUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/auth/update-password`;
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: callbackUrl,
