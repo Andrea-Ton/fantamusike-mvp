@@ -14,6 +14,7 @@ import Link from 'next/link';
 import LogoutButton from '@/components/logout-button';
 import InviteButton from '@/components/dashboard/invite-button';
 import { getCurrentWeekAction } from '@/app/actions/game';
+import { ARTIST_TIERS } from '@/config/game';
 
 export default async function DashboardPage() {
     const supabase = await createClient();
@@ -80,7 +81,7 @@ export default async function DashboardPage() {
             id: 1,
             type: 'Big',
             label: 'Headliner',
-            requirement: 'Popolarità > 75',
+            requirement: `Popolarità > ${ARTIST_TIERS.BIG.min - 1}`,
             artist: userTeam?.slot_1 ? {
                 id: userTeam.slot_1.id,
                 name: userTeam.slot_1.name,
@@ -96,7 +97,7 @@ export default async function DashboardPage() {
             id: 2,
             type: 'Mid',
             label: 'Rising Star 1',
-            requirement: 'Popolarità 30-75',
+            requirement: `Popolarità ${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max}`,
             artist: userTeam?.slot_2 ? {
                 id: userTeam.slot_2.id,
                 name: userTeam.slot_2.name,
@@ -112,7 +113,7 @@ export default async function DashboardPage() {
             id: 3,
             type: 'Mid',
             label: 'Rising Star 2',
-            requirement: 'Popolarità 30-75',
+            requirement: `Popolarità ${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max}`,
             artist: userTeam?.slot_3 ? {
                 id: userTeam.slot_3.id,
                 name: userTeam.slot_3.name,
@@ -128,7 +129,7 @@ export default async function DashboardPage() {
             id: 4,
             type: 'New Gen',
             label: 'Scout Pick 1',
-            requirement: 'Popolarità < 30',
+            requirement: `Popolarità < ${ARTIST_TIERS.NEW_GEN.max + 1}`,
             artist: userTeam?.slot_4 ? {
                 id: userTeam.slot_4.id,
                 name: userTeam.slot_4.name,
@@ -144,7 +145,7 @@ export default async function DashboardPage() {
             id: 5,
             type: 'New Gen',
             label: 'Scout Pick 2',
-            requirement: 'Popolarità < 30',
+            requirement: `Popolarità < ${ARTIST_TIERS.NEW_GEN.max + 1}`,
             artist: userTeam?.slot_5 ? {
                 id: userTeam.slot_5.id,
                 name: userTeam.slot_5.name,

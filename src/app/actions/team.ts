@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import { SpotifyArtist } from '@/lib/spotify';
 import { revalidatePath } from 'next/cache';
 import { getCurrentSeasonAction } from './season';
+import { ARTIST_TIERS } from '@/config/game';
 
 export type TeamSlots = {
     slot_1: SpotifyArtist | null;
@@ -67,11 +68,11 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
         artists.push(artist);
     };
 
-    validateSlot('slot_1', slots.slot_1, 76, 100, 'Big (>75)', previousTeam?.slot_1_id);
-    validateSlot('slot_2', slots.slot_2, 30, 75, 'Mid Tier (30-75)', previousTeam?.slot_2_id);
-    validateSlot('slot_3', slots.slot_3, 30, 75, 'Mid Tier (30-75)', previousTeam?.slot_3_id);
-    validateSlot('slot_4', slots.slot_4, 0, 29, 'New Gen (<30)', previousTeam?.slot_4_id);
-    validateSlot('slot_5', slots.slot_5, 0, 29, 'New Gen (<30)', previousTeam?.slot_5_id);
+    validateSlot('slot_1', slots.slot_1, ARTIST_TIERS.BIG.min, ARTIST_TIERS.BIG.max, `${ARTIST_TIERS.BIG.label} (>65)`, previousTeam?.slot_1_id);
+    validateSlot('slot_2', slots.slot_2, ARTIST_TIERS.MID.min, ARTIST_TIERS.MID.max, `${ARTIST_TIERS.MID.label} (${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max})`, previousTeam?.slot_2_id);
+    validateSlot('slot_3', slots.slot_3, ARTIST_TIERS.MID.min, ARTIST_TIERS.MID.max, `${ARTIST_TIERS.MID.label} (${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max})`, previousTeam?.slot_3_id);
+    validateSlot('slot_4', slots.slot_4, ARTIST_TIERS.NEW_GEN.min, ARTIST_TIERS.NEW_GEN.max, `${ARTIST_TIERS.NEW_GEN.label} (<55)`, previousTeam?.slot_4_id);
+    validateSlot('slot_5', slots.slot_5, ARTIST_TIERS.NEW_GEN.min, ARTIST_TIERS.NEW_GEN.max, `${ARTIST_TIERS.NEW_GEN.label} (<55)`, previousTeam?.slot_5_id);
 
     // Validate Captain
     if (captainId) {

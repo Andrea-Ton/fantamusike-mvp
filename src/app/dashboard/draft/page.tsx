@@ -15,11 +15,12 @@ import LogoutButton from '@/components/logout-button';
 import ScoutSuggestionModal from '@/components/dashboard/scout-suggestion-modal';
 import { createClient } from '@/utils/supabase/client';
 import InviteButton from '@/components/dashboard/invite-button';
+import { ARTIST_TIERS } from '@/config/game';
 
 // Helper to categorize artists based on popularity
 const getCategory = (popularity: number) => {
-    if (popularity >= 76) return 'Big';
-    if (popularity >= 30) return 'Mid Tier';
+    if (popularity >= ARTIST_TIERS.BIG.min) return 'Big';
+    if (popularity >= ARTIST_TIERS.MID.min) return 'Mid Tier';
     return 'New Gen';
 };
 
@@ -440,7 +441,7 @@ export default function TalentScoutPage() {
                 {/* Headliner */}
                 <SlotPreview
                     label="Headliner"
-                    subLabel="Pop > 75"
+                    subLabel={`Pop > ${ARTIST_TIERS.BIG.min - 1}`}
                     artist={draftTeam.slot_1}
                     onRemove={() => handleRemoveFromSlot('slot_1')}
                     icon={<Trophy size={14} className="text-yellow-500" />}
@@ -453,7 +454,7 @@ export default function TalentScoutPage() {
                 {/* Mid Tier */}
                 <SlotPreview
                     label="Mid Tier 1"
-                    subLabel="Pop 30-75"
+                    subLabel={`Pop ${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max}`}
                     artist={draftTeam.slot_2}
                     onRemove={() => handleRemoveFromSlot('slot_2')}
                     icon={<Users size={14} className="text-blue-400" />}
@@ -464,7 +465,7 @@ export default function TalentScoutPage() {
                 />
                 <SlotPreview
                     label="Mid Tier 2"
-                    subLabel="Pop 30-75"
+                    subLabel={`Pop ${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max}`}
                     artist={draftTeam.slot_3}
                     onRemove={() => handleRemoveFromSlot('slot_3')}
                     icon={<Users size={14} className="text-blue-400" />}
@@ -477,7 +478,7 @@ export default function TalentScoutPage() {
                 {/* New Gen */}
                 <SlotPreview
                     label="New Gen 1"
-                    subLabel="Pop < 30"
+                    subLabel={`Pop < ${ARTIST_TIERS.NEW_GEN.max + 1}`}
                     artist={draftTeam.slot_4}
                     onRemove={() => handleRemoveFromSlot('slot_4')}
                     icon={<Zap size={14} className="text-green-400" />}
@@ -490,7 +491,7 @@ export default function TalentScoutPage() {
                 />
                 <SlotPreview
                     label="New Gen 2"
-                    subLabel="Pop < 30"
+                    subLabel={`Pop < ${ARTIST_TIERS.NEW_GEN.max + 1}`}
                     artist={draftTeam.slot_5}
                     onRemove={() => handleRemoveFromSlot('slot_5')}
                     icon={<Zap size={14} className="text-green-400" />}
@@ -833,7 +834,7 @@ export default function TalentScoutPage() {
                     onSign={handleSignScout}
                     onReroll={handleRerollScout}
                     isLoading={isScoutLoading}
-                    maxPopularity={30}
+                    maxPopularity={ARTIST_TIERS.NEW_GEN.max}
                 />
 
             </main>
