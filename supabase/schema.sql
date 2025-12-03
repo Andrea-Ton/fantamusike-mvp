@@ -75,6 +75,10 @@ create policy "Weekly scores are viewable by everyone."
   on weekly_scores for select
   using ( true );
 
+create policy "Admins can manage weekly scores."
+  on weekly_scores for all
+  using ( exists ( select 1 from profiles where id = auth.uid() and is_admin = true ) );
+
 -- Create a trigger to automatically create a profile for new users
 create or replace function public.handle_new_user()
 returns trigger as $$
