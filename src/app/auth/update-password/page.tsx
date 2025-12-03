@@ -5,10 +5,29 @@ import Image from 'next/image';
 import { updatePassword } from '@/app/auth/actions';
 import { Loader2, Lock, Eye, EyeOff } from 'lucide-react';
 
+import { createClient } from '@/utils/supabase/client';
+import { useRouter } from 'next/navigation';
+
 export default function UpdatePasswordPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
+    const router = useRouter();
+
+    React.useEffect(() => {
+        // Initialize Supabase client to handle Implicit Flow hash fragment
+        const supabase = createClient();
+
+        // Optional: Check if session is established
+        const checkSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                // If no session (and no hash), maybe redirect to login?
+                // But for now, just let it be, maybe user is already logged in via cookie
+            }
+        };
+        checkSession();
+    }, []);
 
     const handleSubmit = async (formData: FormData) => {
         setIsLoading(true);
