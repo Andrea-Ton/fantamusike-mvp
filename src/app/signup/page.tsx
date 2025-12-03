@@ -144,7 +144,7 @@ export default function SignupPage() {
                     </button>
                 </form>
 
-                <div className="my-6 flex items-center gap-4">
+                <div className="my-6 flex items-center gap-4" hidden={true}>
                     <div className="h-px bg-white/10 flex-1"></div>
                     <span className="text-xs text-gray-500 font-medium">OPPURE</span>
                     <div className="h-px bg-white/10 flex-1"></div>
@@ -154,6 +154,7 @@ export default function SignupPage() {
                     <button
                         onClick={() => handleOAuth('google')}
                         disabled={isLoading}
+                        hidden={true}
                         className="w-full h-12 bg-white text-black font-bold rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 cursor-pointer"
                     >
                         <svg className="w-5 h-5" viewBox="0 0 24 24">
