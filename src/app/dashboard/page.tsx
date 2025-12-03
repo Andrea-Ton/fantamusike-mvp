@@ -57,18 +57,11 @@ export default async function DashboardPage() {
             userTeam.slot_5?.id
         ].filter(Boolean) as string[];
 
-        const { scores } = await getWeeklyScoresAction(artistIds);
+        const { scores } = await getWeeklyScoresAction(artistIds, userTeam.captain_id);
         weeklyScores = scores;
 
         weeklyTrend = artistIds.reduce((total, artistId) => {
-            const score = scores[artistId] || 0;
-            let multiplier = 1;
-
-            if (userTeam.captain_id === artistId) {
-                multiplier = featuredIds.has(artistId) ? 2 : 1.5;
-            }
-
-            return total + Math.round(score * multiplier);
+            return total + (scores[artistId] || 0);
         }, 0);
     }
 

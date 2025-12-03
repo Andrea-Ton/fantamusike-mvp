@@ -2,7 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server';
 
-export async function getWeeklyScoresAction(artistIds: string[]) {
+export async function getWeeklyScoresAction(artistIds: string[], captainId?: string | null) {
     const supabase = await createClient();
 
     // 1. Get the latest week number
@@ -18,7 +18,7 @@ export async function getWeeklyScoresAction(artistIds: string[]) {
     // 2. Fetch scores for the given artists for the current week
     const { data: scores } = await supabase
         .from('weekly_scores')
-        .select('artist_id, total_points')
+        .select('artist_id, total_points, is_featured')
         .in('artist_id', artistIds)
         .eq('week_number', currentWeek);
 
@@ -27,7 +27,18 @@ export async function getWeeklyScoresAction(artistIds: string[]) {
 
     if (scores) {
         scores.forEach(score => {
-            scoreMap[score.artist_id] = score.total_points;
+            let points = score.total_points;
+
+            // Apply Multipliers
+            if (captainId && score.artist_id === captainId) {
+                if (score.is_featured) {
+                    points = Math.round(points * 2); // Featured Captain x2
+                } else {
+                    points = Math.round(points * 1.5); // Regular Captain x1.5
+                }
+            }
+
+            scoreMap[score.artist_id] = points;
         });
     }
 
