@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
 
 export async function createWeeklySnapshotAction(weekNumber: number) {
     const supabase = await createClient();
@@ -212,64 +213,115 @@ export async function calculateScoresAction(weekNumber: number) {
         // 6. Update Profiles (Bulk)
         // This is the heavy part. For MVP, let's run a SQL function if possible, 
         // or just iterate teams.
-        // 6. Update Profiles (Bulk)
-        // Fetch ALL teams valid for this week (week_number <= current)
+        // 6. Recalculate ALL User Scores from Scratch (Idempotent)
+        // This ensures that any past errors or updates are corrected.
+
+        // A. Fetch ALL weekly scores up to current week
+        const { data: allWeeklyScores } = await supabase
+            .from('weekly_scores')
+            .select('week_number, artist_id, total_points')
+            .lte('week_number', weekNumber);
+
+        // Organize scores for fast lookup: scores[week][artistId] = points
+        const scoresMap: Record<number, Record<string, number>> = {};
+        allWeeklyScores?.forEach(s => {
+            if (!scoresMap[s.week_number]) scoresMap[s.week_number] = {};
+            scoresMap[s.week_number][s.artist_id] = s.total_points;
+        });
+        console.log("scoresMap", scoresMap);
+        // B. Fetch ALL teams for the season (up to current week)
         const { data: allTeams } = await supabase
             .from('teams')
             .select('*')
             .lte('week_number', weekNumber)
-            .order('week_number', { ascending: true }); // Ascending to overwrite with latest
+            .order('week_number', { ascending: true });
 
-        // Filter to get the LATEST effective team for each user
-        const effectiveTeams = new Map<string, any>();
-        if (allTeams) {
-            for (const team of allTeams) {
-                effectiveTeams.set(team.user_id, team);
-            }
-        }
+        // Group teams by user
+        const teamsByUser: Record<string, any[]> = {};
+        allTeams?.forEach(t => {
+            if (!teamsByUser[t.user_id]) teamsByUser[t.user_id] = [];
+            teamsByUser[t.user_id].push(t);
+        });
 
-        // Fetch Featured Artists for Multiplier Check
+        // C. Fetch Featured Artists for Multiplier Check
         const { data: featuredArtists } = await supabase.from('featured_artists').select('spotify_id');
         const featuredIds = new Set(featuredArtists?.map(f => f.spotify_id) || []);
 
-        if (effectiveTeams.size > 0) {
-            for (const team of effectiveTeams.values()) {
-                let teamScore = 0;
-                const slots = [team.slot_1_id, team.slot_2_id, team.slot_3_id, team.slot_4_id, team.slot_5_id];
+        // D. Calculate Totals for each User
+        const userTotals: Record<string, number> = {};
 
-                // Fetch scores for these artists for this week
-                const { data: scores } = await supabase
-                    .from('weekly_scores')
-                    .select('artist_id, total_points')
-                    .eq('week_number', weekNumber)
-                    .in('artist_id', slots);
+        for (const userId in teamsByUser) {
+            const userTeams = teamsByUser[userId];
+            let total = 0;
 
-                if (scores) {
-                    for (const score of scores) {
-                        let points = score.total_points;
+            // Iterate through every week of the season so far
+            for (let w = 1; w <= weekNumber; w++) {
+                // Find the active team for week w
+                // It is the team with the highest week_number that is <= w
+                let activeTeam = null;
+                for (const team of userTeams) {
+                    if (team.week_number <= w) {
+                        activeTeam = team;
+                    } else {
+                        // Since teams are ordered by week_number ASC, 
+                        // once we pass w, we stop. The previous one was the active one.
+                        break;
+                    }
+                }
+
+                if (activeTeam) {
+                    const slots = [
+                        activeTeam.slot_1_id,
+                        activeTeam.slot_2_id,
+                        activeTeam.slot_3_id,
+                        activeTeam.slot_4_id,
+                        activeTeam.slot_5_id
+                    ];
+
+                    const weekScores = scoresMap[w] || {};
+
+                    for (const artistId of slots) {
+                        if (!artistId) continue;
+                        let points = weekScores[artistId] || 0;
 
                         // Apply Multipliers
-                        if (team.captain_id === score.artist_id) {
-                            if (featuredIds.has(score.artist_id)) {
+                        if (activeTeam.captain_id === artistId) {
+                            if (featuredIds.has(artistId)) {
                                 points = Math.round(points * 2); // Featured Captain x2
                             } else {
                                 points = Math.round(points * 1.5); // Regular Captain x1.5
                             }
                         }
-
-                        teamScore += points;
+                        total += points;
                     }
-
-                    // Update Profile
-                    await supabase.rpc('increment_score', {
-                        user_id_param: team.user_id,
-                        score_delta: teamScore
-                    });
                 }
             }
+            userTotals[userId] = total;
         }
 
-        return { success: true, message: `Scoring complete. Processed ${totalUpdates} artists.` };
+        // E. Update Profiles
+        console.log("userTotals", userTotals);
+
+        // We update each profile with the calculated total
+        // Use Admin Client to bypass RLS
+        const supabaseAdmin = createSupabaseAdmin(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            {
+                auth: {
+                    autoRefreshToken: false,
+                    persistSession: false
+                }
+            }
+        );
+
+        const updates = Object.entries(userTotals).map(([userId, total]) =>
+            supabaseAdmin.from('profiles').update({ total_score: total }).eq('id', userId)
+        );
+
+        await Promise.all(updates);
+
+        return { success: true, message: `Scoring complete. Processed ${totalUpdates} artists and updated ${Object.keys(userTotals).length} user profiles.` };
 
     } catch (error) {
         console.error('Unexpected Error:', error);
