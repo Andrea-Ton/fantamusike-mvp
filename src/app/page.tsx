@@ -6,7 +6,12 @@ import { Search, TrendingUp, Trophy } from 'lucide-react';
 import { getCurrentSeasonAction } from '@/app/actions/season';
 import { getFeaturedArtistsAction } from '@/app/actions/artist';
 
+import { createClient } from '@/utils/supabase/server';
+
 export default async function LandingPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   const currentSeason = await getCurrentSeasonAction();
   const seasonName = currentSeason?.name || 'Season Zero';
   const featuredArtists = await getFeaturedArtistsAction();
@@ -18,8 +23,8 @@ export default async function LandingPage() {
       <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-blue-600/20 rounded-full blur-[120px] delay-700" />
       <div className="absolute top-[20%] right-[10%] w-[30vw] h-[30vw] bg-pink-600/10 rounded-full blur-[100px]" />
 
-      <Navbar />
-      <HeroSection seasonName={seasonName} featuredArtists={featuredArtists} />
+      <Navbar user={user} />
+      <HeroSection seasonName={seasonName} featuredArtists={featuredArtists} user={user} />
 
       {/* Features Grid */}
       <section className="relative z-10 py-20 bg-black/20 backdrop-blur-sm border-t border-white/5">

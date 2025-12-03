@@ -6,7 +6,9 @@ import { SpotifyArtist } from '@/lib/spotify';
 import Image from 'next/image';
 import Link from 'next/link';
 
-export default function HeroSection({ seasonName = 'Season Zero', featuredArtists = [] }: { seasonName?: string, featuredArtists?: SpotifyArtist[] }) {
+import { User } from '@supabase/supabase-js';
+
+export default function HeroSection({ seasonName = 'Season Zero', featuredArtists = [], user }: { seasonName?: string, featuredArtists?: SpotifyArtist[], user?: User | null }) {
     return (
         <main className="relative z-10 max-w-7xl mx-auto px-6 pt-32 pb-9 lg:pt-52 lg:pb-32 flex flex-col lg:flex-row items-center gap-16">
             {/* Text Content */}
@@ -25,10 +27,17 @@ export default function HeroSection({ seasonName = 'Season Zero', featuredArtist
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
-                    <Link href="/signup" className="group relative px-8 py-4 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-all shadow-xl shadow-white/10 hover:shadow-white/20 flex items-center justify-center gap-3 cursor-pointer">
-                        <span className="text-lg">Inizia la Carriera</span>
-                        <ArrowRight className="group-hover:translate-x-1 transition-transform" />
-                    </Link>
+                    {user ? (
+                        <Link href="/dashboard" className="group relative px-8 py-4 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-all shadow-xl shadow-white/10 hover:shadow-white/20 flex items-center justify-center gap-3 cursor-pointer">
+                            <span className="text-lg">La mia Dashboard</span>
+                            <ArrowRight className="group-hover:translate-x-1 transition-transform" />
+                        </Link>
+                    ) : (
+                        <Link href="/signup" className="group relative px-8 py-4 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-all shadow-xl shadow-white/10 hover:shadow-white/20 flex items-center justify-center gap-3 cursor-pointer">
+                            <span className="text-lg">Inizia la Carriera</span>
+                            <ArrowRight className="group-hover:translate-x-1 transition-transform" />
+                        </Link>
+                    )}
                     <button className="px-8 py-4 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold transition-all backdrop-blur-md flex items-center justify-center gap-2 cursor-pointer">
                         <PlayCircle size={20} />
                         <span>Come funziona</span>

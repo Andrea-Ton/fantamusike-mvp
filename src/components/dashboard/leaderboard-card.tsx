@@ -1,6 +1,7 @@
 import React from 'react';
 import { Trophy, Medal, Crown } from 'lucide-react';
 import { LeaderboardEntry } from '@/app/actions/leaderboard';
+import Link from 'next/link';
 
 interface LeaderboardCardProps {
     entries: LeaderboardEntry[];
@@ -26,9 +27,9 @@ export default function LeaderboardCard({ entries, currentUserId }: LeaderboardC
                     </div>
                     <h3 className="text-lg font-bold text-white">Top Managers</h3>
                 </div>
-                <button className="text-xs text-purple-400 hover:text-purple-300 font-medium transition-colors">
+                <Link href="/dashboard/leaderboard" className="text-xs text-purple-400 hover:text-purple-300 font-medium transition-colors">
                     Vedi Tutti
-                </button>
+                </Link>
             </div>
 
             <div className="space-y-3 overflow-y-auto custom-scrollbar flex-1 pr-2">

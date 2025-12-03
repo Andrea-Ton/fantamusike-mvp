@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import { SpotifyArtist } from '@/lib/spotify';
 import { revalidatePath } from 'next/cache';
 import { getCurrentSeasonAction } from './season';
+import { ARTIST_TIERS } from '@/config/game';
 
 export type TeamSlots = {
     slot_1: SpotifyArtist | null;
@@ -28,27 +29,50 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
         return { success: false, message: 'Unauthorized' };
     }
 
-    // 2. Validation
+    // 2. Get Active Season & Previous Team (Moved up for validation context)
+    const currentSeason = await getCurrentSeasonAction();
+    if (!currentSeason) {
+        return { success: false, message: 'No active season found' };
+    }
+
+    // Fetch Previous Team (Latest Saved) for Validation & Cost Calculation
+    const { data: previousTeam } = await supabase
+        .from('teams')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('season_id', currentSeason.id)
+        .order('week_number', { ascending: false })
+        .limit(1)
+        .single();
+
+    // 3. Validation
     const errors: Record<string, string> = {};
     const artists: SpotifyArtist[] = [];
 
     // Helper to validate slot
-    const validateSlot = (slotKey: keyof TeamSlots, artist: SpotifyArtist | null, minPop: number, maxPop: number, label: string) => {
+    const validateSlot = (slotKey: keyof TeamSlots, artist: SpotifyArtist | null, minPop: number, maxPop: number, label: string, previousArtistId?: string | null) => {
         if (!artist) {
             errors[slotKey] = 'Slot is empty';
             return;
         }
+
+        // Grandfathering Check: If artist hasn't changed, skip popularity validation
+        if (previousArtistId && artist.id === previousArtistId) {
+            artists.push(artist);
+            return;
+        }
+
         if (artist.popularity < minPop || artist.popularity > maxPop) {
             errors[slotKey] = `Artist must be ${label} (Pop: ${minPop}-${maxPop === 100 ? '100' : maxPop})`;
         }
         artists.push(artist);
     };
 
-    validateSlot('slot_1', slots.slot_1, 76, 100, 'Big (>75)');
-    validateSlot('slot_2', slots.slot_2, 30, 75, 'Mid Tier (30-75)');
-    validateSlot('slot_3', slots.slot_3, 30, 75, 'Mid Tier (30-75)');
-    validateSlot('slot_4', slots.slot_4, 0, 29, 'New Gen (<30)');
-    validateSlot('slot_5', slots.slot_5, 0, 29, 'New Gen (<30)');
+    validateSlot('slot_1', slots.slot_1, ARTIST_TIERS.BIG.min, ARTIST_TIERS.BIG.max, `${ARTIST_TIERS.BIG.label} (>65)`, previousTeam?.slot_1_id);
+    validateSlot('slot_2', slots.slot_2, ARTIST_TIERS.MID.min, ARTIST_TIERS.MID.max, `${ARTIST_TIERS.MID.label} (${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max})`, previousTeam?.slot_2_id);
+    validateSlot('slot_3', slots.slot_3, ARTIST_TIERS.MID.min, ARTIST_TIERS.MID.max, `${ARTIST_TIERS.MID.label} (${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max})`, previousTeam?.slot_3_id);
+    validateSlot('slot_4', slots.slot_4, ARTIST_TIERS.NEW_GEN.min, ARTIST_TIERS.NEW_GEN.max, `${ARTIST_TIERS.NEW_GEN.label} (<55)`, previousTeam?.slot_4_id);
+    validateSlot('slot_5', slots.slot_5, ARTIST_TIERS.NEW_GEN.min, ARTIST_TIERS.NEW_GEN.max, `${ARTIST_TIERS.NEW_GEN.label} (<55)`, previousTeam?.slot_5_id);
 
     // Validate Captain
     if (captainId) {
@@ -63,12 +87,6 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
     }
 
     try {
-        // 3. Get Active Season
-        const currentSeason = await getCurrentSeasonAction();
-        if (!currentSeason) {
-            return { success: false, message: 'No active season found' };
-        }
-
         // 4. Determine Target Week
         // Fetch the latest snapshot week to determine current week
         const { data: latestSnap } = await supabase
@@ -91,16 +109,7 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
         // UX Nuance: If First Team of Season -> Current Week. Else -> Next Week.
         const targetWeek = (!existingSeasonTeam || existingSeasonTeam.length === 0) ? currentWeek : currentWeek + 1;
 
-        // 5. Fetch Previous Team (Latest Saved) for Cost Calculation
-        // We compare against the *latest saved* team to calculate cost of changes
-        const { data: previousTeam } = await supabase
-            .from('teams')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('season_id', currentSeason.id) // Filter by Season
-            .order('week_number', { ascending: false })
-            .limit(1)
-            .single();
+        // Previous Team is already fetched above
 
         const { data: profile } = await supabase
             .from('profiles')

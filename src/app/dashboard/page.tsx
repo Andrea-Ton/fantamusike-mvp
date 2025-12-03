@@ -14,6 +14,7 @@ import Link from 'next/link';
 import LogoutButton from '@/components/logout-button';
 import InviteButton from '@/components/dashboard/invite-button';
 import { getCurrentWeekAction } from '@/app/actions/game';
+import { ARTIST_TIERS } from '@/config/game';
 
 export default async function DashboardPage() {
     const supabase = await createClient();
@@ -57,18 +58,11 @@ export default async function DashboardPage() {
             userTeam.slot_5?.id
         ].filter(Boolean) as string[];
 
-        const { scores } = await getWeeklyScoresAction(artistIds);
+        const { scores } = await getWeeklyScoresAction(artistIds, userTeam.captain_id);
         weeklyScores = scores;
 
         weeklyTrend = artistIds.reduce((total, artistId) => {
-            const score = scores[artistId] || 0;
-            let multiplier = 1;
-
-            if (userTeam.captain_id === artistId) {
-                multiplier = featuredIds.has(artistId) ? 2 : 1.5;
-            }
-
-            return total + Math.round(score * multiplier);
+            return total + (scores[artistId] || 0);
         }, 0);
     }
 
@@ -87,7 +81,7 @@ export default async function DashboardPage() {
             id: 1,
             type: 'Big',
             label: 'Headliner',
-            requirement: 'Popolarità > 75',
+            requirement: `Popolarità > ${ARTIST_TIERS.BIG.min - 1}`,
             artist: userTeam?.slot_1 ? {
                 id: userTeam.slot_1.id,
                 name: userTeam.slot_1.name,
@@ -103,7 +97,7 @@ export default async function DashboardPage() {
             id: 2,
             type: 'Mid',
             label: 'Rising Star 1',
-            requirement: 'Popolarità 30-75',
+            requirement: `Popolarità ${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max}`,
             artist: userTeam?.slot_2 ? {
                 id: userTeam.slot_2.id,
                 name: userTeam.slot_2.name,
@@ -119,7 +113,7 @@ export default async function DashboardPage() {
             id: 3,
             type: 'Mid',
             label: 'Rising Star 2',
-            requirement: 'Popolarità 30-75',
+            requirement: `Popolarità ${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max}`,
             artist: userTeam?.slot_3 ? {
                 id: userTeam.slot_3.id,
                 name: userTeam.slot_3.name,
@@ -135,7 +129,7 @@ export default async function DashboardPage() {
             id: 4,
             type: 'New Gen',
             label: 'Scout Pick 1',
-            requirement: 'Popolarità < 30',
+            requirement: `Popolarità < ${ARTIST_TIERS.NEW_GEN.max + 1}`,
             artist: userTeam?.slot_4 ? {
                 id: userTeam.slot_4.id,
                 name: userTeam.slot_4.name,
@@ -151,7 +145,7 @@ export default async function DashboardPage() {
             id: 5,
             type: 'New Gen',
             label: 'Scout Pick 2',
-            requirement: 'Popolarità < 30',
+            requirement: `Popolarità < ${ARTIST_TIERS.NEW_GEN.max + 1}`,
             artist: userTeam?.slot_5 ? {
                 id: userTeam.slot_5.id,
                 name: userTeam.slot_5.name,
@@ -187,6 +181,17 @@ export default async function DashboardPage() {
                     </div>
                 </div>
                 <LogoutButton />
+            </div>
+
+            {/* Mobile Stats Row */}
+            <div className="md:hidden px-6 mb-2 mt-2 flex gap-3">
+                <div className="px-2 py-2 bg-[#1a1a24] rounded-lg border border-white/10 text-sm font-medium text-yellow-400 flex items-center gap-2 flex-1 justify-center">
+                    <span>MusiCoins:</span>
+                    <span className="font-bold">{musiCoins}</span>
+                </div>
+                <div className="flex-1">
+                    <InviteButton referralCode={profile?.referral_code} />
+                </div>
             </div>
 
             {/* Content Area */}
@@ -242,32 +247,19 @@ export default async function DashboardPage() {
                             </div>
                         </div>
 
-                        {/* Leaderboard Card */}
-                        <div className="h-[400px]">
+                        {/* Leaderboard Card - Hidden on Mobile, Visible on Desktop */}
+                        <div className="hidden lg:block h-[400px]">
                             <LeaderboardCard entries={leaderboard} currentUserId={user.id} />
                         </div>
-
-                        {/* Info Box - REMOVED as per user request */}
-                        {/* <div className="p-6 rounded-3xl bg-blue-500/5 border border-blue-500/20 flex gap-4 items-start">
-                            <div className="p-2 bg-blue-500/10 rounded-lg">
-                                <Info className="text-blue-400" size={24} />
-                            </div>
-                            <div>
-                                <h4 className="text-blue-400 font-bold mb-1">Strategia Settimanale</h4>
-                                <p className="text-sm text-gray-300 leading-relaxed">
-                                    Gli artisti <span className="text-white font-bold">"New Gen"</span> stanno performando il 20% meglio questa settimana grazie ai nuovi release. Considera di scambiare il tuo slot Scout Pick 2.
-                                </p>
-                            </div>
-                        </div> */}
                     </div>
 
                     {/* Right Column: Roster */}
                     <div className="lg:col-span-7">
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-bold text-white">La tua Label <span className="text-gray-400 text-sm font-normal ml-2">(Settimana Corrente)</span></h3>
+                            <h3 className="text-xl font-bold text-white">La tua Label <span className="text-gray-400 text-sm font-normal md:ml-2 block md:inline">(Settimana Corrente)</span></h3>
                             <Link
                                 href="/dashboard/draft"
-                                className="px-4 py-2 rounded-full bg-[#1a1a24] border border-white/10 text-sm text-purple-400 font-medium hover:bg-purple-500 hover:text-white transition-all"
+                                className="px-4 py-2 rounded-full bg-[#1a1a24] border border-white/10 text-sm text-purple-400 font-medium hover:bg-purple-500 hover:text-white transition-all whitespace-nowrap"
                             >
                                 {hasTeam ? 'Gestisci Roster' : 'Crea Team'}
                             </Link>
@@ -294,6 +286,11 @@ export default async function DashboardPage() {
                                 </Link>
                             </div>
                         )}
+                    </div>
+
+                    {/* Leaderboard Card - Visible on Mobile (After Roster), Hidden on Desktop */}
+                    <div className="lg:hidden h-[400px]">
+                        <LeaderboardCard entries={leaderboard} currentUserId={user.id} />
                     </div>
                 </div>
             </main>

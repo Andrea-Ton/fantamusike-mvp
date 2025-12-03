@@ -91,8 +91,8 @@ export default function Sidebar({ avatarUrl, displayName, seasonName, isAdmin }:
             </div>
 
             <div className="p-4 mt-auto">
-                <div className="bg-[#1a1a24] rounded-2xl p-4 border border-white/5 flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 p-0.5 relative">
+                <Link href="/dashboard/profile" className="bg-[#1a1a24] rounded-2xl p-4 border border-white/5 flex items-center gap-3 mb-2 hover:bg-white/5 transition-colors group cursor-pointer">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 p-0.5 relative group-hover:scale-105 transition-transform">
                         {avatarUrl ? (
                             <Image
                                 src={avatarUrl}
@@ -107,16 +107,19 @@ export default function Sidebar({ avatarUrl, displayName, seasonName, isAdmin }:
                         )}
                     </div>
                     <div className="flex-1 overflow-hidden">
-                        <p className="text-sm font-bold text-white truncate">{display}</p>
+                        <p className="text-sm font-bold text-white truncate group-hover:text-purple-400 transition-colors">{display}</p>
                         <p className="text-xs text-gray-500 truncate">Manager Lv. 1</p>
                     </div>
                     <button
-                        onClick={handleSignOut}
-                        className="text-gray-500 hover:text-red-400 transition-colors"
+                        onClick={(e) => {
+                            e.preventDefault(); // Prevent navigation when clicking logout
+                            handleSignOut();
+                        }}
+                        className="text-gray-500 hover:text-red-400 transition-colors p-2 hover:bg-white/10 rounded-full"
                     >
                         <LogOut size={18} />
                     </button>
-                </div>
+                </Link>
             </div>
         </div>
     );
