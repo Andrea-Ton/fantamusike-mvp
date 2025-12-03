@@ -11,30 +11,46 @@ export default function UpdatePasswordPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
+    const [isSessionReady, setIsSessionReady] = useState(false); // Track if session is established
     const router = useRouter();
 
-    React.useEffect(() => {
-        // Initialize Supabase client to handle Implicit Flow hash fragment
-        const supabase = createClient();
+    // Create a single Supabase client instance for the component lifecycle
+    const [supabase] = useState(() => createClient());
 
-        // Optional: Check if session is established
-        const checkSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                // If no session (and no hash), maybe redirect to login?
-                // But for now, just let it be, maybe user is already logged in via cookie
+    React.useEffect(() => {
+        // 1. Check if we already have a session (e.g. from cookie)
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+                console.log("Session found immediately");
+                setIsSessionReady(true);
             }
+        });
+
+        // 2. Listen for auth changes (specifically for the hash recovery flow)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            console.log("Auth event:", event);
+            if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+                setIsSessionReady(true);
+            }
+        });
+
+        return () => {
+            subscription.unsubscribe();
         };
-        checkSession();
-    }, []);
+    }, [supabase]);
 
     const handleSubmit = async (formData: FormData) => {
+        if (!isSessionReady) {
+            setError("Sessione non valida. Riprova o richiedi un nuovo link.");
+            return;
+        }
+
         setIsLoading(true);
         setError(null);
 
         const password = formData.get('password') as string;
-        const supabase = createClient();
 
+        // Use the SAME supabase instance that processed the hash
         const { error } = await supabase.auth.updateUser({
             password: password
         });
@@ -102,10 +118,16 @@ export default function UpdatePasswordPage() {
 
                     <button
                         type="submit"
-                        disabled={isLoading}
+                        disabled={isLoading || !isSessionReady}
                         className="w-full h-12 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
-                        {isLoading ? <Loader2 className="animate-spin" size={20} /> : <><Lock size={20} /> Aggiorna Password</>}
+                        {isLoading ? (
+                            <Loader2 className="animate-spin" size={20} />
+                        ) : !isSessionReady ? (
+                            <><Loader2 className="animate-spin" size={20} /> Verifica Link...</>
+                        ) : (
+                            <><Lock size={20} /> Aggiorna Password</>
+                        )}
                     </button>
                 </form>
             </div>
