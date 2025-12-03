@@ -1,16 +1,6 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
-import { SpotifyArtist } from '@/lib/spotify';
-
-// Helper to fetch fresh data (simulated for now if we don't want to spam Spotify API, 
-// but ideally this calls the real Spotify API via our service)
-// For this MVP, we will assume artists_cache is "fresh enough" or we would trigger a refresh here.
-// To keep it simple and robust, we will re-fetch from Spotify for every artist in cache.
-import { searchArtists } from '@/lib/spotify'; // We might need a getArtist(id) function in spotify.ts
-
-// We need to extend spotify.ts to support getArtist by ID if we want true fresh data.
-// For now, let's assume we iterate through the cache and update it.
 
 export async function createWeeklySnapshotAction(weekNumber: number) {
     const supabase = await createClient();

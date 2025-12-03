@@ -182,6 +182,17 @@ export default async function DashboardPage() {
                 <LogoutButton />
             </div>
 
+            {/* Mobile Stats Row */}
+            <div className="md:hidden px-6 mb-2 mt-2 flex gap-3">
+                <div className="px-2 py-2 bg-[#1a1a24] rounded-lg border border-white/10 text-sm font-medium text-yellow-400 flex items-center gap-2 flex-1 justify-center">
+                    <span>MusiCoins:</span>
+                    <span className="font-bold">{musiCoins}</span>
+                </div>
+                <div className="flex-1">
+                    <InviteButton referralCode={profile?.referral_code} />
+                </div>
+            </div>
+
             {/* Content Area */}
             <main className="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full animate-fade-in">
                 <header className="hidden md:flex justify-between items-end mb-10">
@@ -235,32 +246,19 @@ export default async function DashboardPage() {
                             </div>
                         </div>
 
-                        {/* Leaderboard Card */}
-                        <div className="h-[400px]">
+                        {/* Leaderboard Card - Hidden on Mobile, Visible on Desktop */}
+                        <div className="hidden lg:block h-[400px]">
                             <LeaderboardCard entries={leaderboard} currentUserId={user.id} />
                         </div>
-
-                        {/* Info Box - REMOVED as per user request */}
-                        {/* <div className="p-6 rounded-3xl bg-blue-500/5 border border-blue-500/20 flex gap-4 items-start">
-                            <div className="p-2 bg-blue-500/10 rounded-lg">
-                                <Info className="text-blue-400" size={24} />
-                            </div>
-                            <div>
-                                <h4 className="text-blue-400 font-bold mb-1">Strategia Settimanale</h4>
-                                <p className="text-sm text-gray-300 leading-relaxed">
-                                    Gli artisti <span className="text-white font-bold">"New Gen"</span> stanno performando il 20% meglio questa settimana grazie ai nuovi release. Considera di scambiare il tuo slot Scout Pick 2.
-                                </p>
-                            </div>
-                        </div> */}
                     </div>
 
                     {/* Right Column: Roster */}
                     <div className="lg:col-span-7">
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-bold text-white">La tua Label <span className="text-gray-400 text-sm font-normal ml-2">(Settimana Corrente)</span></h3>
+                            <h3 className="text-xl font-bold text-white">La tua Label <span className="text-gray-400 text-sm font-normal md:ml-2 block md:inline">(Settimana Corrente)</span></h3>
                             <Link
                                 href="/dashboard/draft"
-                                className="px-4 py-2 rounded-full bg-[#1a1a24] border border-white/10 text-sm text-purple-400 font-medium hover:bg-purple-500 hover:text-white transition-all"
+                                className="px-4 py-2 rounded-full bg-[#1a1a24] border border-white/10 text-sm text-purple-400 font-medium hover:bg-purple-500 hover:text-white transition-all whitespace-nowrap"
                             >
                                 {hasTeam ? 'Gestisci Roster' : 'Crea Team'}
                             </Link>
@@ -287,6 +285,11 @@ export default async function DashboardPage() {
                                 </Link>
                             </div>
                         )}
+                    </div>
+
+                    {/* Leaderboard Card - Visible on Mobile (After Roster), Hidden on Desktop */}
+                    <div className="lg:hidden h-[400px]">
+                        <LeaderboardCard entries={leaderboard} currentUserId={user.id} />
                     </div>
                 </div>
             </main>
