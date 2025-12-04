@@ -8,6 +8,7 @@ export type ScoutSuggestion = {
     image_url: string;
     genre: string | null;
     popularity: number;
+    followers?: number;
 };
 
 export async function getScoutSuggestionsAction(): Promise<ScoutSuggestion[]> {
@@ -36,5 +37,43 @@ export async function getScoutSuggestionsAction(): Promise<ScoutSuggestion[]> {
         image_url: a.image_url,
         genre: a.genre,
         popularity: a.popularity,
+    }));
+}
+
+export async function getCuratedRosterAction(): Promise<ScoutSuggestion[]> {
+    const supabase = await createClient();
+
+    // 1. Fetch Active Curated Artists IDs
+    const { data: curated, error } = await supabase
+        .from('curated_roster')
+        .select('spotify_id')
+        .eq('is_active', true);
+
+    if (error || !curated || curated.length === 0) {
+        console.error('Error fetching curated roster:', error);
+        return [];
+    }
+
+    const curatedIds = curated.map(c => c.spotify_id);
+
+    // 2. Fetch Artist Details from Cache (to get followers)
+    const { data: artists, error: artistError } = await supabase
+        .from('artists_cache')
+        .select('*')
+        .in('spotify_id', curatedIds)
+        .order('current_popularity', { ascending: false });
+
+    if (artistError || !artists) {
+        console.error('Error fetching artist details:', artistError);
+        return [];
+    }
+
+    return artists.map(a => ({
+        spotify_id: a.spotify_id,
+        name: a.name,
+        image_url: a.image_url,
+        genre: null, // Cache might not have genre, or we can add it if needed
+        popularity: a.current_popularity,
+        followers: a.current_followers // Add this field to ScoutSuggestion type if needed, or just map it in page.tsx
     }));
 }
