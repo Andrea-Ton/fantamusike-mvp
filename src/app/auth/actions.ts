@@ -79,26 +79,65 @@ export async function signOut() {
     redirect('/');
 }
 
-export async function forgotPassword(formData: FormData) {
-    // Use a separate client with Implicit Flow to avoid PKCE issues on iOS PWA
-    // This ensures the link works even if opened in a different browser (Safari)
-    const supabase = createSupabaseClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            auth: {
-                flowType: 'implicit',
-            }
-        }
-    );
-
+export async function sendPasswordResetOtp(formData: FormData) {
+    const supabase = await createClient();
     const email = formData.get('email') as string;
-    // Redirect directly to the update password page, skipping the server-side callback
-    // The client-side page will handle the hash fragment
-    const callbackUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/auth/update-password`;
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: callbackUrl,
+    const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+            shouldCreateUser: false,
+        },
+    });
+
+    if (error) {
+        return { error: error.message };
+    }
+
+    return { success: true };
+}
+
+export async function verifyOtp(formData: FormData) {
+    const supabase = await createClient();
+    const email = formData.get('email') as string;
+    const token = formData.get('code') as string;
+
+    const { error } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: 'email',
+    });
+
+    if (error) {
+        console.error('Verify OTP Error:', error);
+        // Try 'signup' type as fallback if 'email' fails, just in case it's a signup verification
+        if (error.message.includes('Token has expired or is invalid')) {
+            const { error: signupError } = await supabase.auth.verifyOtp({
+                email,
+                token,
+                type: 'signup',
+            });
+            if (!signupError) {
+                revalidatePath('/', 'layout');
+                redirect('/dashboard');
+                return;
+            }
+            console.error('Verify Signup OTP Error:', signupError);
+        }
+        return { error: error.message };
+    }
+
+    revalidatePath('/', 'layout');
+    redirect('/dashboard');
+}
+
+export async function verifyPasswordResetOtp(email: string, token: string) {
+    const supabase = await createClient();
+
+    const { error } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: 'email',
     });
 
     if (error) {
