@@ -6,13 +6,12 @@ import Image from 'next/image';
 import { searchArtistsAction } from '@/app/actions/spotify';
 import { saveTeamAction, TeamSlots, getUserTeamAction } from '@/app/actions/team';
 import { getFeaturedArtistsAction, getArtistAction } from '@/app/actions/artist';
-import { getScoutSuggestionsAction, ScoutSuggestion } from '@/app/actions/scout';
+import { getCuratedRosterAction } from '@/app/actions/scout';
 import { getCurrentSeasonAction } from '@/app/actions/season';
 import { getCurrentWeekAction } from '@/app/actions/game';
 import { SpotifyArtist } from '@/lib/spotify';
 import { useRouter } from 'next/navigation';
 import LogoutButton from '@/components/logout-button';
-import ScoutSuggestionModal from '@/components/dashboard/scout-suggestion-modal';
 import { createClient } from '@/utils/supabase/client';
 import InviteButton from '@/components/dashboard/invite-button';
 import { ARTIST_TIERS } from '@/config/game';
@@ -60,7 +59,7 @@ export default function TalentScoutPage() {
     const [saveError, setSaveError] = useState<string | null>(null);
     const [showMobileTeam, setShowMobileTeam] = useState(false);
     const [isTeamLoaded, setIsTeamLoaded] = useState(false);
-    const [viewMode, setViewMode] = useState<'search' | 'featured'>('search');
+    const [viewMode, setViewMode] = useState<'search' | 'featured' | 'suggested'>('suggested');
 
     // MusiCoin & Season State
     const [initialTeam, setInitialTeam] = useState<TeamSlots | null>(null);
@@ -72,12 +71,6 @@ export default function TalentScoutPage() {
     const [isNewSeasonEntry, setIsNewSeasonEntry] = useState(false);
     const [musiCoins, setMusiCoins] = useState(0);
     const [referralCode, setReferralCode] = useState<string | undefined>(undefined);
-
-    // Scout Report State
-    const [isScoutModalOpen, setIsScoutModalOpen] = useState(false);
-    const [scoutSuggestions, setScoutSuggestions] = useState<ScoutSuggestion[]>([]);
-    const [isScoutLoading, setIsScoutLoading] = useState(false);
-    const [activeScoutSlotId, setActiveScoutSlotId] = useState<keyof TeamSlots | null>(null);
 
     const [currentWeek, setCurrentWeek] = useState<number>(1);
 
@@ -221,7 +214,7 @@ export default function TalentScoutPage() {
 
     useEffect(() => {
         const fetchArtists = async () => {
-            if (viewMode === 'featured') return;
+            if (viewMode === 'featured' || viewMode === 'suggested') return;
 
             if (debouncedSearchTerm.length < 2) {
                 setArtists([]);
@@ -239,6 +232,13 @@ export default function TalentScoutPage() {
         fetchArtists();
     }, [debouncedSearchTerm, viewMode]);
 
+    // Load Suggested artists on mount if viewMode is 'suggested'
+    useEffect(() => {
+        if (viewMode === 'suggested') {
+            handleLoadSuggested();
+        }
+    }, []); // Run once on mount
+
     const handleLoadFeatured = async () => {
         setIsLoading(true);
         setViewMode('featured');
@@ -248,9 +248,27 @@ export default function TalentScoutPage() {
         setIsLoading(false);
     };
 
+    const handleLoadSuggested = async () => {
+        setIsLoading(true);
+        setViewMode('suggested');
+        setSearchTerm('');
+        const suggested = await getCuratedRosterAction();
+        // Map ScoutSuggestion to SpotifyArtist
+        const mappedArtists: SpotifyArtist[] = suggested.map(s => ({
+            id: s.spotify_id,
+            name: s.name,
+            images: [{ url: s.image_url, height: 0, width: 0 }],
+            popularity: s.popularity,
+            genres: s.genre ? [s.genre] : [],
+            followers: { total: s.followers || 0 }
+        }));
+        setArtists(mappedArtists);
+        setIsLoading(false);
+    };
+
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(e.target.value);
-        if (viewMode === 'featured') {
+        if (viewMode === 'featured' || viewMode === 'suggested') {
             setViewMode('search');
         }
     };
@@ -358,71 +376,7 @@ export default function TalentScoutPage() {
 
     const filledSlotsCount = Object.values(draftTeam).filter(Boolean).length;
 
-    // Scout Handlers
-    const handleOpenScout = async (slotKey: keyof TeamSlots) => {
-        setActiveScoutSlotId(slotKey);
-        setIsScoutModalOpen(true);
-        setShowMobileTeam(false); // Close mobile team sheet if open
-        setIsScoutLoading(true);
-        try {
-            const suggestions = await getScoutSuggestionsAction();
-            setScoutSuggestions(suggestions);
-        } catch (error) {
-            console.error("Failed to fetch suggestions", error);
-        } finally {
-            setIsScoutLoading(false);
-        }
-    };
 
-    const handleRerollScout = async () => {
-        setIsScoutLoading(true);
-        try {
-            const suggestions = await getScoutSuggestionsAction();
-            setScoutSuggestions(suggestions);
-        } catch (error) {
-            console.error("Failed to fetch suggestions", error);
-        } finally {
-            setIsScoutLoading(false);
-        }
-    };
-
-    const handleSignScout = async (artist: ScoutSuggestion) => {
-        if (!activeScoutSlotId) return;
-
-        // Check if artist is already in the team
-        const isAlreadySelected = Object.values(draftTeam).some(slot => slot?.id === artist.spotify_id);
-        if (isAlreadySelected) {
-            alert("Questo artista è già presente nel tuo team!");
-            return;
-        }
-
-        setIsScoutLoading(true);
-        try {
-            // Fetch full artist data from cache (includes followers)
-            const fullArtist = await getArtistAction(artist.spotify_id);
-
-            if (fullArtist) {
-                handleAddToSlot(fullArtist, activeScoutSlotId);
-            } else {
-                // Fallback if not found (shouldn't happen for scouted artists)
-                const fallbackArtist: SpotifyArtist = {
-                    id: artist.spotify_id,
-                    name: artist.name,
-                    images: [{ url: artist.image_url, height: 0, width: 0 }],
-                    popularity: artist.popularity,
-                    genres: artist.genre ? [artist.genre] : [],
-                    followers: { total: 0 }
-                };
-                handleAddToSlot(fallbackArtist, activeScoutSlotId);
-            }
-        } catch (error) {
-            console.error("Failed to sign scouted artist", error);
-        } finally {
-            setIsScoutLoading(false);
-            setIsScoutModalOpen(false);
-            setActiveScoutSlotId(null);
-        }
-    };
 
     const TeamSummaryContent = () => {
         if (!isTeamLoaded) {
@@ -485,8 +439,6 @@ export default function TalentScoutPage() {
                     isCaptain={draftTeam.slot_4?.id === captainId}
                     onSetCaptain={() => draftTeam.slot_4 && handleSetCaptain(draftTeam.slot_4.id)}
                     isFeatured={draftTeam.slot_4 ? featuredArtists.has(draftTeam.slot_4.id) : false}
-                    onOpenScout={() => handleOpenScout('slot_4')}
-                    showScoutBtn={!draftTeam.slot_4}
                     multiplier={draftTeam.slot_4?.id === captainId ? (featuredArtists.has(draftTeam.slot_4.id) ? 2 : 1.5) : undefined}
                 />
                 <SlotPreview
@@ -498,8 +450,6 @@ export default function TalentScoutPage() {
                     isCaptain={draftTeam.slot_5?.id === captainId}
                     onSetCaptain={() => draftTeam.slot_5 && handleSetCaptain(draftTeam.slot_5.id)}
                     isFeatured={draftTeam.slot_5 ? featuredArtists.has(draftTeam.slot_5.id) : false}
-                    onOpenScout={() => handleOpenScout('slot_5')}
-                    showScoutBtn={!draftTeam.slot_5}
                     multiplier={draftTeam.slot_5?.id === captainId ? (featuredArtists.has(draftTeam.slot_5.id) ? 2 : 1.5) : undefined}
                 />
 
@@ -533,6 +483,9 @@ export default function TalentScoutPage() {
                         <h3 className="text-xl font-bold text-white mb-4">Conferma Modifiche</h3>
                         <p className="text-gray-400 mb-6">
                             Hai apportato modifiche al tuo team.
+                            <br />
+                            Saranno attive dalla prossima settimana.
+                            <br />
                             <br />
                             Costo totale: <span className="text-yellow-400 font-bold">{cost} MusiCoin</span>.
                             <br />
@@ -606,17 +559,24 @@ export default function TalentScoutPage() {
                             </div>
                             <div className="flex gap-2 bg-[#1a1a24] p-1 rounded-xl border border-white/10">
                                 <button
-                                    onClick={() => setViewMode('search')}
-                                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'search' ? 'bg-white text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                                    onClick={handleLoadSuggested}
+                                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${viewMode === 'suggested' ? 'bg-purple-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
                                 >
-                                    Cerca
+                                    <Sparkles size={14} />
+                                    Suggeriti
                                 </button>
                                 <button
                                     onClick={handleLoadFeatured}
                                     className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${viewMode === 'featured' ? 'bg-yellow-400 text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
                                 >
-                                    <Sparkles size={14} />
+                                    <Crown size={14} />
                                     Featured
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('search')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'search' ? 'bg-white text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                                >
+                                    Cerca
                                 </button>
                             </div>
                         </div>
@@ -663,10 +623,16 @@ export default function TalentScoutPage() {
                                 {filteredArtists.map((artist) => {
                                     const availableSlots = getAvailableSlots(artist);
                                     const isSelected = Object.values(draftTeam).some(slot => slot?.id === artist.id);
+                                    const isFeatured = featuredArtists.has(artist.id);
 
                                     return (
-                                        <div key={artist.id} className="bg-[#1a1a24] border border-white/5 rounded-2xl p-4 flex gap-4 hover:bg-[#23232f] transition-colors group">
-                                            <div className="relative w-20 h-20 rounded-xl overflow-hidden shadow-lg flex-shrink-0">
+                                        <div key={artist.id} className={`bg-[#1a1a24] border rounded-2xl p-4 flex gap-4 transition-all group relative ${isFeatured ? 'border-yellow-500/50 shadow-[0_0_15px_-3px_rgba(234,179,8,0.2)]' : 'border-white/5 hover:bg-[#23232f]'}`}>
+                                            {isFeatured && (
+                                                <div className="absolute -top-2 -right-2 bg-yellow-500 text-black p-1 rounded-full shadow-lg z-10">
+                                                    <Crown size={12} fill="black" />
+                                                </div>
+                                            )}
+                                            <div className={`relative w-20 h-20 rounded-xl overflow-hidden shadow-lg flex-shrink-0 ${isFeatured ? 'ring-2 ring-yellow-500/50' : ''}`}>
                                                 {artist.images[0] ? (
                                                     <Image src={artist.images[0].url} alt={artist.name} fill className="object-cover" />
                                                 ) : (
@@ -750,7 +716,7 @@ export default function TalentScoutPage() {
                             </div>
 
                             {/* Info Banner inside Team Card */}
-                            {hasChanges && !isNewSeasonEntry && (
+                            {false && hasChanges && !isNewSeasonEntry && (
                                 <div className="mb-6 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-start gap-3 animate-fade-in">
                                     <div className="p-1.5 bg-blue-500/20 rounded-lg shrink-0">
                                         <Info size={16} className="text-blue-400" />
@@ -826,16 +792,7 @@ export default function TalentScoutPage() {
                     </div>
                 )}
 
-                {/* Scout Modal */}
-                <ScoutSuggestionModal
-                    isOpen={isScoutModalOpen}
-                    onClose={() => setIsScoutModalOpen(false)}
-                    suggestions={scoutSuggestions}
-                    onSign={handleSignScout}
-                    onReroll={handleRerollScout}
-                    isLoading={isScoutLoading}
-                    maxPopularity={ARTIST_TIERS.NEW_GEN.max}
-                />
+
 
             </main>
         </>
@@ -851,8 +808,6 @@ function SlotPreview({
     isCaptain,
     onSetCaptain,
     isFeatured,
-    onOpenScout,
-    showScoutBtn,
     multiplier
 }: {
     label: string,
@@ -863,8 +818,6 @@ function SlotPreview({
     isCaptain: boolean,
     onSetCaptain: () => void,
     isFeatured: boolean,
-    onOpenScout?: () => void,
-    showScoutBtn?: boolean,
     multiplier?: number
 }) {
     return (
@@ -918,15 +871,6 @@ function SlotPreview({
                             <div className="text-xs text-gray-500">{subLabel}</div>
                         </div>
                     </div>
-                    {showScoutBtn && (
-                        <button
-                            onClick={onOpenScout}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-colors text-xs font-bold border border-purple-500/20"
-                        >
-                            <Sparkles size={14} />
-                            Suggerisci
-                        </button>
-                    )}
                 </div>
             )}
         </div>
