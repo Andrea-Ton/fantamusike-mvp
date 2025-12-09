@@ -33,7 +33,7 @@ export async function getWeeklyScoresAction(artistIds: string[], captainId?: str
         // Scoring is lagging (e.g. new week started but no scores yet)
         return {
             week: latestSnapshotWeek,
-            scores: {}
+            scores: {} as Record<string, number>
         };
     }
 
