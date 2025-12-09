@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Plus, TrendingUp, ChevronRight, Crown } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, Minus, ChevronRight, Crown } from 'lucide-react';
 
 export type Artist = {
     id: string;
@@ -64,8 +64,9 @@ export default function ArtistCard({ slot }: { slot: Slot }) {
                     </div>
                     <div className="flex items-center gap-2">
                         <span className="text-[10px] md:text-xs px-1.5 py-0.5 rounded bg-white/10 text-gray-300 border border-white/5">Pop: {slot.artist.popularity}</span>
-                        <span className="text-[10px] md:text-xs text-green-400 flex items-center gap-0.5">
-                            <TrendingUp size={12} /> +{Math.round(slot.artist.trend * (slot.artist.multiplier || 1))} pts
+                        <span className={`text-[10px] md:text-xs flex items-center gap-0.5 ${slot.artist.trend > 0 ? 'text-green-400' : slot.artist.trend < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                            {slot.artist.trend > 0 ? <TrendingUp size={12} /> : slot.artist.trend < 0 ? <TrendingDown size={12} /> : <Minus size={12} />}
+                            {slot.artist.trend > 0 ? '+' : ''}{Math.round(slot.artist.trend * (slot.artist.multiplier || 1))} pts
                         </span>
                     </div>
                 </div>

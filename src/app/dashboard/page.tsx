@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, TrendingUp, Info, LogOut, Share2 } from 'lucide-react';
+import { Trophy, TrendingUp, TrendingDown, Minus, Info, LogOut, Share2 } from 'lucide-react';
 import ArtistCard, { Slot } from '@/components/dashboard/artist-card';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/server';
@@ -231,9 +231,9 @@ export default async function DashboardPage() {
                                 <div className="mt-8 flex gap-6">
                                     <div className="flex flex-col">
                                         <span className="text-xs text-purple-200 uppercase tracking-wider mb-1">Trend Settimanale</span>
-                                        <div className="flex items-center gap-1 text-lg font-bold">
-                                            <TrendingUp size={18} className="text-green-300" />
-                                            +{weeklyTrend} pts
+                                        <div className={`flex items-center gap-1 text-lg font-bold ${weeklyTrend > 0 ? 'text-green-300' : weeklyTrend < 0 ? 'text-red-300' : 'text-gray-300'}`}>
+                                            {weeklyTrend > 0 ? <TrendingUp size={18} /> : weeklyTrend < 0 ? <TrendingDown size={18} /> : <Minus size={18} />}
+                                            {weeklyTrend > 0 ? '+' : ''}{weeklyTrend} pts
                                         </div>
                                     </div>
                                 </div>
