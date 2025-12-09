@@ -842,7 +842,9 @@ function SlotPreview({
                                 </span>
                             )}
                         </div>
-                        <div className="text-xs text-gray-400">{subLabel}</div>
+                        <div className="text-xs text-gray-400">
+                            Pop: <span className="text-white font-bold">{artist.popularity}</span>
+                        </div>
                     </div>
                     <div className="flex gap-2">
                         <button
