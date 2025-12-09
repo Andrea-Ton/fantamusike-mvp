@@ -145,6 +145,40 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
             }
         }
         // If no previousTeam (First team of season), cost remains 0 (Free)
+        if (!previousTeam) {
+            // IMMEDIATE SNAPSHOT LOGIC
+            // Ensure selected artists are in the current week's snapshot
+            const artistIds = artists.map(a => a.id);
+
+            // Check existing snapshots for these artists
+            const { data: existingSnapshots } = await supabase
+                .from('weekly_snapshots')
+                .select('artist_id')
+                .eq('week_number', currentWeek)
+                .in('artist_id', artistIds);
+
+            const existingSnapshotIds = new Set(existingSnapshots?.map(s => s.artist_id) || []);
+
+            const missingArtists = artists.filter(a => !existingSnapshotIds.has(a.id));
+
+            if (missingArtists.length > 0) {
+                const newSnapshots = missingArtists.map(artist => ({
+                    week_number: currentWeek,
+                    artist_id: artist.id,
+                    popularity: artist.popularity,
+                    followers: artist.followers.total
+                }));
+
+                const { error: snapError } = await supabase
+                    .from('weekly_snapshots')
+                    .insert(newSnapshots);
+
+                if (snapError) {
+                    console.error('Immediate Snapshot Error:', snapError);
+                    // Non-blocking error, but worth logging
+                }
+            }
+        }
 
         // 7. Check Balance & Deduct
         if (cost > 0) {
