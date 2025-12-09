@@ -122,24 +122,15 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
         }
 
         // 6. Calculate Cost
+        // 6. Calculate Cost
         let cost = 0;
 
-        // Fetch "Active Team" (Week <= Current) for this season
-        const { data: activeTeam } = await supabase
-            .from('teams')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('season_id', currentSeason.id) // Filter by Season (New Season = Free)
-            .lte('week_number', currentWeek)
-            .order('week_number', { ascending: false })
-            .limit(1)
-            .single();
-
-        if (activeTeam) {
-            // Calculate changes from Active Team
+        // Calculate changes against the LAST SAVED team (previousTeam)
+        // This ensures incremental updates (paying only for new changes)
+        if (previousTeam) {
             let changedArtists = 0;
             const newIds = [slots.slot_1!.id, slots.slot_2!.id, slots.slot_3!.id, slots.slot_4!.id, slots.slot_5!.id];
-            const oldIds = [activeTeam.slot_1_id, activeTeam.slot_2_id, activeTeam.slot_3_id, activeTeam.slot_4_id, activeTeam.slot_5_id];
+            const oldIds = [previousTeam.slot_1_id, previousTeam.slot_2_id, previousTeam.slot_3_id, previousTeam.slot_4_id, previousTeam.slot_5_id];
 
             for (let i = 0; i < 5; i++) {
                 if (newIds[i] !== oldIds[i]) {
@@ -149,11 +140,11 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
 
             cost += changedArtists * 20;
 
-            if (activeTeam.captain_id && captainId && activeTeam.captain_id !== captainId) {
+            if (previousTeam.captain_id && captainId && previousTeam.captain_id !== captainId) {
                 cost += 10;
             }
         }
-        // If no activeTeam (First team of season), cost remains 0 (Free)
+        // If no previousTeam (First team of season), cost remains 0 (Free)
 
         // 7. Check Balance & Deduct
         if (cost > 0) {
