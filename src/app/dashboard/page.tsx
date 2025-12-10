@@ -13,6 +13,7 @@ import LeaderboardCard from '@/components/dashboard/leaderboard-card';
 import Link from 'next/link';
 import LogoutButton from '@/components/logout-button';
 import InviteButton from '@/components/dashboard/invite-button';
+import SyncButton from '@/components/dashboard/sync-button';
 import { getCurrentWeekAction } from '@/app/actions/game';
 import { ARTIST_TIERS } from '@/config/game';
 
@@ -161,6 +162,14 @@ export default async function DashboardPage() {
 
     const hasTeam = userTeam !== null;
 
+    // Check Spotify Connection
+    const { count: spotifyTokensCount } = await supabase
+        .from('spotify_tokens')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+    const hasSpotify = (spotifyTokensCount || 0) > 0;
+
     return (
         <>
             {/* Mobile Header */}
@@ -202,6 +211,7 @@ export default async function DashboardPage() {
                         <p className="text-gray-400">Benvenuto, Manager. Ecco come sta andando la tua Label.</p>
                     </div>
                     <div className="flex gap-4">
+                        {/* Status indicators */}
                         <div className="px-4 py-2 bg-[#1a1a24] rounded-lg border border-white/10 text-sm font-medium text-yellow-400 flex items-center gap-2">
                             <span>MusiCoins:</span>
                             <span className="font-bold">{musiCoins}</span>
@@ -222,10 +232,8 @@ export default async function DashboardPage() {
                                         <p className="text-purple-200 text-sm font-medium mb-2">Punteggio Totale</p>
                                         <h2 className="text-5xl md:text-6xl font-bold tracking-tighter">{totalScore}</h2>
                                     </div>
-                                    <button className="bg-white/20 backdrop-blur-md px-4 py-2 rounded-full flex items-center gap-2 hover:bg-white/30 transition-colors cursor-pointer">
-                                        <Share2 size={16} className="text-white" />
-                                        <span className="text-sm font-bold">Share</span>
-                                    </button>
+                                    <SyncButton isConnected={hasSpotify} />
+
                                 </div>
 
                                 <div className="mt-8 flex gap-6">

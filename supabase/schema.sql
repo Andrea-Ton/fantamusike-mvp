@@ -305,3 +305,52 @@ create policy "Anyone can update their own avatar."
   on storage.objects for update
   using ( auth.uid() = owner )
   with check ( bucket_id = 'avatars' );
+
+-- LISTEN TO WIN FEATURE
+-- 1. Add last_spotify_sync to profiles
+alter table profiles add column if not exists last_spotify_sync timestamp with time zone;
+
+-- 2. Create spotify_tokens table
+create table spotify_tokens (
+  user_id uuid references profiles.id primary key,
+  access_token text not null,
+  refresh_token text not null,
+  expires_at bigint not null, -- Unix timestamp
+  created_at timestamp with time zone default timezone('utc'::text, now()),
+  updated_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+alter table spotify_tokens enable row level security;
+
+create policy "Users can manage their own spotify tokens."
+  on spotify_tokens for all
+  using ( auth.uid() = user_id )
+  with check ( auth.uid() = user_id );
+
+-- 3. Create listen_history table
+create table listen_history (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references profiles.id not null,
+  artist_id text not null, -- Spotify Artist ID
+  track_name text not null,
+  played_at timestamp with time zone not null,
+  points_awarded integer default 0,
+  created_at timestamp with time zone default timezone('utc'::text, now()),
+  
+  -- Prevent duplicate processing of the same stream
+  unique(user_id, played_at) 
+);
+
+alter table listen_history enable row level security;
+
+create policy "Users can view their own listen history."
+  on listen_history for select
+  using ( auth.uid() = user_id );
+
+create policy "Users can insert their own listen history."
+  on listen_history for insert
+  with check ( auth.uid() = user_id );
+
+create policy "Users can update their own listen history."
+  on listen_history for update
+  using ( auth.uid() = user_id );
