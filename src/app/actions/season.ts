@@ -145,7 +145,7 @@ export async function endSeasonAction(seasonId: string) {
     // 4. Reset profiles total_score
     const { error: resetError } = await supabase
         .from('profiles')
-        .update({ total_score: 0 })
+        .update({ total_score: 0, listen_score: 0 })
         .neq('id', '00000000-0000-0000-0000-000000000000'); // Update all valid users
 
     if (resetError) {

@@ -1,0 +1,59 @@
+# **Feature Request: Listen to Win (Active Listening Points)**
+
+Context:  
+We are adding a "Play to Earn" mechanic where users earn FantaMusiké points by listening to the artists currently in their roster on Spotify.  
+Technical Constraint:  
+Spotify does not provide real-time stream events. We must use the user-read-recently-played scope and a manual "Sync" mechanism to avoid API rate limits.
+
+## **1\. Database Schema Updates**
+
+### **New Table: listen\_history**
+
+Used to prevent double-counting streams.
+
+* id: uuid  
+* user\_id: uuid  
+* artist\_id: text (Spotify Artist ID)  
+* played\_at: timestamp (From Spotify API)  
+* track\_name: text  
+* points\_awarded: integer  
+* **Constraint:** Unique constraint on (user\_id, played\_at) to ensure we never pay for the same stream twice.
+
+### **Update Table: profiles**
+
+* last\_spotify\_sync: timestamp
+
+## **2\. The Balancing Logic (Point Formula)**
+
+**Goal:** Reward listening to "Underground" artists more than "Headliners".
+
+Formula:  
+Points \= FLOOR( (100 \- Artist\_Popularity) / 10 )  
+**Examples:**
+
+* **Headliner (Pop 90):** (100 \- 90\) / 10 \= **1 Point** per stream.  
+* **Mid Tier (Pop 50):** (100 \- 50\) / 10 \= **5 Points** per stream.  
+* **Underground (Pop 10):** (100 \- 10\) / 10 \= **9 Points** per stream.
+
+**Anti-Cheat Cap (Daily Limit):**
+
+* Max **5 scored streams** per artist per day.  
+* *Why:* Prevents users from leaving a song on repeat while sleeping to farm points.
+
+
+## **3\. Frontend UX**
+
+### **Dashboard**
+
+* **"Sync" Button:** A prominent button (e.g., Spotify Logo \+ "Claim Points").  
+  * *State:* Disabled if synced in the last 10 minutes (Cool down).  
+* **Feedback Modal:**  
+  * "You synced 12 tracks\!"  
+  * "You earned **45 Points**."  
+  * List:  
+    * *Song A (Suspect CB) \-\> \+8 pts*  
+    * *Song B (Lazza) \-\> \+1 pt*  
+    * *Song C (Lazza) \-\> \+0 pts (Daily Limit Reached)*
+
+Instruction for AI:  
+Implement the API route and the point calculation logic with strict deduplication using the played\_at timestamp.

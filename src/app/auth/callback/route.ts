@@ -8,9 +8,29 @@ export async function GET(request: Request) {
 
     if (code) {
         const supabase = await createClient();
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
-        if (!error) {
+        if (!error && data?.session) {
+            // Check if we have provider tokens (from Spotify login)
+            const { provider_token, provider_refresh_token, user } = data.session;
+
+            if (provider_token && provider_refresh_token && user) {
+                // Store/Update Spotify tokens
+                const { error: tokenError } = await supabase
+                    .from('spotify_tokens')
+                    .upsert({
+                        user_id: user.id,
+                        access_token: provider_token,
+                        refresh_token: provider_refresh_token,
+                        expires_at: Math.floor(Date.now() / 1000) + 3600, // Assuming 1 hour expiry which is standard
+                        updated_at: new Date().toISOString()
+                    });
+
+                if (tokenError) {
+                    console.error('Error saving Spotify tokens:', tokenError);
+                }
+            }
+
             return NextResponse.redirect(`${origin}${next}`);
         }
     }

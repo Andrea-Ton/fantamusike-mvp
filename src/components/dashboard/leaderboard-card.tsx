@@ -38,33 +38,44 @@ export default function LeaderboardCard({ entries, currentUserId }: LeaderboardC
                         Ancora nessuna classifica disponibile.
                     </div>
                 ) : (
-                    entries.map((entry) => {
+                    entries.map((entry, index) => {
                         const isCurrentUser = entry.id === currentUserId;
+                        const prevEntry = entries[index - 1];
+                        const showSeparator = prevEntry && (entry.rank - prevEntry.rank > 1);
+
                         return (
-                            <div
-                                key={entry.id}
-                                className={`flex items-center justify-between p-3 rounded-xl transition-all ${isCurrentUser
-                                    ? 'bg-purple-500/20 border border-purple-500/40 shadow-lg shadow-purple-500/10'
-                                    : 'bg-white/5 border border-white/5 hover:bg-white/10'
-                                    }`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 flex justify-center">
-                                        {getRankIcon(entry.rank)}
+                            <React.Fragment key={entry.id}>
+                                {showSeparator && (
+                                    <div className="flex justify-center py-2 gap-1 opacity-30">
+                                        <div className="h-1 w-1 bg-white rounded-full"></div>
+                                        <div className="h-1 w-1 bg-white rounded-full"></div>
+                                        <div className="h-1 w-1 bg-white rounded-full"></div>
                                     </div>
-                                    <div className="flex flex-col">
-                                        <span className={`text-sm font-bold ${isCurrentUser ? 'text-white' : 'text-gray-200'}`}>
-                                            {entry.username}
-                                        </span>
-                                        {isCurrentUser && (
-                                            <span className="text-[10px] text-purple-300 uppercase tracking-wider font-bold">Tu</span>
-                                        )}
+                                )}
+                                <div
+                                    className={`flex items-center justify-between p-3 rounded-xl transition-all ${isCurrentUser
+                                        ? 'bg-purple-500/20 border border-purple-500/40 shadow-lg shadow-purple-500/10'
+                                        : 'bg-white/5 border border-white/5 hover:bg-white/10'
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 flex justify-center">
+                                            {getRankIcon(entry.rank)}
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className={`text-sm font-bold ${isCurrentUser ? 'text-white' : 'text-gray-200'}`}>
+                                                {entry.username || 'Utente'}
+                                            </span>
+                                            {isCurrentUser && (
+                                                <span className="text-[10px] text-purple-300 uppercase tracking-wider font-bold">Tu</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="font-mono font-bold text-white">
+                                        {entry.total_score} <span className="text-xs text-gray-500 font-normal">pts</span>
                                     </div>
                                 </div>
-                                <div className="font-mono font-bold text-white">
-                                    {entry.total_score} <span className="text-xs text-gray-500 font-normal">pts</span>
-                                </div>
-                            </div>
+                            </React.Fragment>
                         );
                     })
                 )}
