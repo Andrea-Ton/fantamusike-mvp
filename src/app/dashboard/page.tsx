@@ -90,7 +90,8 @@ export default async function DashboardPage() {
 
 
     // Fetch Leaderboard
-    const leaderboard = await getLeaderboardAction(10);
+    const { podium, neighborhood } = await getLeaderboardAction(user.id);
+    const leaderboardEntries = [...podium, ...neighborhood];
 
     // Fetch Current Season
     const currentSeason = await getCurrentSeasonAction();
@@ -279,7 +280,7 @@ export default async function DashboardPage() {
 
                         {/* Leaderboard Card - Hidden on Mobile, Visible on Desktop */}
                         <div className="hidden lg:block h-[400px]">
-                            <LeaderboardCard entries={leaderboard} currentUserId={user.id} />
+                            <LeaderboardCard entries={leaderboardEntries} currentUserId={user.id} />
                         </div>
                     </div>
 
@@ -320,7 +321,7 @@ export default async function DashboardPage() {
 
                     {/* Leaderboard Card - Visible on Mobile (After Roster), Hidden on Desktop */}
                     <div className="lg:hidden h-[400px]">
-                        <LeaderboardCard entries={leaderboard} currentUserId={user.id} />
+                        <LeaderboardCard entries={leaderboardEntries} currentUserId={user.id} />
                     </div>
                 </div>
             </main>
