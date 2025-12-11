@@ -111,11 +111,11 @@ export async function syncListeningHistory() {
         .from('teams')
         .select(`
             slot_1_id, slot_2_id, slot_3_id, slot_4_id, slot_5_id,
-            a1:slot_1_id(current_popularity),
-            a2:slot_2_id(current_popularity),
-            a3:slot_3_id(current_popularity),
-            a4:slot_4_id(current_popularity),
-            a5:slot_5_id(current_popularity)
+            a1:slot_1_id(current_popularity, name),
+            a2:slot_2_id(current_popularity, name),
+            a3:slot_3_id(current_popularity, name),
+            a4:slot_4_id(current_popularity, name),
+            a5:slot_5_id(current_popularity, name)
         `)
         .eq('user_id', user.id)
         .order('week_number', { ascending: false })
@@ -126,13 +126,19 @@ export async function syncListeningHistory() {
         return { success: false, message: 'Nessuna squadra attiva trovata.' };
     }
 
-    // Create a Map of ArtistID -> Popularity
-    const rosterMap = new Map<string, number>();
-    if (team.slot_1_id) rosterMap.set(team.slot_1_id, (team.a1 as any)?.current_popularity || 0);
-    if (team.slot_2_id) rosterMap.set(team.slot_2_id, (team.a2 as any)?.current_popularity || 0);
-    if (team.slot_3_id) rosterMap.set(team.slot_3_id, (team.a3 as any)?.current_popularity || 0);
-    if (team.slot_4_id) rosterMap.set(team.slot_4_id, (team.a4 as any)?.current_popularity || 0);
-    if (team.slot_5_id) rosterMap.set(team.slot_5_id, (team.a5 as any)?.current_popularity || 0);
+    // Create a Map of ArtistID -> { Popularity, Name }
+    const rosterMap = new Map<string, { popularity: number, name: string }>();
+    const addToMap = (id: string | null, data: any) => {
+        if (id) rosterMap.set(id, {
+            popularity: data?.current_popularity || 0,
+            name: data?.name || 'Artista'
+        });
+    };
+
+    addToMap(team.slot_1_id, team.a1);
+    addToMap(team.slot_2_id, team.a2);
+    addToMap(team.slot_3_id, team.a3);
+    addToMap(team.slot_4_id, team.a4);
 
     // 5. Process Tracks
     let totalPoints = 0;
@@ -156,7 +162,7 @@ export async function syncListeningHistory() {
 
         if (!rosterArtist) continue;
 
-        const popularity = rosterMap.get(rosterArtist.id)!;
+        const { popularity, name: artistName } = rosterMap.get(rosterArtist.id)!;
 
         // Calculate Points
         // Formula: Floor((100 - Pop) / 10)
@@ -194,6 +200,7 @@ export async function syncListeningHistory() {
         processedDetails.push({
             user_id: user.id,
             artist_id: rosterArtist.id,
+            artist_name: artistName,
             track_name: item.track.name,
             played_at: item.played_at,
             points_awarded: points,
@@ -213,8 +220,8 @@ export async function syncListeningHistory() {
         // Given max 50 items, sequential processing is acceptable and robust.
 
         for (const detail of processedDetails) {
-            // Remove the helper 'points' property we added for local counting
-            const { points, ...dbRow } = detail;
+            // Remove helper props
+            const { points, artist_name, ...dbRow } = detail;
 
             const { error: insertError } = await supabase
                 .from('listen_history')
@@ -238,12 +245,12 @@ export async function syncListeningHistory() {
 
         // 7. Update User Score with Actual Points Earned
         if (totalPoints > 0) {
-            const { data: currentProfile } = await supabase.from('profiles').select('total_score').eq('id', user.id).single();
-            const newScore = (currentProfile?.total_score || 0) + totalPoints;
+            const { data: currentProfile } = await supabase.from('profiles').select('listen_score').eq('id', user.id).single();
+            const newScore = (currentProfile?.listen_score || 0) + totalPoints;
 
             const { error: updateError } = await supabase
                 .from('profiles')
-                .update({ total_score: newScore })
+                .update({ listen_score: newScore })
                 .eq('id', user.id);
 
             if (updateError) {
@@ -263,9 +270,7 @@ export async function syncListeningHistory() {
         pointsEarned: totalPoints,
         tracksProcessed: validTracksCount,
         details: processedDetails.map(p => ({
-            artist: p.artist_id, // We might want artist name here, but we have rosterMap with IDs. The UI can try to look it up or we pass name. 
-            // Wait, I didn't save artist name in processedDetails, only ID.
-            // Let's rely on track_name for now or update processedDetails to include artist name.
+            artist: p.artist_name,
             track: p.track_name,
             points: p.points,
             played_at: p.played_at

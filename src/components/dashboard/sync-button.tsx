@@ -140,7 +140,9 @@ export default function SyncButton({ isConnected }: SyncButtonProps) {
                                     <div key={idx} className="flex justify-between items-center text-xs p-2 bg-white/5 rounded-lg">
                                         <div className="flex items-center gap-2 overflow-hidden">
                                             <Music size={12} className="text-gray-500 flex-shrink-0" />
-                                            <span className="text-gray-300 truncate">{item.track}</span>
+                                            <span className="text-gray-300 truncate">
+                                                <span className="text-gray-400">{item.artist}</span> - {item.track}
+                                            </span>
                                         </div>
                                         <span className={`font-bold ${item.points > 0 ? 'text-green-400' : 'text-gray-500'}`}>
                                             +{item.points}

@@ -4,6 +4,7 @@ create table profiles (
   username text unique,
   avatar_url text,
   total_score integer default 0,
+  listen_score integer default 0, -- New column for Spotify Listen to Win points
   musi_coins integer default 50,
   is_admin boolean default false,
   created_at timestamp with time zone default timezone('utc'::text, now()),

@@ -14,11 +14,11 @@ export async function getLeaderboardAction(limit: number = 10): Promise<Leaderbo
     const supabase = await createClient();
 
     try {
+        // Fetch all profiles to sort by combined score in memory (MVP solution)
+        // For larger scale, use a Postgres Computed Column or View.
         const { data: profiles, error } = await supabase
             .from('profiles')
-            .select('id, username, avatar_url, total_score')
-            .order('total_score', { ascending: false })
-            .limit(limit);
+            .select('id, username, avatar_url, total_score, listen_score');
 
         if (error) {
             console.error('Error fetching leaderboard:', error);
@@ -27,12 +27,21 @@ export async function getLeaderboardAction(limit: number = 10): Promise<Leaderbo
 
         if (!profiles) return [];
 
-        // Add rank to each entry
-        return profiles.map((profile, index) => ({
+        // Calculate combined score and sort
+        const rankedProfiles = profiles
+            .map(p => ({
+                ...p,
+                effective_score: (p.total_score || 0) + (p.listen_score || 0)
+            }))
+            .sort((a, b) => b.effective_score - a.effective_score)
+            .slice(0, limit);
+
+        // Add rank
+        return rankedProfiles.map((profile, index) => ({
             id: profile.id,
             username: profile.username || 'Unknown User',
             avatar_url: profile.avatar_url,
-            total_score: profile.total_score || 0,
+            total_score: profile.effective_score, // We return the combined score as 'total_score' for the UI
             rank: index + 1
         }));
 

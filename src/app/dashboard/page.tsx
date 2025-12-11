@@ -31,7 +31,7 @@ export default async function DashboardPage() {
         .eq('id', user.id)
         .single();
 
-    const totalScore = profile?.total_score || 0;
+    const totalScore = (profile?.total_score || 0) + (profile?.listen_score || 0);
     const musiCoins = profile?.musi_coins || 0;
 
     // Determine Current Week
@@ -44,9 +44,7 @@ export default async function DashboardPage() {
     let weeklyScores: Record<string, number> = {};
     let weeklyTrend = 0;
 
-
-
-    // Fetch Featured Artists for Multiplier Calculation - MOVED UP
+    // Fetch Featured Artists for Multiplier Calculation
     const featuredArtists = await getFeaturedArtistsAction();
     const featuredIds = new Set(featuredArtists.map(a => a.id));
 
@@ -66,6 +64,30 @@ export default async function DashboardPage() {
             return total + (scores[artistId] || 0);
         }, 0);
     }
+
+    // --- ADDED: Listen to Win Trend ---
+    // Fetch latest snapshot date
+    const { data: latestSnapshot } = await supabase
+        .from('weekly_snapshots')
+        .select('created_at')
+        .order('week_number', { ascending: false })
+        .limit(1)
+        .single();
+
+    const lastSnapshotDate = latestSnapshot?.created_at || new Date(0).toISOString();
+
+    // Fetch Listen Points since last snapshot
+    const { data: listenTrendData } = await supabase
+        .from('listen_history')
+        .select('points_awarded')
+        .eq('user_id', user.id)
+        .gt('created_at', lastSnapshotDate); // Using created_at or played_at? created_at helps for "points earned SINCE snapshot"
+
+    const listenTrend = listenTrendData?.reduce((acc, curr) => acc + (curr.points_awarded || 0), 0) || 0;
+
+    // Add Listen Trend to Total Weekly Trend
+    weeklyTrend += listenTrend;
+
 
     // Fetch Leaderboard
     const leaderboard = await getLeaderboardAction(10);
