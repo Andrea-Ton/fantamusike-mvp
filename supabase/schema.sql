@@ -306,3 +306,31 @@ create policy "Anyone can update their own avatar."
   on storage.objects for update
   using ( auth.uid() = owner )
   with check ( bucket_id = 'avatars' );
+
+-- DAILY PROMO SYSTEM (Daily Hype)
+
+create type daily_promo_action_type as enum ('profile_click', 'release_click', 'share');
+
+create table daily_promo_logs (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references profiles(id) not null,
+  artist_id text references artists_cache(spotify_id) not null,
+  action_type daily_promo_action_type not null,
+  points_awarded integer not null default 5,
+  created_at timestamp with time zone default timezone('utc'::text, now()),
+  log_date date generated always as ((created_at at time zone 'UTC')::date) stored
+);
+
+-- Index to enforce one action TYPE per artist per day per user
+create unique index daily_promo_logs_action_unique_idx 
+  on daily_promo_logs (user_id, artist_id, action_type, log_date);
+
+alter table daily_promo_logs enable row level security;
+
+create policy "Users can insert their own promo logs."
+  on daily_promo_logs for insert
+  with check ( auth.uid() = user_id );
+
+create policy "Users can view their own promo logs."
+  on daily_promo_logs for select
+  using ( auth.uid() = user_id );

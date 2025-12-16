@@ -2,10 +2,13 @@
 import React from 'react';
 import { Trophy } from 'lucide-react';
 import Link from 'next/link';
-import ArtistCard, { Slot } from '@/components/dashboard/artist-card';
+import { Slot } from '@/components/dashboard/artist-card';
+import ArtistPromoCard from '@/components/dashboard/artist-promo-card';
 import { UserTeamResponse } from '@/app/actions/team';
 import { getWeeklyScoresAction } from '@/app/actions/dashboard';
 import { getFeaturedArtistsAction } from '@/app/actions/artist';
+import { getDailyPromoStatusAction, ArtistPromoStatus } from '@/app/actions/promo';
+import { getArtistReleases } from '@/lib/spotify';
 import { ARTIST_TIERS } from '@/config/game';
 
 interface RosterSectionProps {
@@ -19,6 +22,8 @@ export default async function RosterSection({ userTeamPromise }: RosterSectionPr
     let weeklyScores: Record<string, number> = {};
     const featuredArtists = await getFeaturedArtistsAction();
     const featuredIds = new Set(featuredArtists.map(a => a.id));
+    let promoStatus: Record<string, ArtistPromoStatus> = {};
+    let artistReleases: Record<string, string | undefined> = {};
 
     if (userTeam) {
         const artistIds = [
@@ -29,8 +34,23 @@ export default async function RosterSection({ userTeamPromise }: RosterSectionPr
             userTeam.slot_5?.id
         ].filter(Boolean) as string[];
 
-        const { scores } = await getWeeklyScoresAction(artistIds, userTeam.captain_id);
-        weeklyScores = scores;
+        // Parallel data fetching
+        const [scoresResult, statusResult, ...releasesResults] = await Promise.all([
+            getWeeklyScoresAction(artistIds, userTeam.captain_id),
+            getDailyPromoStatusAction(artistIds),
+            // Fetch releases for each artist
+            ...artistIds.map(id => getArtistReleases(id).then(releases => ({ id, release: releases[0] })))
+        ]);
+
+        weeklyScores = scoresResult.scores;
+        promoStatus = statusResult;
+
+        // Map releases
+        releasesResults.forEach((r: any) => {
+            if (r.release && r.release.external_urls && r.release.external_urls.spotify) {
+                artistReleases[r.id] = r.release.external_urls.spotify;
+            }
+        });
     }
 
     const teamSlots: Slot[] = [
@@ -47,7 +67,8 @@ export default async function RosterSection({ userTeamPromise }: RosterSectionPr
                 category: 'Big',
                 trend: weeklyScores[userTeam.slot_1.id] || 0,
                 isCaptain: userTeam.captain_id === userTeam.slot_1.id,
-                multiplier: userTeam.captain_id === userTeam.slot_1.id ? (featuredIds.has(userTeam.slot_1.id) ? 2 : 1.5) : undefined
+                multiplier: userTeam.captain_id === userTeam.slot_1.id ? (featuredIds.has(userTeam.slot_1.id) ? 2 : 1.5) : undefined,
+                external_urls: { spotify: `https://open.spotify.com/artist/${userTeam.slot_1.id}` }
             } : null
         },
         {
@@ -63,7 +84,8 @@ export default async function RosterSection({ userTeamPromise }: RosterSectionPr
                 category: 'Mid',
                 trend: weeklyScores[userTeam.slot_2.id] || 0,
                 isCaptain: userTeam.captain_id === userTeam.slot_2.id,
-                multiplier: userTeam.captain_id === userTeam.slot_2.id ? (featuredIds.has(userTeam.slot_2.id) ? 2 : 1.5) : undefined
+                multiplier: userTeam.captain_id === userTeam.slot_2.id ? (featuredIds.has(userTeam.slot_2.id) ? 2 : 1.5) : undefined,
+                external_urls: { spotify: `https://open.spotify.com/artist/${userTeam.slot_2.id}` }
             } : null
         },
         {
@@ -79,7 +101,8 @@ export default async function RosterSection({ userTeamPromise }: RosterSectionPr
                 category: 'Mid',
                 trend: weeklyScores[userTeam.slot_3.id] || 0,
                 isCaptain: userTeam.captain_id === userTeam.slot_3.id,
-                multiplier: userTeam.captain_id === userTeam.slot_3.id ? (featuredIds.has(userTeam.slot_3.id) ? 2 : 1.5) : undefined
+                multiplier: userTeam.captain_id === userTeam.slot_3.id ? (featuredIds.has(userTeam.slot_3.id) ? 2 : 1.5) : undefined,
+                external_urls: { spotify: `https://open.spotify.com/artist/${userTeam.slot_3.id}` }
             } : null
         },
         {
@@ -95,7 +118,8 @@ export default async function RosterSection({ userTeamPromise }: RosterSectionPr
                 category: 'New Gen',
                 trend: weeklyScores[userTeam.slot_4.id] || 0,
                 isCaptain: userTeam.captain_id === userTeam.slot_4.id,
-                multiplier: userTeam.captain_id === userTeam.slot_4.id ? (featuredIds.has(userTeam.slot_4.id) ? 2 : 1.5) : undefined
+                multiplier: userTeam.captain_id === userTeam.slot_4.id ? (featuredIds.has(userTeam.slot_4.id) ? 2 : 1.5) : undefined,
+                external_urls: { spotify: `https://open.spotify.com/artist/${userTeam.slot_4.id}` }
             } : null
         },
         {
@@ -111,7 +135,8 @@ export default async function RosterSection({ userTeamPromise }: RosterSectionPr
                 category: 'New Gen',
                 trend: weeklyScores[userTeam.slot_5.id] || 0,
                 isCaptain: userTeam.captain_id === userTeam.slot_5.id,
-                multiplier: userTeam.captain_id === userTeam.slot_5.id ? (featuredIds.has(userTeam.slot_5.id) ? 2 : 1.5) : undefined
+                multiplier: userTeam.captain_id === userTeam.slot_5.id ? (featuredIds.has(userTeam.slot_5.id) ? 2 : 1.5) : undefined,
+                external_urls: { spotify: `https://open.spotify.com/artist/${userTeam.slot_5.id}` }
             } : null
         },
     ];
@@ -131,7 +156,13 @@ export default async function RosterSection({ userTeamPromise }: RosterSectionPr
             {hasTeam ? (
                 <div className="grid grid-cols-1 gap-4">
                     {teamSlots.map((slot) => (
-                        <ArtistCard key={slot.id} slot={slot} />
+                        <ArtistPromoCard
+                            key={slot.id}
+                            slot={slot}
+                            promoStatus={slot.artist ? promoStatus[slot.artist.id] : { profile_click: false, release_click: false, share: false }} // Fallback
+                            spotifyUrl={slot.artist?.external_urls?.spotify}
+                            releaseUrl={slot.artist ? artistReleases[slot.artist.id] : undefined}
+                        />
                     ))}
                 </div>
             ) : (

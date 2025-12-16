@@ -12,6 +12,7 @@ export type Artist = {
     trend: number;
     isCaptain?: boolean;
     multiplier?: number;
+    external_urls?: { spotify: string };
 };
 
 export type Slot = {
