@@ -257,6 +257,7 @@ export default function TalentScoutPage() {
         const mappedArtists: SpotifyArtist[] = suggested.map(s => ({
             id: s.spotify_id,
             name: s.name,
+            external_urls: { spotify: '' },
             images: [{ url: s.image_url, height: 0, width: 0 }],
             popularity: s.popularity,
             genres: s.genre ? [s.genre] : [],

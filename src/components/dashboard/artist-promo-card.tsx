@@ -97,13 +97,22 @@ export default function ArtistPromoCard({ slot, promoStatus, spotifyUrl, release
                             onClick={() => setIsModalOpen(true)}
                             className="group relative flex flex-col items-center justify-center px-4 py-2 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl text-white shadow-lg shadow-purple-900/20 hover:shadow-purple-500/30 active:scale-95 transition-all min-w-[80px]"
                         >
-                            <Rocket size={18} className="mb-1 group-hover:-translate-y-1 group-hover:scale-110 transition-transform" />
+                            <Rocket size={18} className="mb-1 group-hover:-translate-y-1 group-hover:scale-110 transition-transform hidden" />
                             <span className="text-[10px] font-bold uppercase whitespace-nowrap">
                                 Promuovi
                             </span>
                         </button>
                     )}
                 </div>
+
+                {/* CTA Bouncing Pill */}
+                {!allDone && (
+                    <div className="absolute md:top-4 top-2 right-2 z-20">
+                        <div className="bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg shadow-yellow-500/20 animate-bounce">
+                            + Points
+                        </div>
+                    </div>
+                )}
 
                 {/* Background Gradient */}
                 <div className={`absolute right-0 top-0 w-32 h-full bg-gradient-to-l ${slot.artist.isCaptain ? 'from-yellow-500/10' : slot.type === 'New Gen' ? 'from-green-500/10' : slot.type === 'Big' ? 'from-purple-500/10' : 'from-blue-500/10'
