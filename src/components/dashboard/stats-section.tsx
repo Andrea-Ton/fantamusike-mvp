@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import SyncButton from '@/components/dashboard/sync-button';
 import { createClient } from '@/utils/supabase/server';
 import { getWeeklyScoresAction } from '@/app/actions/dashboard';
 import { UserTeamResponse } from '@/app/actions/team';
@@ -15,14 +14,6 @@ interface StatsSectionProps {
 export default async function StatsSection({ userId, userTeamPromise, totalScore }: StatsSectionProps) {
     const supabase = await createClient();
     const userTeam = await userTeamPromise;
-
-    // Check Spotify Connection
-    const { count: spotifyTokensCount } = await supabase
-        .from('spotify_tokens')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId);
-
-    const hasSpotify = (spotifyTokensCount || 0) > 0;
 
     let weeklyTrend = 0;
 
@@ -42,29 +33,6 @@ export default async function StatsSection({ userId, userTeamPromise, totalScore
         }, 0);
     }
 
-    // --- Listen to Win Trend ---
-    // Fetch latest snapshot date
-    const { data: latestSnapshot } = await supabase
-        .from('weekly_snapshots')
-        .select('created_at')
-        .order('week_number', { ascending: false })
-        .limit(1)
-        .single();
-
-    const lastSnapshotDate = latestSnapshot?.created_at || new Date(0).toISOString();
-
-    // Fetch Listen Points since last snapshot
-    const { data: listenTrendData } = await supabase
-        .from('listen_history')
-        .select('points_awarded')
-        .eq('user_id', userId)
-        .gt('created_at', lastSnapshotDate);
-
-    const listenTrend = listenTrendData?.reduce((acc, curr) => acc + (curr.points_awarded || 0), 0) || 0;
-
-    // Add Listen Trend to Total Weekly Trend
-    weeklyTrend += listenTrend;
-
     return (
         <div className="w-full rounded-3xl bg-gradient-to-br from-[#5b21b6] via-[#7c3aed] to-[#ec4899] p-8 text-white shadow-2xl shadow-purple-500/20 relative overflow-hidden group hover:scale-[1.01] transition-transform duration-300">
             <div className="relative z-10">
@@ -73,7 +41,6 @@ export default async function StatsSection({ userId, userTeamPromise, totalScore
                         <p className="text-purple-200 text-sm font-medium mb-2">Punteggio Totale</p>
                         <h2 className="text-5xl md:text-6xl font-bold tracking-tighter">{totalScore}</h2>
                     </div>
-                    <SyncButton isConnected={hasSpotify} />
                 </div>
 
                 <div className="mt-8 flex gap-6">

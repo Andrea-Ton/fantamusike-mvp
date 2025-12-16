@@ -4,7 +4,6 @@ import { redirect } from 'next/navigation';
 import AvatarUpload from '@/components/profile/avatar-upload';
 import ProfileForm from '@/components/profile/profile-form';
 import DeleteAccount from '@/components/profile/delete-account';
-import SpotifyConnect from '@/components/profile/spotify-connect';
 
 export default async function ProfilePage() {
     const supabase = await createClient();
@@ -19,15 +18,6 @@ export default async function ProfilePage() {
         .select('*')
         .eq('id', user.id)
         .single();
-
-    // Check for Spotify connection
-    const { data: spotifyToken } = await supabase
-        .from('spotify_tokens')
-        .select('user_id')
-        .eq('user_id', user.id)
-        .single();
-
-    const isSpotifyConnected = !!spotifyToken;
 
     const username = profile?.username || user.user_metadata?.name || 'Manager';
     const avatarUrl = profile?.avatar_url || user.user_metadata?.avatar_url;
@@ -58,12 +48,6 @@ export default async function ProfilePage() {
                                 initialUsername={username}
                                 email={email}
                             />
-                        </div>
-
-                        {/* Spotify Connection Section */}
-                        <div>
-                            <h3 className="text-xl font-bold text-white mb-6">Integrazioni</h3>
-                            <SpotifyConnect isConnected={isSpotifyConnected} />
                         </div>
 
                         <DeleteAccount />
