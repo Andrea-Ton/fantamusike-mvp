@@ -18,6 +18,7 @@ export type SpotifyArtist = {
     popularity: number;
     genres: string[];
     followers: { total: number };
+    external_urls: { spotify: string };
 };
 
 export type SearchArtistsResponse = {

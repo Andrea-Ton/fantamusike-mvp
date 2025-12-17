@@ -31,6 +31,7 @@ export async function getFeaturedArtistsAction(): Promise<SpotifyArtist[]> {
     return artists.map(a => ({
         id: a.spotify_id,
         name: a.name,
+        external_urls: { spotify: '' },
         images: [{ url: a.image_url, height: 0, width: 0 }],
         popularity: a.current_popularity,
         genres: [],
@@ -79,6 +80,7 @@ export async function getArtistAction(artistId: string): Promise<SpotifyArtist |
     return {
         id: artist.spotify_id,
         name: artist.name,
+        external_urls: { spotify: '' },
         images: [{ url: artist.image_url, height: 0, width: 0 }],
         popularity: artist.current_popularity,
         genres: [],

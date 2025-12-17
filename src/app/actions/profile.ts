@@ -46,18 +46,62 @@ export async function deleteAccountAction() {
         return { success: false, message: 'Unauthorized' };
     }
 
-    // Use Admin Client to delete user from Auth (bypasses RLS/Auth restrictions)
+    // Use Admin Client to delete user data (bypasses RLS)
     const supabaseAdmin = createAdminClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(user.id);
+    try {
+        const userId = user.id;
 
-    if (error) {
-        console.error('Delete account error:', error);
-        return { success: false, message: 'Failed to delete account' };
+        // 1. Unlink referrals (users referred by this user)
+        await supabaseAdmin
+            .from('profiles')
+            .update({ referred_by: null })
+            .eq('referred_by', userId);
+
+        // 2. Delete Promo Logs
+        await supabaseAdmin
+            .from('daily_promo_logs')
+            .delete()
+            .eq('user_id', userId);
+
+        // 3. Delete Teams
+        await supabaseAdmin
+            .from('teams')
+            .delete()
+            .eq('user_id', userId);
+
+        // 4. Delete Season Rankings
+        await supabaseAdmin
+            .from('season_rankings')
+            .delete()
+            .eq('user_id', userId);
+
+        // 5. Delete Profile
+        const { error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .delete()
+            .eq('id', userId);
+
+        if (profileError) {
+            console.error('Error deleting profile:', profileError);
+            throw new Error('Failed to delete profile data');
+        }
+
+        // 6. Delete User from Auth
+        const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+
+        if (authError) {
+            console.error('Delete account error:', authError);
+            throw new Error('Failed to delete records from Auth');
+        }
+
+        return { success: true, message: 'Account deleted' };
+
+    } catch (error: any) {
+        console.error('Full delete flow error:', error);
+        return { success: false, message: error.message || 'Failed to delete account completely' };
     }
-
-    return { success: true, message: 'Account deleted' };
 }

@@ -334,6 +334,7 @@ async function fetchArtistsForTeam(team: any, supabase: any): Promise<UserTeamRe
         return {
             id: artistData.spotify_id,
             name: artistData.name,
+            external_urls: { spotify: '' },
             images: [{ url: artistData.image_url, height: 0, width: 0 }],
             popularity: artistData.current_popularity,
             genres: [], // Not stored in cache currently

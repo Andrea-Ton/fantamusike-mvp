@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Plus, LogOut, Loader2, X, Save, Trophy, Users, Zap, ChevronUp, Star, Crown, Sparkles, RotateCcw, Info } from 'lucide-react';
+import { Search, Plus, LogOut, Loader2, X, Save, Trophy, Users, Zap, ChevronUp, Star, Crown, Sparkles, RotateCcw, Info, Rocket } from 'lucide-react';
 import Image from 'next/image';
 import { searchArtistsAction } from '@/app/actions/spotify';
 import { saveTeamAction, TeamSlots, getUserTeamAction } from '@/app/actions/team';
@@ -257,6 +257,7 @@ export default function TalentScoutPage() {
         const mappedArtists: SpotifyArtist[] = suggested.map(s => ({
             id: s.spotify_id,
             name: s.name,
+            external_urls: { spotify: '' },
             images: [{ url: s.image_url, height: 0, width: 0 }],
             popularity: s.popularity,
             genres: s.genre ? [s.genre] : [],
@@ -496,9 +497,22 @@ export default function TalentScoutPage() {
                             <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
                                 <p className="text-red-400 font-bold text-sm mb-2">Saldo Insufficiente!</p>
                                 <p className="text-gray-300 text-xs mb-3">Non hai abbastanza MusiCoin per completare questa operazione.</p>
-                                <div className="flex flex-col gap-2">
-                                    <p className="text-white text-xs font-bold">Vuoi 30 MusiCoin gratis?</p>
-                                    <InviteButton referralCode={referralCode} />
+                                <div className="flex flex-col gap-3">
+                                    <div className="bg-black/20 rounded-lg p-3">
+                                        <p className="text-white text-xs font-bold mb-2">Opzione 1: Invita amici (+30 🪙)</p>
+                                        <InviteButton referralCode={referralCode} />
+                                    </div>
+
+                                    <div className="bg-black/20 rounded-lg p-3">
+                                        <p className="text-white text-xs font-bold mb-2">Opzione 2: Promuovi Artisti (+🪙)</p>
+                                        <button
+                                            onClick={() => router.push('/dashboard')}
+                                            className="px-4 py-2 bg-purple-600 rounded-lg text-white text-sm font-bold hover:bg-purple-700 transition shadow-lg shadow-purple-500/20 flex items-center gap-2"
+                                        >
+                                            <Rocket size={14} />
+                                            Vai alla Dashboard
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ) : null}

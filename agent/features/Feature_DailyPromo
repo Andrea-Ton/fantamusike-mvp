@@ -1,0 +1,85 @@
+# **Feature Request: "Daily Hype" (Active Promotion System)**
+
+Context:  
+We are replacing the "Listen to Win" mechanic with a Traffic Generation System.  
+The Concept: Users act as Managers promoting their artists. They complete daily "Promo Ops" (clicking links to Spotify) to earn small amounts of points.  
+Goal: Drive high-intent traffic to Artists' Spotify profiles while keeping users engaged daily.
+
+## **1\. The Core Mechanic: "Promo Ops"**
+
+For each artist in the user's active team, the user can perform **1 Promo Op per day**.
+
+### **The Actions (Randomized or Fixed):**
+
+Instead of just "Open Link," we frame them as Manager Duties:
+
+1. **"Check Metrics"**: Opens Artist's Spotify Profile. (*"Go check if the monthly listeners went up."*)  
+2. **"Push Latest Release"**: Opens the Artist's latest Single/Album. (*"Give the new drop a stream."*)  
+3. **"Viral Share"**: Opens the native Share Sheet (Web Share API) with a pre-filled link. (*"Spread the word."*)
+
+### **Reward Logic:**
+
+* **Reward:** **5 Points** per action.  
+* **Limit:** 1 Action per Artist per Day (Max 25 points/day total).  
+* **Reset:** 00:00 UTC.
+
+## **2\. Database Schema Updates**
+
+### **New Table: daily\_promo\_logs**
+
+Used to enforce the daily limit and track traffic generated.
+
+* id: uuid  
+* user\_id: uuid  
+* artist\_id: text (Spotify Artist ID)  
+* action\_type: enum ('profile\_click', 'release\_click', 'share')  
+* points\_awarded: integer  
+* created\_at: timestamp (Default: now())
+
+**Index:** Compound index on (user\_id, artist\_id, created\_at::date) to quickly check daily limits.
+
+## **3\. API Implementation (Next.js)**
+
+### **Endpoint: POST /api/game/promo-click**
+
+**Body:** { artistId, actionType }
+
+**Logic Flow:**
+
+1. **Validation:**  
+   * Is the artist currently in the user's active team? (Prevent exploiting artists not owned).  
+   * Has the user already claimed a promo for this artistId today (UTC)?  
+2. **Execution:**  
+   * If Valid: Insert into daily\_promo\_logs.  
+   * Increment profiles.total\_score by 5\.  
+   * Return: { success: true, newScore: 1234 }.  
+   * If Invalid (Already claimed): Return { success: false, reason: "Cooldown active" }.
+
+## **4\. Frontend UX (The "Appealing" Part)**
+
+Component: ArtistPromoCard  
+Instead of a boring list, this should look like a "Mission Control" panel.
+
+* **Visual State 1 (Available):**  
+  * A glowing button or "Pulse" effect on the artist card.  
+  * Text: *"📢 Promote Now (+5pts)"*  
+  * **Interaction:** When clicked, it opens the Spotify link in a **New Tab** AND triggers the API call in the background.  
+  * **Animation:** Confetti or a "Coin" sound effect immediately upon click.  
+* **Visual State 2 (Completed/Cooldown):**  
+  * The button turns gray/green.  
+  * Text: *"✅ Promo Done"*  
+  * Countdown: "Next Op in: 14h 32m" (Time until midnight).
+
+**The "Smart" Link Logic:**
+
+* Since we use Client Credentials, we can fetch the artist.external\_urls.spotify (Profile) easily.  
+* For "Latest Release," we fetch artist.albums (limit 1\) and use that URL.
+
+## **5\. Anti-Cheat & MVP Limitations**
+
+* **The "Honesty" System:** We cannot technically verify if the user *stayed* on Spotify or just closed the tab immediately.  
+* **MVP Decision:** **We accept this.** The friction of opening a new tab daily is enough "Proof of Work" for 5 points.  
+* **Rate Limit:** The server-side check (1 per artist per day) is the hard security.
+
+Instruction for AI:  
+Implement the daily\_promo\_logs table and the claim endpoint. On the frontend, create a satisfying "Claim" animation that triggers simultaneously with opening the external link.

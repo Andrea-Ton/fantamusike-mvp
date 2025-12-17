@@ -75,8 +75,9 @@ export default async function DashboardPage() {
             <main className="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full animate-fade-in">
                 <header className="hidden md:flex justify-between items-end mb-10">
                     <div>
-                        <h1 className="text-4xl font-bold text-white mb-2">Dashboard</h1>
-                        <p className="text-gray-400">Benvenuto, Manager. Ecco come sta andando la tua Label.</p>
+                        <h1 className="text-4xl font-bold text-white mb-2">Bentornato {profile?.username},</h1>
+                        <p className="text-gray-400">Controlla come sta andando la tua Label.</p>
+                        <p className="text-gray-400">Promuovi i tuoi artisti preferiti per guadagnare punti extra e vincere MusiCoins!</p>
                     </div>
                     <div className="flex gap-4">
                         {/* Status indicators */}
@@ -109,7 +110,7 @@ export default async function DashboardPage() {
 
                     {/* Right Column: Roster */}
                     <Suspense fallback={<RosterSkeleton />}>
-                        <RosterSection userTeamPromise={userTeamPromise} />
+                        <RosterSection userTeamPromise={userTeamPromise} userId={user.id} />
                     </Suspense>
 
                     {/* Leaderboard Card - Visible on Mobile (After Roster), Hidden on Desktop */}
