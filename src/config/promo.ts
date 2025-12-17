@@ -26,15 +26,15 @@ export interface LuckyDropTier {
 
 export const PROMO_LUCKY_DROP: Record<ArtistCategory, LuckyDropTier[]> = {
     Big: [
-        { probability: 0.01, amount: 20, label: "Legendary Drop" },
-        { probability: 0.08, amount: 2, label: "Lucky Drop" }
+        { probability: 0.2, amount: 3, label: "Legendary Drop" },
+        { probability: 0.4, amount: 1, label: "Lucky Drop" }
     ],
     Mid: [
-        { probability: 0.04, amount: 30, label: "Legendary Drop" },
-        { probability: 0.15, amount: 3, label: "Lucky Drop" }
+        { probability: 0.2, amount: 3, label: "Legendary Drop" },
+        { probability: 0.4, amount: 1, label: "Lucky Drop" }
     ],
     'New Gen': [
-        { probability: 0.5, amount: 40, label: "Legendary Drop" },
-        { probability: 0.5, amount: 5, label: "Lucky Drop" }
+        { probability: 0.2, amount: 3, label: "Legendary Drop" },
+        { probability: 0.4, amount: 1, label: "Lucky Drop" }
     ]
 };
