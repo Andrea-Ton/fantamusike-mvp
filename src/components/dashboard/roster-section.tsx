@@ -13,9 +13,10 @@ import { ARTIST_TIERS } from '@/config/game';
 
 interface RosterSectionProps {
     userTeamPromise: Promise<UserTeamResponse>;
+    userId?: string;
 }
 
-export default async function RosterSection({ userTeamPromise }: RosterSectionProps) {
+export default async function RosterSection({ userTeamPromise, userId }: RosterSectionProps) {
     const userTeam = await userTeamPromise;
     const hasTeam = userTeam !== null;
 
@@ -36,7 +37,7 @@ export default async function RosterSection({ userTeamPromise }: RosterSectionPr
 
         // Parallel data fetching
         const [scoresResult, statusResult, ...releasesResults] = await Promise.all([
-            getWeeklyScoresAction(artistIds, userTeam.captain_id),
+            getWeeklyScoresAction(artistIds, userTeam.captain_id, userId),
             getDailyPromoStatusAction(artistIds),
             // Fetch releases for each artist
             ...artistIds.map(id => getArtistReleases(id).then(releases => ({ id, release: releases[0] })))

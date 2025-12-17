@@ -109,7 +109,7 @@ export default async function DashboardPage() {
 
                     {/* Right Column: Roster */}
                     <Suspense fallback={<RosterSkeleton />}>
-                        <RosterSection userTeamPromise={userTeamPromise} />
+                        <RosterSection userTeamPromise={userTeamPromise} userId={user.id} />
                     </Suspense>
 
                     {/* Leaderboard Card - Visible on Mobile (After Roster), Hidden on Desktop */}

@@ -44,9 +44,9 @@ export default function PromoModal({ isOpen, onClose, slot, spotifyUrl, releaseU
             window.open(releaseUrl, '_blank');
         } else if (action === 'share') {
             const shareData = {
-                title: `Check out ${slot.artist?.name} on FantaMusiké!`,
+                title: `Check out ${slot.artist?.name} !`,
                 text: `I'm managing ${slot.artist?.name} in FantaMusiké. Listen now!`,
-                url: spotifyUrl || 'https://fantamusike.com'
+                url: spotifyUrl || 'https://musike.fm'
             };
             if (navigator.share) {
                 try {

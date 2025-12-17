@@ -26,7 +26,7 @@ export default async function StatsSection({ userId, userTeamPromise, totalScore
             userTeam.slot_5?.id
         ].filter(Boolean) as string[];
 
-        const { scores } = await getWeeklyScoresAction(artistIds, userTeam.captain_id);
+        const { scores } = await getWeeklyScoresAction(artistIds, userTeam.captain_id, userId);
 
         weeklyTrend = artistIds.reduce((total, artistId) => {
             return total + (scores[artistId] || 0);
