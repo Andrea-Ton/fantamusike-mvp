@@ -218,8 +218,6 @@ export default function PromoModal({ isOpen, onClose, slot, spotifyUrl, releaseU
                             {pendingRedirectUrl ? (
                                 <a
                                     href={pendingRedirectUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
                                     onClick={() => handleClaim(false)}
                                     className="block w-full text-center px-8 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black font-bold rounded-xl shadow-lg shadow-yellow-500/20 transform hover:scale-105 active:scale-95 transition-all"
                                 >
