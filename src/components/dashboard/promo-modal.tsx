@@ -142,7 +142,7 @@ export default function PromoModal({ isOpen, onClose, slot, spotifyUrl, releaseU
         }
     };
 
-    const handleClaim = () => {
+    const handleClaim = (shouldRedirect: boolean = true) => {
         setWinningDrop(null);
 
         // Maybe a small short confetti burst on claim too?
@@ -153,11 +153,11 @@ export default function PromoModal({ isOpen, onClose, slot, spotifyUrl, releaseU
             colors: ['#a855f7', '#fbbf24', '#ffffff']
         });
 
-        // Open Pending URL
-        if (pendingRedirectUrl) {
+        // Open Pending URL via window.open ONLY if requested (programmatic)
+        if (shouldRedirect && pendingRedirectUrl) {
             window.open(pendingRedirectUrl, '_blank');
-            setPendingRedirectUrl(null);
         }
+        setPendingRedirectUrl(null);
     };
 
     return (
@@ -215,12 +215,24 @@ export default function PromoModal({ isOpen, onClose, slot, spotifyUrl, releaseU
                             </h3>
                             <p className="text-gray-400 mb-8 text-center text-sm">Hai trovato <span className="text-yellow-400 font-bold text-lg"><SpringCounter from={0} to={winningDrop.amount} /> MusiCoins</span>!</p>
 
-                            <button
-                                onClick={handleClaim}
-                                className="px-8 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black font-bold rounded-xl shadow-lg shadow-yellow-500/20 transform hover:scale-105 active:scale-95 transition-all w-full"
-                            >
-                                Raccogli MusiCoins
-                            </button>
+                            {pendingRedirectUrl ? (
+                                <a
+                                    href={pendingRedirectUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={() => handleClaim(false)}
+                                    className="block w-full text-center px-8 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black font-bold rounded-xl shadow-lg shadow-yellow-500/20 transform hover:scale-105 active:scale-95 transition-all"
+                                >
+                                    Raccogli MusiCoins
+                                </a>
+                            ) : (
+                                <button
+                                    onClick={() => handleClaim(true)}
+                                    className="px-8 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black font-bold rounded-xl shadow-lg shadow-yellow-500/20 transform hover:scale-105 active:scale-95 transition-all w-full"
+                                >
+                                    Raccogli MusiCoins
+                                </button>
+                            )}
                         </div>
                     ) : (
                         <div className="space-y-3 animate-in fade-in duration-300">
