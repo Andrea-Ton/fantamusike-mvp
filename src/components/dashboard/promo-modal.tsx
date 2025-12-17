@@ -6,6 +6,18 @@ import { claimPromoAction, PromoActionType, ArtistPromoStatus } from '@/app/acti
 import { PROMO_POINTS, ArtistCategory } from '@/config/promo';
 import { Slot } from './artist-card';
 import confetti from 'canvas-confetti';
+import { motion, useSpring, useTransform } from 'framer-motion';
+
+function SpringCounter({ from, to }: { from: number; to: number }) {
+    const spring = useSpring(from, { mass: 0.8, stiffness: 75, damping: 15 });
+    const display = useTransform(spring, (current) => Math.round(current));
+
+    useEffect(() => {
+        spring.set(to);
+    }, [spring, to]);
+
+    return <motion.span>{display}</motion.span>;
+}
 
 interface PromoModalProps {
     isOpen: boolean;
@@ -201,7 +213,7 @@ export default function PromoModal({ isOpen, onClose, slot, spotifyUrl, releaseU
                             <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-100 to-yellow-300 mb-2 text-center drop-shadow-sm">
                                 {winningDrop.label}!
                             </h3>
-                            <p className="text-gray-400 mb-8 text-center text-sm">Hai trovato <span className="text-yellow-400 font-bold text-lg">{winningDrop.amount} MusiCoins</span>!</p>
+                            <p className="text-gray-400 mb-8 text-center text-sm">Hai trovato <span className="text-yellow-400 font-bold text-lg"><SpringCounter from={0} to={winningDrop.amount} /> MusiCoins</span>!</p>
 
                             <button
                                 onClick={handleClaim}
