@@ -49,7 +49,7 @@ export default function PromoModal({ isOpen, onClose, slot, spotifyUrl, releaseU
     const pointsMatrix = PROMO_POINTS[category] || PROMO_POINTS['New Gen']; // safety fallback
 
     const triggerConfetti = () => {
-        const duration = 2000;
+        const duration = 500;
         const end = Date.now() + duration;
 
         const frame = () => {
