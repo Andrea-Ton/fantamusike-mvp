@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { getCurrentWeekAction } from './game';
 import { UserTeamResponse, getUserTeamAction } from './team';
-import { PROMO_POINTS, ArtistCategory } from '@/config/promo';
+import { PROMO_POINTS, ArtistCategory, PROMO_LUCKY_DROP } from '@/config/promo';
 import { ARTIST_TIERS } from '@/config/game';
 
 export type PromoActionType = 'profile_click' | 'release_click' | 'share';
@@ -14,6 +14,8 @@ export type ClaimPromoResult = {
     message: string;
     newScore?: number;
     pointsAwarded?: number;
+    musiCoinsAwarded?: number;
+    dropLabel?: string;
     error?: string;
 };
 
@@ -66,10 +68,6 @@ export async function claimPromoAction(artistId: string, actionType: PromoAction
         }
 
         // 4. Calculate Points
-        // We use the category from the popularity snapshot in the team (which is cached)
-        // or potentially current popularity if we trust the team snapshot enough.
-        // Let's use getArtistCategory helper.
-        // Note: Slot object has popularity.
         const category = getArtistCategory(artistSlot.popularity);
         const points = PROMO_POINTS[category][actionType];
 
@@ -94,23 +92,54 @@ export async function claimPromoAction(artistId: string, actionType: PromoAction
         // 6. Award Points (Increment Listen Score)
         const { data: profile } = await supabase
             .from('profiles')
-            .select('listen_score')
+            .select('listen_score, musi_coins')
             .eq('id', user.id)
             .single();
 
         let newScore = (profile?.listen_score || 0) + points;
+        let updateData: any = { listen_score: newScore };
+
+        // 7. Lucky Drop Logic
+        let musiCoinsAwarded = 0;
+        let dropLabel = '';
+
+        const dropTiers = PROMO_LUCKY_DROP[category];
+        if (dropTiers && dropTiers.length > 0) {
+            const roll = Math.random();
+            let accumulatedProbability = 0;
+
+            // Sort by lowest probability first (rarest) to check them in order, 
+            // or we can just check ranges. The typical way is to check:
+            // if roll < prob1 -> win 1
+            // else if roll < prob1 + prob2 -> win 2
+
+            for (const tier of dropTiers) {
+                accumulatedProbability += tier.probability;
+                if (roll < accumulatedProbability) {
+                    musiCoinsAwarded = tier.amount;
+                    dropLabel = tier.label;
+                    updateData.musi_coins = (profile?.musi_coins || 0) + musiCoinsAwarded;
+                    break;
+                }
+            }
+        }
 
         if (profile) {
             await supabase
                 .from('profiles')
-                .update({
-                    listen_score: newScore,
-                })
+                .update(updateData)
                 .eq('id', user.id);
         }
 
         revalidatePath('/dashboard');
-        return { success: true, message: `Promo claimed! +${points} Points`, newScore, pointsAwarded: points };
+        return {
+            success: true,
+            message: `Promo claimed! +${points} Points`,
+            newScore,
+            pointsAwarded: points,
+            musiCoinsAwarded: musiCoinsAwarded > 0 ? musiCoinsAwarded : undefined,
+            dropLabel: dropLabel || undefined
+        };
 
     } catch (error) {
         console.error('Claim Promo Error:', error);
