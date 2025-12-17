@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Minus, Crown, ExternalLink, CheckCircle, Plus, Rocket } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Crown, ExternalLink, CheckCircle, Plus, Rocket, Gift } from 'lucide-react';
 import { ArtistPromoStatus } from '@/app/actions/promo';
 import { Slot } from './artist-card'; // Reuse types
 import CountdownTimer from './countdown-timer';
@@ -108,8 +108,10 @@ export default function ArtistPromoCard({ slot, promoStatus, spotifyUrl, release
                 {/* CTA Bouncing Pill */}
                 {!allDone && (
                     <div className="absolute md:top-4 top-2 right-2 z-20">
-                        <div className="bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg shadow-yellow-500/20 animate-bounce">
-                            + Points
+                        <div className="bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg shadow-yellow-500/20 animate-bounce flex items-center gap-1">
+                            <span>+ Points</span>
+                            <span className="opacity-50">|</span>
+                            <Gift size={12} className="stroke-[3]" />
                         </div>
                     </div>
                 )}
