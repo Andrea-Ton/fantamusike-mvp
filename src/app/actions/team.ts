@@ -113,7 +113,7 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
 
         const { data: profile } = await supabase
             .from('profiles')
-            .select('musi_coins')
+            .select('musi_coins, total_score')
             .eq('id', user.id)
             .single();
 
@@ -177,6 +177,40 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
                     console.error('Immediate Snapshot Error:', snapError);
                     // Non-blocking error, but worth logging
                 }
+            }
+
+            // INSTANT SCORING LOGIC (UX Only)
+            // Use already saved scores for the current week if any
+            try {
+                const { data: currentScores } = await supabase
+                    .from('weekly_scores')
+                    .select('artist_id, total_points')
+                    .eq('week_number', currentWeek)
+                    .in('artist_id', artistIds);
+
+                const { data: featured } = await supabase.from('featured_artists').select('spotify_id');
+                const featuredIds = new Set(featured?.map(f => f.spotify_id) || []);
+                const scoreMap = Object.fromEntries(currentScores?.map(s => [s.artist_id, s.total_points]) || []);
+
+                let instantScore = 0;
+                for (const artist of artists) {
+                    let points = scoreMap[artist.id] || 0;
+
+                    // Apply Multipliers
+                    if (captainId === artist.id) {
+                        points = Math.round(points * (featuredIds.has(artist.id) ? 2 : 1.5));
+                    }
+                    instantScore += points;
+                }
+
+                if (instantScore > 0) {
+                    await supabase
+                        .from('profiles')
+                        .update({ total_score: (profile?.total_score || 0) + instantScore })
+                        .eq('id', user.id);
+                }
+            } catch (scoringError) {
+                console.error('Instant Scoring Error:', scoringError);
             }
         }
 
