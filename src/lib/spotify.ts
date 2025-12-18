@@ -137,7 +137,10 @@ export async function getArtistReleases(artistId: string): Promise<SpotifyAlbum[
         }
 
         const data = await response.json();
-        return data.items || [];
+        const items = (data.items || []) as SpotifyAlbum[];
+
+        // Explicitly sort by release_date descending to mix albums and singles chronologically
+        return items.sort((a, b) => b.release_date.localeCompare(a.release_date));
     } catch (error) {
         console.error(`Error in getArtistReleases for ${artistId}:`, error);
         return [];
