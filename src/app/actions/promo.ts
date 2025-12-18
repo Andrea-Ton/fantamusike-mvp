@@ -65,13 +65,32 @@ export async function claimPromoAction(artistId: string, actionType: PromoAction
 
         if (count && count > 0) {
             return { success: false, message: 'This specific promo action already claimed today' };
+        }        // 4. Determine Rewards
+        const category = getArtistCategory(artistSlot.popularity);
+        const standardPoints = PROMO_POINTS[category][actionType];
+
+        // 5. Calculate Lucky Drop FIRST
+        let musiCoinsAwarded = 0;
+        let dropLabel = '';
+        const dropTiers = PROMO_LUCKY_DROP[category];
+
+        if (dropTiers && dropTiers.length > 0) {
+            const roll = Math.random();
+            let accumulatedProbability = 0;
+            for (const tier of dropTiers) {
+                accumulatedProbability += tier.probability;
+                if (roll < accumulatedProbability) {
+                    musiCoinsAwarded = tier.amount;
+                    dropLabel = tier.label;
+                    break;
+                }
+            }
         }
 
-        // 4. Calculate Points
-        const category = getArtistCategory(artistSlot.popularity);
-        const points = PROMO_POINTS[category][actionType];
+        // 6. Point Logic: IF MusiCoins won, Points = 0. Else, Points = Standard.
+        const points = musiCoinsAwarded > 0 ? 0 : standardPoints;
 
-        // 5. Execute Claim
+        // 7. Execute Claim (Log)
         const { error: insertError } = await supabase
             .from('daily_promo_logs')
             .insert({
@@ -89,42 +108,26 @@ export async function claimPromoAction(artistId: string, actionType: PromoAction
             return { success: false, message: 'Failed to log promo' };
         }
 
-        // 6. Award Points (Increment Listen Score)
+        // 8. Award Rewards to Profile
         const { data: profile } = await supabase
             .from('profiles')
             .select('listen_score, musi_coins')
             .eq('id', user.id)
             .single();
 
-        let newScore = (profile?.listen_score || 0) + points;
-        let updateData: any = { listen_score: newScore };
+        let updateData: any = {};
+        let newScore = profile?.listen_score || 0;
 
-        // 7. Lucky Drop Logic
-        let musiCoinsAwarded = 0;
-        let dropLabel = '';
-
-        const dropTiers = PROMO_LUCKY_DROP[category];
-        if (dropTiers && dropTiers.length > 0) {
-            const roll = Math.random();
-            let accumulatedProbability = 0;
-
-            // Sort by lowest probability first (rarest) to check them in order, 
-            // or we can just check ranges. The typical way is to check:
-            // if roll < prob1 -> win 1
-            // else if roll < prob1 + prob2 -> win 2
-
-            for (const tier of dropTiers) {
-                accumulatedProbability += tier.probability;
-                if (roll < accumulatedProbability) {
-                    musiCoinsAwarded = tier.amount;
-                    dropLabel = tier.label;
-                    updateData.musi_coins = (profile?.musi_coins || 0) + musiCoinsAwarded;
-                    break;
-                }
-            }
+        if (points > 0) {
+            newScore += points;
+            updateData.listen_score = newScore;
         }
 
-        if (profile) {
+        if (musiCoinsAwarded > 0) {
+            updateData.musi_coins = (profile?.musi_coins || 0) + musiCoinsAwarded;
+        }
+
+        if (Object.keys(updateData).length > 0 && profile) {
             await supabase
                 .from('profiles')
                 .update(updateData)
@@ -134,7 +137,9 @@ export async function claimPromoAction(artistId: string, actionType: PromoAction
         revalidatePath('/dashboard');
         return {
             success: true,
-            message: `Promo claimed! +${points} Points`,
+            message: musiCoinsAwarded > 0
+                ? `Promo claimed! You won MusiCoins!`
+                : `Promo claimed! +${points} Points`,
             newScore,
             pointsAwarded: points,
             musiCoinsAwarded: musiCoinsAwarded > 0 ? musiCoinsAwarded : undefined,
