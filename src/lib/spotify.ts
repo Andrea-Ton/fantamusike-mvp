@@ -27,45 +27,84 @@ export type SearchArtistsResponse = {
     };
 };
 
-async function getAccessToken(): Promise<string> {
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function fetchWithRetry(url: string, options: RequestInit, retries = 3, backoff = 500): Promise<Response> {
+    try {
+        const response = await fetch(url, options);
+
+        if (response.ok) return response;
+
+        // Retry on 429 (Rate Limit) or 5xx (Server Errors like 503)
+        if ((response.status === 429 || response.status >= 500) && retries > 0) {
+            console.warn(`Spotify API error ${response.status}. Retrying in ${backoff}ms... (${retries} attempts left)`);
+            await wait(backoff);
+            return fetchWithRetry(url, options, retries - 1, backoff * 2);
+        }
+
+        return response;
+    } catch (error) {
+        if (retries > 0) {
+            console.warn(`Fetch failed: ${error}. Retrying...`);
+            await wait(backoff);
+            return fetchWithRetry(url, options, retries - 1, backoff * 2);
+        }
+        throw error;
+    }
+}
+
+async function getAccessToken(): Promise<string | null> {
     const auth = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64');
 
-    const response = await fetch('https://accounts.spotify.com/api/token', {
-        method: 'POST',
-        headers: {
-            Authorization: `Basic ${auth}`,
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: 'grant_type=client_credentials',
-        next: { revalidate: 3500 }, // Cache for slightly less than 1 hour (3600s)
-    });
+    try {
+        const response = await fetchWithRetry('https://accounts.spotify.com/api/token', {
+            method: 'POST',
+            headers: {
+                Authorization: `Basic ${auth}`,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'grant_type=client_credentials',
+            next: { revalidate: 3500 },
+        });
 
-    if (!response.ok) {
-        throw new Error(`Failed to fetch Spotify token: ${response.statusText}`);
+        if (!response.ok) {
+            console.error(`Failed to fetch Spotify token: ${response.statusText}`);
+            return null;
+        }
+
+        const data: SpotifyToken = await response.json();
+        return data.access_token;
+    } catch (error) {
+        console.error('Error in getAccessToken:', error);
+        return null;
     }
-
-    const data: SpotifyToken = await response.json();
-    return data.access_token;
 }
 
 export async function searchArtists(query: string): Promise<SpotifyArtist[]> {
     const token = await getAccessToken();
+    if (!token) return [];
 
-    const response = await fetch(
-        `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist&limit=10`,
-        {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
+    try {
+        const response = await fetchWithRetry(
+            `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist&limit=10`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        if (!response.ok) {
+            console.error(`Failed to search artists: ${response.statusText}`);
+            return [];
         }
-    );
 
-    if (!response.ok) {
-        throw new Error(`Failed to search artists: ${response.statusText}`);
+        const data: SearchArtistsResponse = await response.json();
+        return data.artists.items;
+    } catch (error) {
+        console.error('Error in searchArtists:', error);
+        return [];
     }
-
-    const data: SearchArtistsResponse = await response.json();
-    return data.artists.items;
 }
 
 export type SpotifyAlbum = {
@@ -74,48 +113,61 @@ export type SpotifyAlbum = {
     release_date: string;
     album_type: 'album' | 'single' | 'compilation';
     total_tracks: number;
+    external_urls: { spotify: string };
 };
 
 export async function getArtistReleases(artistId: string): Promise<SpotifyAlbum[]> {
     const token = await getAccessToken();
+    if (!token) return [];
 
-    const response = await fetch(
-        `https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=album,single&limit=5&market=IT`,
-        {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-            next: { revalidate: 3600 }
+    try {
+        const response = await fetchWithRetry(
+            `https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=album,single&limit=20&market=IT`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                next: { revalidate: 3600 }
+            }
+        );
+
+        if (!response.ok) {
+            console.error(`Failed to fetch releases for ${artistId}: ${response.statusText}`);
+            return [];
         }
-    );
 
-    if (!response.ok) {
-        console.error(`Failed to fetch releases for ${artistId}: ${response.statusText}`);
+        const data = await response.json();
+        return data.items || [];
+    } catch (error) {
+        console.error(`Error in getArtistReleases for ${artistId}:`, error);
         return [];
     }
-
-    const data = await response.json();
-    return data.items;
 }
 
 export async function getArtist(artistId: string): Promise<SpotifyArtist | null> {
     const token = await getAccessToken();
+    if (!token) return null;
 
-    const response = await fetch(
-        `https://api.spotify.com/v1/artists/${artistId}`,
-        {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-            next: { revalidate: 3600 }
+    try {
+        const response = await fetchWithRetry(
+            `https://api.spotify.com/v1/artists/${artistId}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                next: { revalidate: 3600 }
+            }
+        );
+
+        if (!response.ok) {
+            console.error(`Failed to fetch artist ${artistId}: ${response.statusText}`);
+            return null;
         }
-    );
 
-    if (!response.ok) {
-        console.error(`Failed to fetch artist ${artistId}: ${response.statusText}`);
+        const data: SpotifyArtist = await response.json();
+        return data;
+    } catch (error) {
+        console.error(`Error in getArtist for ${artistId}:`, error);
         return null;
     }
-
-    const data: SpotifyArtist = await response.json();
-    return data;
 }
