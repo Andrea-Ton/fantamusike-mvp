@@ -122,7 +122,7 @@ export async function getArtistReleases(artistId: string): Promise<SpotifyAlbum[
 
     try {
         const response = await fetchWithRetry(
-            `https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=album,single&limit=20&market=IT`,
+            `https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=album,single,appears_on&limit=50&market=IT`,
             {
                 headers: {
                     Authorization: `Bearer ${token}`,

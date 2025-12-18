@@ -202,7 +202,15 @@ export default function PromoModal({ isOpen, onClose, slot, spotifyUrl, releaseU
                     </button>
                 )}
 
-                <h3 className="text-lg font-bold text-center text-white mb-6">Promuovi Artista</h3>
+                <h3 className="text-lg font-bold text-center text-white mb-6">Promuovi Artista
+                    <div className="flex items-center justify-center gap-2">
+                        <div className="text-xs text-gray-500 whitespace-nowrap">Powered by</div>
+                        <div className="flex items-center opacity-40 flex-nowrap shrink-0">
+                            <img src="/Spotify_Full_Logo_White.png" alt="Spotify" className="h-4 object-contain" />
+                        </div>
+                    </div>
+                </h3>
+
 
                 {/* Header */}
                 <div className="flex items-center gap-4 mb-8">
@@ -240,9 +248,10 @@ export default function PromoModal({ isOpen, onClose, slot, spotifyUrl, releaseU
 
                                     <button
                                         onClick={handleClaim}
-                                        className="px-8 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black font-bold rounded-xl shadow-lg shadow-yellow-500/20 transform hover:scale-105 active:scale-95 transition-all w-full"
+                                        className="px-4 sm:px-8 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black font-bold rounded-xl shadow-lg shadow-yellow-500/20 transform hover:scale-105 active:scale-95 transition-all w-full flex flex-col sm:flex-row items-center justify-center gap-1 text-sm sm:text-base"
                                     >
-                                        Raccogli MusiCoins
+                                        <span className="whitespace-nowrap">Raccogli MusiCoins</span>
+                                        <span className="inline-flex items-center gap-1">e apri <img src="/Spotify_Full_Logo_Black.png" alt="Spotify" className="h-4 object-contain" /></span>
                                     </button>
                                 </>
                             ) : (
@@ -262,9 +271,10 @@ export default function PromoModal({ isOpen, onClose, slot, spotifyUrl, releaseU
 
                                     <button
                                         onClick={handleClaim}
-                                        className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg shadow-purple-900/40 transform hover:scale-105 active:scale-95 transition-all w-full"
+                                        className="px-4 sm:px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg shadow-purple-900/40 transform hover:scale-105 active:scale-95 transition-all w-full flex flex-col sm:flex-row items-center justify-center gap-1 text-sm sm:text-base"
                                     >
-                                        Raccogli Punti
+                                        <span className="whitespace-nowrap">Raccogli Punti</span>
+                                        <span className="inline-flex items-center gap-1">e apri <img src="/Spotify_Full_Logo_White.png" alt="Spotify" className="h-4 object-contain" /></span>
                                     </button>
                                 </>
                             )}
@@ -275,7 +285,7 @@ export default function PromoModal({ isOpen, onClose, slot, spotifyUrl, releaseU
                             <ActionRow
                                 icon={ExternalLink}
                                 label="Check Metrics"
-                                subLabel="Visit Spotify Profile"
+                                subLabel="Visita il profilo Spotify"
                                 points={pointsMatrix.profile_click}
                                 isDone={localStatus.profile_click}
                                 isLoading={loadingAction === 'profile_click'}
@@ -287,7 +297,7 @@ export default function PromoModal({ isOpen, onClose, slot, spotifyUrl, releaseU
                             <ActionRow
                                 icon={Music2}
                                 label="Push Latest Release"
-                                subLabel="Stream New Drop"
+                                subLabel="Promuovi la sua ultima uscita"
                                 points={pointsMatrix.release_click}
                                 isDone={localStatus.release_click}
                                 isLoading={loadingAction === 'release_click'}
