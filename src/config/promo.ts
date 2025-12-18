@@ -1,17 +1,17 @@
 export const PROMO_POINTS = {
     Big: {
-        profile_click: 1,
-        release_click: 1,
-        share: 1
+        profile_click: 2,
+        release_click: 2,
+        share: 2
     },
     Mid: {
-        profile_click: 1,
-        release_click: 2,
-        share: 1
+        profile_click: 2,
+        release_click: 3,
+        share: 2
     },
     'New Gen': {
         profile_click: 3,
-        release_click: 3,
+        release_click: 4,
         share: 3
     }
 } as const;
@@ -26,15 +26,18 @@ export interface LuckyDropTier {
 
 export const PROMO_LUCKY_DROP: Record<ArtistCategory, LuckyDropTier[]> = {
     Big: [
-        { probability: 0.2, amount: 3, label: "Legendary Drop" },
-        { probability: 0.4, amount: 1, label: "Lucky Drop" }
+        { probability: 0.08, amount: 5, label: "Legendary Drop" },
+        { probability: 0.15, amount: 3, label: "Epic Drop" },
+        { probability: 0.2, amount: 1, label: "Lucky Drop" }
     ],
     Mid: [
-        { probability: 0.2, amount: 3, label: "Legendary Drop" },
-        { probability: 0.4, amount: 1, label: "Lucky Drop" }
+        { probability: 0.08, amount: 5, label: "Legendary Drop" },
+        { probability: 0.15, amount: 3, label: "Epic Drop" },
+        { probability: 0.2, amount: 1, label: "Lucky Drop" }
     ],
     'New Gen': [
-        { probability: 0.2, amount: 3, label: "Legendary Drop" },
-        { probability: 0.4, amount: 1, label: "Lucky Drop" }
+        { probability: 0.08, amount: 5, label: "Legendary Drop" },
+        { probability: 0.15, amount: 3, label: "Epic Drop" },
+        { probability: 0.2, amount: 1, label: "Lucky Drop" }
     ]
 };

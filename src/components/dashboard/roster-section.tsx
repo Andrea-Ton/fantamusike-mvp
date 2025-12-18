@@ -24,7 +24,7 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
     const featuredArtists = await getFeaturedArtistsAction();
     const featuredIds = new Set(featuredArtists.map(a => a.id));
     let promoStatus: Record<string, ArtistPromoStatus> = {};
-    let artistReleases: Record<string, string | undefined> = {};
+    let artistReleases: Record<string, { latest?: string; revival?: string }> = {};
 
     if (userTeam) {
         const artistIds = [
@@ -36,22 +36,40 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
         ].filter(Boolean) as string[];
 
         // Parallel data fetching
-        const [scoresResult, statusResult, ...releasesResults] = await Promise.all([
-            getWeeklyScoresAction(artistIds, userTeam.captain_id, userId),
-            getDailyPromoStatusAction(artistIds),
-            // Fetch releases for each artist
-            ...artistIds.map(id => getArtistReleases(id).then(releases => ({ id, release: releases[0] })))
-        ]);
+        try {
+            const [scoresResult, statusResult, ...releasesResults] = await Promise.all([
+                getWeeklyScoresAction(artistIds, userTeam.captain_id, userId),
+                getDailyPromoStatusAction(artistIds),
+                // Fetch releases for each artist
+                ...artistIds.map(id => getArtistReleases(id).then(releases => {
+                    const latest = releases[0]?.external_urls?.spotify;
+                    let revival = undefined;
+                    if (releases.length > 1) {
+                        // Pick a random one from indices 1 to end
+                        const randomIndex = Math.floor(Math.random() * (releases.length - 1)) + 1;
+                        revival = releases[randomIndex]?.external_urls?.spotify;
+                    }
+                    return { id, latest, revival };
+                }).catch(err => {
+                    console.error(`Error fetching releases for ${id}:`, err);
+                    return { id, latest: undefined, revival: undefined };
+                }))
+            ]);
 
-        weeklyScores = scoresResult.scores;
-        promoStatus = statusResult;
+            weeklyScores = scoresResult.scores;
+            promoStatus = statusResult;
 
-        // Map releases
-        releasesResults.forEach((r: any) => {
-            if (r.release && r.release.external_urls && r.release.external_urls.spotify) {
-                artistReleases[r.id] = r.release.external_urls.spotify;
-            }
-        });
+            // Map releases
+            releasesResults.forEach((r: any) => {
+                artistReleases[r.id] = { latest: r.latest, revival: r.revival };
+            });
+        } catch (error) {
+            console.error('Error in parallel data fetching:', error);
+            // Default empty status
+            artistIds.forEach(id => {
+                if (!promoStatus[id]) promoStatus[id] = { profile_click: false, release_click: false, share: false };
+            });
+        }
     }
 
     const teamSlots: Slot[] = [
@@ -162,7 +180,8 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
                             slot={slot}
                             promoStatus={slot.artist ? promoStatus[slot.artist.id] : { profile_click: false, release_click: false, share: false }} // Fallback
                             spotifyUrl={slot.artist?.external_urls?.spotify}
-                            releaseUrl={slot.artist ? artistReleases[slot.artist.id] : undefined}
+                            releaseUrl={slot.artist ? artistReleases[slot.artist.id]?.latest : undefined}
+                            revivalUrl={slot.artist ? artistReleases[slot.artist.id]?.revival : undefined}
                         />
                     ))}
                 </div>

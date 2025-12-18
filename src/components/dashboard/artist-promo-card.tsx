@@ -12,9 +12,10 @@ interface ArtistPromoCardProps {
     promoStatus: ArtistPromoStatus;
     spotifyUrl?: string;
     releaseUrl?: string;
+    revivalUrl?: string;
 }
 
-export default function ArtistPromoCard({ slot, promoStatus, spotifyUrl, releaseUrl }: ArtistPromoCardProps) {
+export default function ArtistPromoCard({ slot, promoStatus, spotifyUrl, releaseUrl, revivalUrl }: ArtistPromoCardProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     // Check if ALL daily actions are done
@@ -127,6 +128,7 @@ export default function ArtistPromoCard({ slot, promoStatus, spotifyUrl, release
                 slot={slot}
                 spotifyUrl={spotifyUrl}
                 releaseUrl={releaseUrl}
+                revivalUrl={revivalUrl}
                 promoStatus={promoStatus}
             />
         </>
