@@ -127,6 +127,37 @@ export default function PromoModal({ isOpen, onClose, slot, spotifyUrl, releaseU
         }
     };
 
+    const smartRedirect = (url: string) => {
+        // Detect if running in standalone mode (PWA)
+        const isStandalone = (window.navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches;
+
+        if (isStandalone && url.includes('spotify.com')) {
+            // Convert to URI scheme to trigger app directly without "ghost tab"
+            // open.spotify.com/artist/ID -> spotify:artist:ID
+            // open.spotify.com/track/ID -> spotify:track:ID
+            // open.spotify.com/album/ID -> spotify:album:ID
+
+            try {
+                const parts = url.split('spotify.com/')[1]?.split('?')[0]?.split('/');
+                if (parts && parts.length >= 2) {
+                    const type = parts[0];
+                    const id = parts[1];
+                    const spotifyUri = `spotify:${type}:${id}`;
+
+                    // Direct location change in PWA mode triggers the app switch
+                    // without opening a new browser tab bridge
+                    window.location.href = spotifyUri;
+                    return;
+                }
+            } catch (e) {
+                console.error('Failed to parse Spotify URI', e);
+            }
+        }
+
+        // Fallback for non-PWA or if parsing fails/unsupported
+        window.open(url, '_blank');
+    };
+
     const handleClaim = () => {
         const isMusiCoin = promoResult?.type === 'musicoins';
         setPromoResult(null);
@@ -141,9 +172,9 @@ export default function PromoModal({ isOpen, onClose, slot, spotifyUrl, releaseU
             });
         }
 
-        // Open Pending URL
+        // Open Pending URL using smart redirect
         if (pendingRedirectUrl) {
-            window.open(pendingRedirectUrl, '_blank');
+            smartRedirect(pendingRedirectUrl);
             setPendingRedirectUrl(null);
         }
     };
