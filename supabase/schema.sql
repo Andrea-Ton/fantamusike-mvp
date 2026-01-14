@@ -34,7 +34,8 @@ create table profiles (
   musi_coins integer default 50,
   is_admin boolean default false,
   created_at timestamp with time zone default timezone('utc'::text, now()),
-  updated_at timestamp with time zone default timezone('utc'::text, now())
+  updated_at timestamp with time zone default timezone('utc'::text, now()),
+  marketing_opt_in boolean default false
 );
 
 alter table profiles enable row level security;
@@ -191,7 +192,8 @@ begin
     avatar_url,
     musi_coins,
     referral_code,
-    referred_by
+    referred_by,
+    marketing_opt_in
   )
   values (
     new.id,
@@ -199,7 +201,8 @@ begin
     new.raw_user_meta_data->>'avatar_url',
     case when referrer_id is not null then default_coins + bonus_coins else default_coins end,
     new_referral_code,
-    referrer_id
+    referrer_id,
+    (new.raw_user_meta_data->>'marketing_opt_in')::boolean
   );
 
   -- Award bonus to referrer

@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import AvatarUpload from '@/components/profile/avatar-upload';
 import ProfileForm from '@/components/profile/profile-form';
 import DeleteAccount from '@/components/profile/delete-account';
+import PrivacySettings from '@/components/profile/privacy-settings';
 
 export default async function ProfilePage() {
     const supabase = await createClient();
@@ -48,6 +49,10 @@ export default async function ProfilePage() {
                                 initialUsername={username}
                                 email={email}
                             />
+                        </div>
+                        <div className="mt-8 pt-8 border-t border-white/5">
+                            <h3 className="text-xl font-bold text-white mb-6">Notifiche</h3>
+                            <PrivacySettings initialOptIn={profile?.marketing_opt_in ?? false} />
                         </div>
 
                         <DeleteAccount />
