@@ -1,3 +1,29 @@
+-- CRON & NET Extensions (for automated jobs)
+create extension if not exists pg_cron;
+create extension if not exists pg_net;
+
+select cron.schedule(
+  'perform-weekly-snapshot-job',
+  '0 4 * * 1',
+  $$
+  select net.http_post(
+    url := 'https://<your-project-ref>.supabase.co/functions/v1/perform-weekly-snapshot',
+    headers := '{"Content-Type": "application/json", "Authorization": "Bearer <YOUR_SERVICE_ROLE_KEY>"}'::jsonb
+  ) as request_id;
+  $$
+);
+-- 2. Schedule Daily Scoring (Daily 02:00 UTC)
+select cron.schedule(
+  'calculate-daily-scores-job',
+  '03 * * *',
+  $$
+  select net.http_post(
+    url := 'https://<your-project-ref>.supabase.co/functions/v1/calculate-daily-scores',
+    headers := '{"Content-Type": "application/json", "Authorization": "Bearer <YOUR_SERVICE_ROLE_KEY>"}'::jsonb
+  ) as request_id;
+  $$
+);
+
 -- Create profiles table
 create table profiles (
   id uuid references auth.users not null primary key,
@@ -47,6 +73,18 @@ create table teams (
   week_number integer default 1,
   slot_1_id text references artists_cache.spotify_id,
   slot_2_id text references artists_cache.spotify_id,
+  slot_3_id text references artists_cache.spotify_id,
+  slot_4_id text references artists_cache.spotify_id,
+  slot_5_id text references artists_cache.spotify_id,
+  captain_id text references artists_cache.spotify_id,
+  season_id uuid references seasons.id,
+  locked_at timestamp with time zone default timezone('utc'::text, now()),
+  primary key (user_id, week_number, season_id)
+);
+
+alter table teams enable row level security;
+
+create policy "Teams are viewable by everyone."
   on teams for select
   using ( true );
 
@@ -69,6 +107,9 @@ create table weekly_scores (
   total_points integer,
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
+
+ALTER TABLE public.weekly_scores 
+ADD CONSTRAINT weekly_scores_week_artist_unique UNIQUE (week_number, artist_id);
 
 alter table weekly_scores enable row level security;
 
@@ -187,6 +228,8 @@ alter table weekly_snapshots enable row level security;
 create policy "Weekly snapshots are viewable by everyone."
   on weekly_snapshots for select
   using ( true );
+
+create index weekly_snapshots_week_artist_idx on weekly_snapshots(week_number, artist_id);
 
 -- RPC to increment score safely
 create or replace function public.increment_score(user_id_param uuid, score_delta integer)
@@ -334,3 +377,29 @@ create policy "Users can insert their own promo logs."
 create policy "Users can view their own promo logs."
   on daily_promo_logs for select
   using ( auth.uid() = user_id );
+
+-- DAILY SCORE LOGS (Deferred Scoring UI)
+
+create table daily_score_logs (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references profiles(id) on delete cascade not null,
+  date date not null default current_date,
+  points_gained integer not null,
+  breakdown jsonb, -- [{ artist: "Lazza", pts: 5 }, { artist: "Anna", pts: 2 }]
+  seen_by_user boolean default false,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+-- Indexes for performance
+create index daily_score_logs_user_unseen_idx on daily_score_logs(user_id, seen_by_user);
+
+alter table daily_score_logs enable row level security;
+
+create policy "Users can view their own score logs."
+    on daily_score_logs for select
+    using ( auth.uid() = user_id );
+
+create policy "Users can update their own score logs (mark as seen)."
+    on daily_score_logs for update
+    using ( auth.uid() = user_id )
+    with check ( auth.uid() = user_id );

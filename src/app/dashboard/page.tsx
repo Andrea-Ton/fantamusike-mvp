@@ -11,6 +11,8 @@ import StatsSection from '@/components/dashboard/stats-section';
 import RosterSection from '@/components/dashboard/roster-section';
 import LeaderboardSection from '@/components/dashboard/leaderboard-section';
 import { StatsSkeleton, RosterSkeleton, LeaderboardSkeleton } from '@/components/dashboard/skeletons';
+import { getUnseenScoreLogsAction } from '@/app/actions/dashboard';
+import { DailyRecapModalWrapper } from '@/components/dashboard/daily-recap-modal-wrapper';
 
 export default async function DashboardPage() {
     const supabase = await createClient();
@@ -37,6 +39,7 @@ export default async function DashboardPage() {
     // --- Slow Data Fetching (Non-Blocking / Streaming) ---
     // Start fetching team data but don't await yet
     const userTeamPromise = getUserTeamAction(currentWeek);
+    const unseenLogs = await getUnseenScoreLogsAction();
 
     return (
         <>
@@ -71,6 +74,10 @@ export default async function DashboardPage() {
                 </div>
             </div>
 
+            {unseenLogs && unseenLogs.length > 0 && (
+                <DailyRecapModalWrapper logs={unseenLogs} />
+            )}
+
             {/* Content Area */}
             <main className="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full animate-fade-in">
                 <header className="hidden md:flex justify-between items-end mb-10">
@@ -88,6 +95,7 @@ export default async function DashboardPage() {
                         <InviteButton referralCode={profile?.referral_code} />
                     </div>
                 </header>
+
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 

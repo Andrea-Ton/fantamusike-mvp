@@ -4,6 +4,7 @@ import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { createClient } from '@/utils/supabase/server';
 import { getWeeklyScoresAction } from '@/app/actions/dashboard';
 import { UserTeamResponse } from '@/app/actions/team';
+import CountdownTimer from './countdown-timer';
 
 interface StatsSectionProps {
     userId: string;
@@ -40,6 +41,14 @@ export default async function StatsSection({ userId, userTeamPromise, totalScore
                     <div>
                         <p className="text-purple-200 text-sm font-medium mb-2">Punteggio Totale</p>
                         <h2 className="text-5xl md:text-6xl font-bold tracking-tighter">{totalScore}</h2>
+                    </div>
+                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/10">
+                        <CountdownTimer
+                            targetHour={3}
+                            showScoringStatus={true}
+                            label="Prossima assegnazione"
+                            variant="large"
+                        />
                     </div>
                 </div>
 

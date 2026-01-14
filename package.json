@@ -14,9 +14,10 @@
     "canvas-confetti": "^1.9.4",
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.554.0",
-    "next": "16.0.7",
+    "next": "^16.1.1",
     "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "react-dom": "19.2.0",
+    "supabase": "^2.71.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
