@@ -7,6 +7,21 @@ import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function UnsubscribePage() {
+    return (
+        <React.Suspense fallback={
+            <div className="min-h-screen bg-[#0b0b10] flex items-center justify-center p-6">
+                <div className="w-full max-w-md bg-[#1a1a24] border border-white/10 rounded-3xl p-8 shadow-2xl text-center flex flex-col items-center">
+                    <Loader2 className="w-12 h-12 text-purple-600 animate-spin mb-4" />
+                    <h2 className="text-xl font-bold text-white mb-2">Caricamento...</h2>
+                </div>
+            </div>
+        }>
+            <UnsubscribeContent />
+        </React.Suspense>
+    );
+}
+
+function UnsubscribeContent() {
     const searchParams = useSearchParams();
     const id = searchParams.get('id');
     const token = searchParams.get('token');
