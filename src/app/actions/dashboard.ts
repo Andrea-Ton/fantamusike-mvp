@@ -100,3 +100,41 @@ export async function getWeeklyScoresAction(artistIds: string[], captainId?: str
         scores: scoreMap
     };
 }
+export async function getUnseenScoreLogsAction() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+        .from('daily_score_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('seen_by_user', false)
+        .order('date', { ascending: true });
+
+    if (error) {
+        console.error('Error fetching score logs:', error);
+        return null;
+    }
+
+    return data;
+}
+
+export async function markScoreLogsSeenAction(logIds: string[]) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false };
+
+    const { error } = await supabase
+        .from('daily_score_logs')
+        .update({ seen_by_user: true })
+        .in('id', logIds)
+        .eq('user_id', user.id);
+
+    if (error) {
+        console.error('Error marking score logs as seen:', error);
+        return { success: false };
+    }
+
+    return { success: true };
+}

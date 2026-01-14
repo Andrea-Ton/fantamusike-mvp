@@ -118,10 +118,11 @@ export default function ScoringPage() {
                             <div className="p-2 bg-blue-500/20 rounded-lg text-blue-400">
                                 <Database size={20} />
                             </div>
-                            <h3 className="font-bold text-lg text-white">1. Weekly Snapshot</h3>
+                            <h3 className="font-bold text-lg text-white">Weekly Snapshot</h3>
                         </div>
                         <p className="text-sm text-gray-400 h-12">
-                            Freezes current artist stats (Popularity & Followers) as the baseline for the week. Run this on Monday 00:00.
+                            Saves live artist data as the baseline for the next scoring week. <br />
+                            <strong>Automatizzato:</strong> Ogni Lunedì alle 04:00 AM UTC.
                         </p>
                         <button
                             onClick={handleSnapshot}
@@ -139,10 +140,11 @@ export default function ScoringPage() {
                             <div className="p-2 bg-green-500/20 rounded-lg text-green-400">
                                 <Activity size={20} />
                             </div>
-                            <h3 className="font-bold text-lg text-white">2. Calculate Scores</h3>
+                            <h3 className="font-bold text-lg text-white">Calculate Scores</h3>
                         </div>
                         <p className="text-sm text-gray-400 h-12">
-                            Compares current live data against the snapshot. Calculates points and updates user profiles. Run this on Sunday 23:59.
+                            Compares current live data against the last snapshot. Calculates points and updates user profiles.<br />
+                            <strong>Automatizzato:</strong> Ogni giorno alle 03:00 AM UTC.
                         </p>
                         <button
                             onClick={handleScoring}

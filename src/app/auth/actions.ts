@@ -37,6 +37,7 @@ export async function signup(formData: FormData) {
             data: {
                 name: username,
                 referral_code_used: referralCode || null,
+                marketing_opt_in: formData.get('marketingOptIn') === 'on',
             },
         },
     });
