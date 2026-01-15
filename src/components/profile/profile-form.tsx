@@ -42,6 +42,10 @@ export default function ProfileForm({ initialUsername, email }: ProfileFormProps
                         type="text"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
+                        minLength={3}
+                        maxLength={20}
+                        pattern="[a-zA-Z0-9_.]+"
+                        title="Solo lettere, numeri, punti e underscore. Lunghezza 3-20 caratteri."
                         className="w-full bg-[#1a1a24] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors"
                         placeholder="Il tuo username"
                     />

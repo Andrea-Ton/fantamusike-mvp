@@ -108,7 +108,6 @@ export default function Sidebar({ avatarUrl, displayName, seasonName, isAdmin }:
                     </div>
                     <div className="flex-1 overflow-hidden">
                         <p className="text-sm font-bold text-white truncate group-hover:text-purple-400 transition-colors">{display}</p>
-                        <p className="text-xs text-gray-500 truncate">Manager Lv. 1</p>
                     </div>
                     <button
                         onClick={(e) => {

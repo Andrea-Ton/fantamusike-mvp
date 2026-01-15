@@ -86,6 +86,10 @@ export default function SignupPage() {
                             name="username"
                             type="text"
                             required
+                            minLength={3}
+                            maxLength={20}
+                            pattern="[a-zA-Z0-9_.]+"
+                            title="Solo lettere, numeri, punti e underscore. Lunghezza 3-20 caratteri."
                             placeholder="Il tuo nome manager"
                             className="w-full h-12 bg-[#1a1a24] border border-white/10 rounded-xl px-4 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors"
                         />

@@ -5,6 +5,9 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
 import { Provider, createClient as createSupabaseClient } from '@supabase/supabase-js';
 
+
+import { validateUsername } from '@/utils/validation';
+
 export async function login(formData: FormData) {
     const supabase = await createClient();
     const email = formData.get('email') as string;
@@ -29,6 +32,12 @@ export async function signup(formData: FormData) {
     const password = formData.get('password') as string;
     const username = formData.get('username') as string;
     const referralCode = formData.get('referralCode') as string;
+
+    // Validate username
+    const validation = validateUsername(username);
+    if (!validation.valid) {
+        return { error: validation.error };
+    }
 
     const { data, error } = await supabase.auth.signUp({
         email,
