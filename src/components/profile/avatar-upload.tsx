@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { Camera, Loader2, X, Check } from 'lucide-react';
 import { updateProfileAction } from '@/app/actions/profile';
@@ -15,6 +16,20 @@ export default function AvatarUpload({ currentAvatarUrl, username }: AvatarUploa
     const [avatarUrl, setAvatarUrl] = useState<string | null>(currentAvatarUrl || null);
     const [isSaving, setIsSaving] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+            document.body.style.position = '';
+        };
+    }, [isOpen]);
 
     const handleSelectAvatar = async (path: string) => {
         setIsSaving(true);
@@ -42,22 +57,25 @@ export default function AvatarUpload({ currentAvatarUrl, username }: AvatarUploa
 
     return (
         <>
-            <div className="flex flex-col items-center gap-4">
+            <div className="flex flex-col items-center gap-6">
                 <div
                     className="relative group cursor-pointer"
                     onClick={() => setIsOpen(true)}
                 >
-                    <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white/10 relative bg-[#1a1a24]">
+                    {/* Glowing Ring Effect */}
+                    <div className="absolute -inset-1 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full blur opacity-50 group-hover:opacity-100 transition duration-500"></div>
+
+                    <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-white/10 relative bg-[#1a1a24] shadow-2xl">
                         {avatarUrl ? (
                             <Image
                                 src={avatarUrl}
                                 alt="Avatar"
                                 fill
-                                className="object-cover"
+                                className="object-cover transition-transform duration-500 group-hover:scale-110"
                             />
                         ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                                <span className="text-4xl font-bold text-white/20">{username.charAt(0).toUpperCase()}</span>
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-900/50 to-blue-900/50">
+                                <span className="text-5xl font-bold text-white/40">{username.charAt(0).toUpperCase()}</span>
                             </div>
                         )}
 
@@ -73,47 +91,54 @@ export default function AvatarUpload({ currentAvatarUrl, username }: AvatarUploa
                             </div>
                         )}
                     </div>
-                    <div className="absolute bottom-0 right-0 bg-purple-600 p-2 rounded-full border-4 border-[#0b0b10] shadow-lg">
-                        <Camera size={16} className="text-white" />
-                    </div>
+
+                    <button className="absolute bottom-2 right-2 bg-purple-600 p-2.5 rounded-full border-4 border-[#0b0b10] shadow-lg hover:bg-purple-500 transition-colors group-hover:scale-110 duration-300">
+                        <Camera size={18} className="text-white" />
+                    </button>
                 </div>
-                <p className="text-sm text-gray-400">Clicca per cambiare foto</p>
+
+                <div className="text-center">
+                    <p className="text-gray-400 text-xs font-medium">Clicca per cambiare foto</p>
+                </div>
             </div>
 
             {/* Selection Modal */}
-            {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-[#1a1a24] border border-white/10 rounded-3xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl relative">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-xl font-bold text-white">Scegli il tuo Avatar</h3>
+            {mounted && isOpen && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+                    <div className="bg-[#1a1a24]/90 border border-white/10 rounded-3xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl relative animate-fade-in-up ring-1 ring-white/10">
+                        <div className="flex items-center justify-between mb-8">
+                            <div>
+                                <h3 className="text-2xl font-bold text-white">Scegli il tuo Avatar</h3>
+                                <p className="text-gray-400 text-sm mt-1">Seleziona uno dei nostri avatar esclusivi</p>
+                            </div>
                             <button
                                 onClick={() => setIsOpen(false)}
-                                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                                className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
                             >
-                                <X className="text-gray-400" size={24} />
+                                <X size={24} />
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
                             {AVAILABLE_AVATARS.map((avatar) => (
                                 <button
                                     key={avatar.id}
                                     onClick={() => handleSelectAvatar(avatar.path)}
-                                    className={`relative aspect-square rounded-2xl overflow-hidden border-2 transition-all group ${avatarUrl === avatar.path
-                                            ? 'border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.4)]'
-                                            : 'border-white/5 hover:border-white/20'
+                                    className={`relative aspect-square rounded-2xl overflow-hidden border-2 transition-all duration-300 group ${avatarUrl === avatar.path
+                                        ? 'border-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.3)] scale-105'
+                                        : 'border-white/5 hover:border-white/20 hover:scale-105 hover:shadow-xl'
                                         }`}
                                 >
                                     <Image
                                         src={avatar.path}
                                         alt={avatar.label}
                                         fill
-                                        className="object-cover transition-transform group-hover:scale-110"
+                                        className="object-cover transition-transform duration-500 group-hover:scale-110 cursor-pointer"
                                     />
                                     {avatarUrl === avatar.path && (
-                                        <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
-                                            <div className="bg-purple-500 rounded-full p-1">
-                                                <Check size={16} className="text-white" />
+                                        <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center backdrop-blur-[1px]">
+                                            <div className="bg-purple-500 rounded-full p-2 shadow-lg">
+                                                <Check size={20} className="text-white" />
                                             </div>
                                         </div>
                                     )}
@@ -121,7 +146,8 @@ export default function AvatarUpload({ currentAvatarUrl, username }: AvatarUploa
                             ))}
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </>
     );

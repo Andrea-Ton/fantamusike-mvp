@@ -406,3 +406,50 @@ create policy "Users can update their own score logs (mark as seen)."
     on daily_score_logs for update
     using ( auth.uid() = user_id )
     with check ( auth.uid() = user_id );
+
+-- BADGE SYSTEM
+
+-- 1. Create badges table
+create table badges (
+  id uuid default uuid_generate_v4() primary key,
+  name text not null,
+  description text,
+  image_url text,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+alter table badges enable row level security;
+
+create policy "Badges are viewable by everyone."
+  on badges for select
+  using ( true );
+  
+create policy "Admins can manage badges."
+  on badges for all
+  using ( exists ( select 1 from profiles where id = auth.uid() and is_admin = true ) );
+
+-- 2. Create user_badges table
+create table user_badges (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references profiles(id) on delete cascade not null,
+  badge_id uuid references badges(id) on delete cascade not null,
+  awarded_at timestamp with time zone default timezone('utc'::text, now()),
+  unique(user_id, badge_id)
+);
+
+alter table user_badges enable row level security;
+
+create policy "User badges are viewable by everyone."
+  on user_badges for select
+  using ( true );
+
+create policy "Admins can award badges."
+  on user_badges for insert
+  with check ( exists ( select 1 from profiles where id = auth.uid() and is_admin = true ) );
+
+-- SEED DATA FOR BADGES (Pioneers)
+
+-- Insert 'Pioneer' Badge if it doesn't exist
+insert into badges (name, description, image_url)
+select 'Pioneer', 'Membro fondatore di FantaMusiké MVP', '/badges/pioneer.png'
+where not exists (select 1 from badges where name = 'Pioneer');
