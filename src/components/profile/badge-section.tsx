@@ -59,12 +59,12 @@ export default function BadgeSection({ userId }: { userId: string }) {
                 <div className="flex flex-wrap gap-4">
                     {userBadges.map((ub) => (
                         <div key={ub.badge_id} className="group relative">
-                            <div className="w-25 h-25 rounded-full bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(168,85,247,0.2)] cursor-help overflow-hidden relative">
+                            <div className="w-25 h-25 rounded-full bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(168,85,247,0.2)] cursor-help overflow-hidden relative isolate">
                                 <Image
                                     src={ub.badge.image_url}
                                     alt={ub.badge.name}
                                     fill
-                                    className="object-cover drop-shadow-[0_0_5px_rgba(168,85,247,0.5)]"
+                                    className="object-cover rounded-full drop-shadow-[0_0_5px_rgba(168,85,247,0.5)]"
                                 />
                             </div>
 
