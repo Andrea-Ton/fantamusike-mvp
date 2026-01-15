@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { validateUsername } from '@/utils/validation';
 
 export async function updateProfileAction(formData: FormData) {
     const supabase = await createClient();
@@ -20,7 +21,13 @@ export async function updateProfileAction(formData: FormData) {
         updated_at: new Date().toISOString(),
     };
 
-    if (username) updates.username = username;
+    if (username) {
+        const validation = validateUsername(username);
+        if (!validation.valid) {
+            return { success: false, message: validation.error };
+        }
+        updates.username = username;
+    }
     if (avatarUrl) updates.avatar_url = avatarUrl;
 
     const { error } = await supabase
@@ -31,6 +38,17 @@ export async function updateProfileAction(formData: FormData) {
     if (error) {
         console.error('Profile update error:', error);
         return { success: false, message: 'Failed to update profile' };
+    }
+
+    // Sync with Auth Metadata (so Sidebar/Learderboard reflect changes immediately)
+    if (updates.username || updates.avatar_url) {
+        const metadataUpdates: { name?: string; avatar_url?: string } = {};
+        if (updates.username) metadataUpdates.name = updates.username;
+        if (updates.avatar_url) metadataUpdates.avatar_url = updates.avatar_url;
+
+        await supabase.auth.updateUser({
+            data: metadataUpdates
+        });
     }
 
     revalidatePath('/dashboard/profile');

@@ -121,11 +121,12 @@ export async function sendAdminMarketingEmail(subject: string, payload: EmailPay
         // Simple footer injection for Unsubscribe
         // We ensure we append it before </body> if present, or just at end
         const footerHtml = `
-            <br/><br/>
-            <hr/>
-            <p style="font-size: 12px; color: #666; text-align: center;">
-                Non vuoi più ricevere queste email? <a href="${unsubscribeLink}" style="color: #666; text-decoration: underline;">Disiscriviti qui</a>.
-            </p>
+            <div style="padding: 48px 20px; text-align: center;">
+                <hr style="border: none; border-top: 1px solid #eaeaea; margin-bottom: 24px;" />
+                <p style="font-size: 12px; color: #666; margin: 0;">
+                    Non vuoi più ricevere queste email? <a href="${unsubscribeLink}" style="color: #666; text-decoration: underline;">Disiscriviti qui</a>.
+                </p>
+            </div>
         `;
 
         // If HTML has </body>, inject before it. Else append.

@@ -24,8 +24,9 @@ export default async function DashboardLayout({
         .eq('id', user.id)
         .single();
 
-    const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url;
-    const displayName = profile?.username || user?.user_metadata?.name || 'Manager';
+    // Prioritize DB profile, fallback to metadata, fallback to nothing
+    const avatarUrl = profile?.avatar_url ?? user?.user_metadata?.avatar_url;
+    const displayName = profile?.username ?? user?.user_metadata?.name ?? 'Manager';
     const isAdmin = profile?.is_admin || false;
 
     // Fetch Current Season
