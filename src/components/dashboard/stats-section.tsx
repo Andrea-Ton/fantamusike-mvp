@@ -17,6 +17,8 @@ export default async function StatsSection({ userId, userTeamPromise, totalScore
     const userTeam = await userTeamPromise;
 
     let weeklyTrend = 0;
+    let weeklyFanta = 0;
+    let weeklyPromo = 0;
 
     if (userTeam) {
         const artistIds = [
@@ -27,10 +29,19 @@ export default async function StatsSection({ userId, userTeamPromise, totalScore
             userTeam.slot_5?.id
         ].filter(Boolean) as string[];
 
-        const { scores } = await getWeeklyScoresAction(artistIds, userTeam.captain_id, userId);
+        // @ts-ignore
+        const { scores, fantaScores, promoScores } = await getWeeklyScoresAction(artistIds, userTeam.captain_id, userId);
 
         weeklyTrend = artistIds.reduce((total, artistId) => {
             return total + (scores[artistId] || 0);
+        }, 0);
+
+        weeklyFanta = artistIds.reduce((total, artistId) => {
+            return total + (fantaScores?.[artistId] || 0);
+        }, 0);
+
+        weeklyPromo = artistIds.reduce((total, artistId) => {
+            return total + (promoScores?.[artistId] || 0);
         }, 0);
     }
 
@@ -52,12 +63,35 @@ export default async function StatsSection({ userId, userTeamPromise, totalScore
                     </div>
                 </div>
 
-                <div className="mt-8 flex gap-6">
+                <div className="mt-8 flex flex-col md:flex-row gap-6">
+                    {/* Total Trend */}
                     <div className="flex flex-col">
                         <span className="text-xs text-purple-200 uppercase tracking-wider mb-1">Trend Settimanale</span>
                         <div className={`flex items-center gap-1 text-lg font-bold ${weeklyTrend > 0 ? 'text-green-300' : weeklyTrend < 0 ? 'text-red-300' : 'text-gray-300'}`}>
                             {weeklyTrend > 0 ? <TrendingUp size={18} /> : weeklyTrend < 0 ? <TrendingDown size={18} /> : <Minus size={18} />}
                             {weeklyTrend > 0 ? '+' : ''}{weeklyTrend} pts
+                        </div>
+                    </div>
+
+                    {/* Divider (Mobile hidden) */}
+                    <div className="hidden md:block w-px bg-white/20 h-10 self-center"></div>
+
+                    {/* Breakdown */}
+                    <div className="flex gap-6">
+                        {/* Fanta Points */}
+                        <div className="flex flex-col">
+                            <span className="text-[10px] text-purple-200 uppercase tracking-wider mb-1 opacity-80">Punti Fanta</span>
+                            <div className="flex items-center gap-1.5 text-base font-medium text-white/90">
+                                {weeklyFanta > 0 ? '+' : ''}{weeklyFanta}
+                            </div>
+                        </div>
+
+                        {/* Promo Points */}
+                        <div className="flex flex-col">
+                            <span className="text-[10px] text-purple-200 uppercase tracking-wider mb-1 opacity-80">Punti Promo</span>
+                            <div className="flex items-center gap-1.5 text-base font-medium text-white/90">
+                                {weeklyPromo > 0 ? '+' : ''}{weeklyPromo}
+                            </div>
                         </div>
                     </div>
                 </div>

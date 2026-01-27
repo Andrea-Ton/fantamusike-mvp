@@ -57,11 +57,17 @@ export async function getWeeklyScoresAction(artistIds: string[], captainId?: str
 
     // 6. Return a map of artistId -> score
     const scoreMap: Record<string, number> = {};
+    const fantaScoreMap: Record<string, number> = {};
+    const promoScoreMap: Record<string, number> = {};
 
     // Initialize with 0
-    artistIds.forEach(id => scoreMap[id] = 0);
+    artistIds.forEach(id => {
+        scoreMap[id] = 0;
+        fantaScoreMap[id] = 0;
+        promoScoreMap[id] = 0;
+    });
 
-    // Add Weekly Scores
+    // Add Weekly Scores (Fanta Points)
     scores.forEach(score => {
         let points = score.total_points;
 
@@ -74,7 +80,8 @@ export async function getWeeklyScoresAction(artistIds: string[], captainId?: str
             }
         }
 
-        scoreMap[score.artist_id] = points;
+        fantaScoreMap[score.artist_id] = points;
+        scoreMap[score.artist_id] += points;
     });
 
     // 7. Add Promo Points (Real-time)
@@ -90,6 +97,7 @@ export async function getWeeklyScoresAction(artistIds: string[], captainId?: str
         if (promoLogs) {
             promoLogs.forEach(log => {
                 if (scoreMap[log.artist_id] === undefined) scoreMap[log.artist_id] = 0;
+                promoScoreMap[log.artist_id] = (promoScoreMap[log.artist_id] || 0) + log.points_awarded;
                 scoreMap[log.artist_id] += log.points_awarded;
             });
         }
@@ -97,7 +105,9 @@ export async function getWeeklyScoresAction(artistIds: string[], captainId?: str
 
     return {
         week: Math.max(targetWeek, latestSnapshotWeek), // Return current week context even if scores are lagging
-        scores: scoreMap
+        scores: scoreMap,
+        fantaScores: fantaScoreMap,
+        promoScores: promoScoreMap
     };
 }
 export async function getUnseenScoreLogsAction() {

@@ -21,6 +21,8 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
     const hasTeam = userTeam !== null;
 
     let weeklyScores: Record<string, number> = {};
+    let fantaScores: Record<string, number> = {};
+    let promoScores: Record<string, number> = {};
     const featuredArtists = await getFeaturedArtistsAction();
     const featuredIds = new Set(featuredArtists.map(a => a.id));
     let promoStatus: Record<string, ArtistPromoStatus> = {};
@@ -57,6 +59,9 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
             ]);
 
             weeklyScores = scoresResult.scores;
+            fantaScores = scoresResult.fantaScores || {};
+            promoScores = scoresResult.promoScores || {};
+
             promoStatus = statusResult;
 
             // Map releases
@@ -85,6 +90,8 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
                 popularity: userTeam.slot_1.popularity,
                 category: 'Big',
                 trend: weeklyScores[userTeam.slot_1.id] || 0,
+                fantaTrend: typeof fantaScores !== 'undefined' ? fantaScores[userTeam.slot_1.id] || 0 : 0,
+                promoTrend: typeof promoScores !== 'undefined' ? promoScores[userTeam.slot_1.id] || 0 : 0,
                 isCaptain: userTeam.captain_id === userTeam.slot_1.id,
                 multiplier: userTeam.captain_id === userTeam.slot_1.id ? (featuredIds.has(userTeam.slot_1.id) ? 2 : 1.5) : undefined,
                 external_urls: { spotify: `https://open.spotify.com/artist/${userTeam.slot_1.id}` }
@@ -102,6 +109,8 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
                 popularity: userTeam.slot_2.popularity,
                 category: 'Mid',
                 trend: weeklyScores[userTeam.slot_2.id] || 0,
+                fantaTrend: typeof fantaScores !== 'undefined' ? fantaScores[userTeam.slot_2.id] || 0 : 0,
+                promoTrend: typeof promoScores !== 'undefined' ? promoScores[userTeam.slot_2.id] || 0 : 0,
                 isCaptain: userTeam.captain_id === userTeam.slot_2.id,
                 multiplier: userTeam.captain_id === userTeam.slot_2.id ? (featuredIds.has(userTeam.slot_2.id) ? 2 : 1.5) : undefined,
                 external_urls: { spotify: `https://open.spotify.com/artist/${userTeam.slot_2.id}` }
@@ -119,6 +128,8 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
                 popularity: userTeam.slot_3.popularity,
                 category: 'Mid',
                 trend: weeklyScores[userTeam.slot_3.id] || 0,
+                fantaTrend: typeof fantaScores !== 'undefined' ? fantaScores[userTeam.slot_3.id] || 0 : 0,
+                promoTrend: typeof promoScores !== 'undefined' ? promoScores[userTeam.slot_3.id] || 0 : 0,
                 isCaptain: userTeam.captain_id === userTeam.slot_3.id,
                 multiplier: userTeam.captain_id === userTeam.slot_3.id ? (featuredIds.has(userTeam.slot_3.id) ? 2 : 1.5) : undefined,
                 external_urls: { spotify: `https://open.spotify.com/artist/${userTeam.slot_3.id}` }
@@ -136,6 +147,8 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
                 popularity: userTeam.slot_4.popularity,
                 category: 'New Gen',
                 trend: weeklyScores[userTeam.slot_4.id] || 0,
+                fantaTrend: typeof fantaScores !== 'undefined' ? fantaScores[userTeam.slot_4.id] || 0 : 0,
+                promoTrend: typeof promoScores !== 'undefined' ? promoScores[userTeam.slot_4.id] || 0 : 0,
                 isCaptain: userTeam.captain_id === userTeam.slot_4.id,
                 multiplier: userTeam.captain_id === userTeam.slot_4.id ? (featuredIds.has(userTeam.slot_4.id) ? 2 : 1.5) : undefined,
                 external_urls: { spotify: `https://open.spotify.com/artist/${userTeam.slot_4.id}` }
@@ -153,6 +166,8 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
                 popularity: userTeam.slot_5.popularity,
                 category: 'New Gen',
                 trend: weeklyScores[userTeam.slot_5.id] || 0,
+                fantaTrend: typeof fantaScores !== 'undefined' ? fantaScores[userTeam.slot_5.id] || 0 : 0,
+                promoTrend: typeof promoScores !== 'undefined' ? promoScores[userTeam.slot_5.id] || 0 : 0,
                 isCaptain: userTeam.captain_id === userTeam.slot_5.id,
                 multiplier: userTeam.captain_id === userTeam.slot_5.id ? (featuredIds.has(userTeam.slot_5.id) ? 2 : 1.5) : undefined,
                 external_urls: { spotify: `https://open.spotify.com/artist/${userTeam.slot_5.id}` }

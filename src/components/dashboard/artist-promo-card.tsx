@@ -67,17 +67,26 @@ export default function ArtistPromoCard({ slot, promoStatus, spotifyUrl, release
                                 </span>
                             )}
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className={`text-[10px] md:text-xs flex items-center gap-0.5 ${slot.artist.trend > 0 ? 'text-green-400' : slot.artist.trend < 0 ? 'text-red-400' : 'text-gray-400'}`}>
-                                {slot.artist.trend > 0 ? <TrendingUp size={12} /> : slot.artist.trend < 0 ? <TrendingDown size={12} /> : <Minus size={12} />}
-                                {slot.artist.trend > 0 ? '+' : ''}{Math.round(slot.artist.trend)} pts
-                            </span>
-                            <span className="text-[10px] md:text-xs flex items-center gap-0.5 text-gray-400">
-                                <span className="hidden md:inline">Promozioni giornaliere:</span>
-                                <span className="md:hidden">Promo:</span>
-                                <span className={completedCount === totalActions ? 'text-green-400 font-bold' : 'text-white'}>
-                                    {completedCount}/{totalActions}
+                        <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
+                            {/* Unified view if no separate data (fallback) -> actually separate data is always there now */}
+
+                            {/* Fanta Trend (Game) */}
+                            <span className="text-[10px] md:text-xs flex items-center gap-1 text-purple-200">
+                                <span className={slot.artist.fantaTrend! > 0 ? 'text-green-400 font-bold' : slot.artist.fantaTrend! < 0 ? 'text-red-400 font-bold' : 'text-gray-400'}>
+                                    {slot.artist.fantaTrend! > 0 ? '+' : ''}{Math.round(slot.artist.fantaTrend || 0)}
                                 </span>
+                                <span className="opacity-60 text-[9px] uppercase tracking-wider">Fanta</span>
+                            </span>
+
+                            {/* Divider on Mobile */}
+                            {/* <span className="hidden md:block text-white/10">|</span> */}
+
+                            {/* Promo Trend (Actions) */}
+                            <span className="text-[10px] md:text-xs flex items-center gap-1 text-yellow-200 relative">
+                                <span className={slot.artist.promoTrend! > 0 ? 'text-yellow-400 font-bold' : 'text-gray-400'}>
+                                    {slot.artist.promoTrend! > 0 ? '+' : ''}{Math.round(slot.artist.promoTrend || 0)}
+                                </span>
+                                <span className="opacity-60 text-[9px] uppercase tracking-wider">Promo</span>
                             </span>
                         </div>
                     </div>

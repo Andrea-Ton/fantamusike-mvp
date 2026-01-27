@@ -10,6 +10,8 @@ export type Artist = {
     popularity: number;
     category: 'Big' | 'Mid' | 'New Gen';
     trend: number;
+    fantaTrend?: number;
+    promoTrend?: number;
     isCaptain?: boolean;
     multiplier?: number;
     external_urls?: { spotify: string };
