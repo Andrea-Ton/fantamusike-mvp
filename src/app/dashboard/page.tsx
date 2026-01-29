@@ -13,6 +13,8 @@ import LeaderboardSection from '@/components/dashboard/leaderboard-section';
 import { StatsSkeleton, RosterSkeleton, LeaderboardSkeleton } from '@/components/dashboard/skeletons';
 import { getUnseenScoreLogsAction } from '@/app/actions/dashboard';
 import { DailyRecapModalWrapper } from '@/components/dashboard/daily-recap-modal-wrapper';
+import { getPendingBetResultAction } from '@/app/actions/promo';
+import { BetResultModalWrapper } from '@/components/dashboard/bet-result-modal-wrapper';
 
 export default async function DashboardPage() {
     const supabase = await createClient();
@@ -40,6 +42,7 @@ export default async function DashboardPage() {
     // Start fetching team data but don't await yet
     const userTeamPromise = getUserTeamAction(currentWeek);
     const unseenLogs = await getUnseenScoreLogsAction();
+    const pendingBetResult = await getPendingBetResultAction();
 
     return (
         <>
@@ -76,6 +79,11 @@ export default async function DashboardPage() {
 
             {unseenLogs && unseenLogs.length > 0 && (
                 <DailyRecapModalWrapper logs={unseenLogs} />
+            )}
+
+            {/* MusiBet Result Modal */}
+            {pendingBetResult && (
+                <BetResultModalWrapper result={pendingBetResult} />
             )}
 
             {/* Content Area */}

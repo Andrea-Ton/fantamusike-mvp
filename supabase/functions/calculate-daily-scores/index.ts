@@ -135,6 +135,106 @@ Deno.serve(async (_req: Request) => {
             }
         }
 
+        // 4b. Resolve MusiBets
+        console.log("Resolving MusiBets...");
+        const { data: pendingBets } = await supabaseClient
+            .from('daily_promos')
+            .select('*')
+            .eq('bet_done', true)
+            .eq('bet_resolved', false);
+
+        if (pendingBets && pendingBets.length > 0) {
+            // Fetch latest scores for all involved artists efficiently
+            const artistIds = new Set<string>();
+            pendingBets.forEach((p: any) => {
+                if (p.artist_id) artistIds.add(p.artist_id);
+                if (p.bet_snapshot?.rival?.id) artistIds.add(p.bet_snapshot.rival.id);
+            });
+
+            const { data: latestScores } = await supabaseClient
+                .from('weekly_scores')
+                .select('artist_id, total_points')
+                .eq('week_number', weekNumber)
+                .in('artist_id', Array.from(artistIds));
+
+            const scoreMap = new Map<string, number>();
+            latestScores?.forEach((s: any) => scoreMap.set(s.artist_id, s.total_points));
+
+            for (const promo of pendingBets) {
+                try {
+                    const myId = promo.artist_id;
+                    const rivalId = promo.bet_snapshot.rival.id;
+                    const startMy = promo.bet_snapshot.initial_scores?.my || 0;
+                    const startRival = promo.bet_snapshot.initial_scores?.rival || 0;
+
+                    const currMy = scoreMap.get(myId) || 0;
+                    const currRival = scoreMap.get(rivalId) || 0;
+
+                    const myDelta = currMy - startMy;
+                    const rivalDelta = currRival - startRival;
+
+                    const wager = promo.bet_snapshot.wager; // 'my_artist' | 'rival'
+                    let status = 'lost';
+
+                    if (myDelta === rivalDelta) {
+                        status = 'draw';
+                    } else if (wager === 'my_artist' && myDelta > rivalDelta) {
+                        status = 'won';
+                    } else if (wager === 'rival' && rivalDelta > myDelta) {
+                        status = 'won';
+                    }
+
+                    const isWin = status === 'won';
+                    const isDraw = status === 'draw';
+
+                    // Rewards
+                    const POINTS_REWARD = 10;
+                    const COINS_REWARD = 0;
+                    const pointsAwarded = isWin ? POINTS_REWARD : 0;
+                    const coinsAwarded = isWin ? COINS_REWARD : 0;
+
+                    // Update Snapshot
+                    const newSnapshot = {
+                        ...promo.bet_snapshot,
+                        status: status,
+                        scores: { my: myDelta, rival: rivalDelta },
+                        won_points: pointsAwarded,
+                        won_coins: coinsAwarded
+                    };
+
+                    // Update Promo
+                    await supabaseClient
+                        .from('daily_promos')
+                        .update({
+                            bet_snapshot: newSnapshot,
+                            bet_resolved: true,
+                            total_points: (promo.total_points || 0) + pointsAwarded,
+                            total_coins: (promo.total_coins || 0) + coinsAwarded
+                        })
+                        .eq('id', promo.id);
+
+                    // Award to Profile immediately
+                    if (isWin) {
+                        // We fetch profile first to increment safely? Or blindly increment using RPC if available?
+                        // Simple fetch-update pattern here since traffic is low
+                        const { data: prof } = await supabaseClient.from('profiles').select('listen_score, musi_coins').eq('id', promo.user_id).single();
+                        if (prof) {
+                            await supabaseClient
+                                .from('profiles')
+                                .update({
+                                    listen_score: (prof.listen_score || 0) + pointsAwarded,
+                                    musi_coins: (prof.musi_coins || 0) + coinsAwarded
+                                })
+                                .eq('id', promo.user_id);
+                        }
+                    }
+
+                } catch (e) {
+                    console.error("Error resolving bet for promo " + promo.id, e);
+                }
+            }
+        }
+
         // 5. Recalculate User Totals (Batch approach)
         const { data: allWeeklyScores } = await supabaseClient
             .from('weekly_scores')

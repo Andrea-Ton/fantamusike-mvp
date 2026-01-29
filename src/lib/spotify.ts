@@ -177,3 +177,28 @@ export async function getArtist(artistId: string): Promise<SpotifyArtist | null>
         return null;
     }
 }
+
+export async function getArtistTopTracks(artistId: string): Promise<string[]> {
+    const token = await getAccessToken();
+    if (!token) return [];
+
+    try {
+        const response = await fetchWithRetry(
+            `https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=IT`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                next: { revalidate: 3600 }
+            }
+        );
+
+        if (!response.ok) return [];
+
+        const data = await response.json();
+        return data.tracks.map((t: any) => t.name);
+    } catch (e) {
+        console.error(`Error fetching top tracks for ${artistId}:`, e);
+        return [];
+    }
+}

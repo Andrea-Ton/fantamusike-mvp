@@ -86,19 +86,21 @@ export async function getWeeklyScoresAction(artistIds: string[], captainId?: str
 
     // 7. Add Promo Points (Real-time)
     if (userId && weekStartDate) {
-        // Fetch promo logs for this user, these artists, since week start
-        const { data: promoLogs } = await supabase
-            .from('daily_promo_logs')
-            .select('artist_id, points_awarded')
+        // Fetch daily_promos for this user, where artist is one of the requested IDs, since week start
+        const { data: promos } = await supabase
+            .from('daily_promos')
+            .select('artist_id, total_points')
             .eq('user_id', userId)
             .in('artist_id', artistIds)
             .gte('created_at', weekStartDate);
 
-        if (promoLogs) {
-            promoLogs.forEach(log => {
-                if (scoreMap[log.artist_id] === undefined) scoreMap[log.artist_id] = 0;
-                promoScoreMap[log.artist_id] = (promoScoreMap[log.artist_id] || 0) + log.points_awarded;
-                scoreMap[log.artist_id] += log.points_awarded;
+        if (promos) {
+            promos.forEach(promo => {
+                if (scoreMap[promo.artist_id] === undefined) scoreMap[promo.artist_id] = 0;
+                // Add total_points stored in the daily_promo row
+                const points = promo.total_points || 0;
+                promoScoreMap[promo.artist_id] = (promoScoreMap[promo.artist_id] || 0) + points;
+                scoreMap[promo.artist_id] += points;
             });
         }
     }

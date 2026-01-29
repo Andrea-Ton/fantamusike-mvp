@@ -1,22 +1,9 @@
-export const PROMO_POINTS = {
-    Big: {
-        profile_click: 2,
-        release_click: 2,
-        share: 2
-    },
-    Mid: {
-        profile_click: 2,
-        release_click: 3,
-        share: 2
-    },
-    'New Gen': {
-        profile_click: 3,
-        release_click: 4,
-        share: 3
-    }
-} as const;
+export type ArtistCategory = 'Big' | 'Mid' | 'New Gen';
 
-export type ArtistCategory = keyof typeof PROMO_POINTS;
+export const QUIZ_CONFIG = {
+    POINTS_CORRECT: 5,
+    POINTS_INCORRECT: 1
+} as const;
 
 export interface LuckyDropTier {
     probability: number; // 0.0 to 1.0 (e.g. 0.05 is 5%)
@@ -24,20 +11,24 @@ export interface LuckyDropTier {
     label: string;       // For UI display (e.g. "Rare Drop")
 }
 
-export const PROMO_LUCKY_DROP: Record<ArtistCategory, LuckyDropTier[]> = {
-    Big: [
-        { probability: 0.02, amount: 5, label: "Legendary Drop" },
-        { probability: 0.08, amount: 3, label: "Epic Drop" },
-        { probability: 0.1, amount: 1, label: "Lucky Drop" }
+
+export const BET_CONFIG = {
+    POINTS_REWARD: 10,
+    COINS_REWARD: 0
+} as const;
+
+export const BOOST_CONFIG = {
+    ACTION_TEMPLATES: [
+        { id: 'revival', label: 'Boost Revival', subLabel: 'Sostieni un Classico', icon: 'Rocket', type: 'revival' },
+        { id: 'latest', label: 'Push Latest Release', subLabel: 'Promuovi l\'ultima uscita', icon: 'Music2', type: 'latest' },
+        { id: 'metrics', label: 'Check Metrics', subLabel: 'Analisi Profilo Spotify', icon: 'TrendingUp', type: 'metrics' },
+        { id: 'top_tracks', label: 'Hit Parade', subLabel: 'Ascolta le più amate', icon: 'Trophy', type: 'top_tracks' },
+        { id: 'discography', label: 'Discografia', subLabel: 'Esplora tutti gli album', icon: 'Library', type: 'discography' },
+        { id: 'radio', label: 'Artist Radio', subLabel: 'Scopri brani simili', icon: 'Radio', type: 'radio' }
     ],
-    Mid: [
-        { probability: 0.02, amount: 5, label: "Legendary Drop" },
-        { probability: 0.08, amount: 3, label: "Epic Drop" },
-        { probability: 0.1, amount: 1, label: "Lucky Drop" }
-    ],
-    'New Gen': [
-        { probability: 0.02, amount: 5, label: "Legendary Drop" },
-        { probability: 0.08, amount: 3, label: "Epic Drop" },
-        { probability: 0.1, amount: 1, label: "Lucky Drop" }
-    ]
-};
+    REWARDS: {
+        POINTS_AMOUNT: 5,
+        COINS_PROBABILITY: 0.1, // 10% chance
+        COINS_AMOUNT: 2
+    }
+} as const;

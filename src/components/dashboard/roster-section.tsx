@@ -7,9 +7,10 @@ import ArtistPromoCard from '@/components/dashboard/artist-promo-card';
 import { UserTeamResponse } from '@/app/actions/team';
 import { getWeeklyScoresAction } from '@/app/actions/dashboard';
 import { getFeaturedArtistsAction } from '@/app/actions/artist';
-import { getDailyPromoStatusAction, ArtistPromoStatus } from '@/app/actions/promo';
+import { getDailyPromoStateAction, DailyPromoState } from '@/app/actions/promo';
 import { getArtistReleases } from '@/lib/spotify';
 import { ARTIST_TIERS } from '@/config/game';
+import DailyPromoFeature from './daily-promo-feature';
 
 interface RosterSectionProps {
     userTeamPromise: Promise<UserTeamResponse>;
@@ -25,8 +26,14 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
     let promoScores: Record<string, number> = {};
     const featuredArtists = await getFeaturedArtistsAction();
     const featuredIds = new Set(featuredArtists.map(a => a.id));
-    let promoStatus: Record<string, ArtistPromoStatus> = {};
-    let artistReleases: Record<string, { latest?: string; revival?: string }> = {};
+
+    // New State Fetching
+    const dailyPromoState = await getDailyPromoStateAction();
+
+    // Maps for URLs to pass to client feature
+    let spotifyUrls: Record<string, string | undefined> = {};
+    let releaseUrls: Record<string, string | undefined> = {};
+    let revivalUrls: Record<string, string | undefined> = {};
 
     if (userTeam) {
         const artistIds = [
@@ -39,15 +46,13 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
 
         // Parallel data fetching
         try {
-            const [scoresResult, statusResult, ...releasesResults] = await Promise.all([
+            const [scoresResult, ...releasesResults] = await Promise.all([
                 getWeeklyScoresAction(artistIds, userTeam.captain_id, userId),
-                getDailyPromoStatusAction(artistIds),
                 // Fetch releases for each artist
                 ...artistIds.map(id => getArtistReleases(id).then(releases => {
                     const latest = releases[0]?.external_urls?.spotify;
                     let revival = undefined;
                     if (releases.length > 1) {
-                        // Pick a random one from indices 1 to end
                         const randomIndex = Math.floor(Math.random() * (releases.length - 1)) + 1;
                         revival = releases[randomIndex]?.external_urls?.spotify;
                     }
@@ -62,18 +67,22 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
             fantaScores = scoresResult.fantaScores || {};
             promoScores = scoresResult.promoScores || {};
 
-            promoStatus = statusResult;
-
-            // Map releases
+            // Map URLs
             releasesResults.forEach((r: any) => {
-                artistReleases[r.id] = { latest: r.latest, revival: r.revival };
+                releaseUrls[r.id] = r.latest;
+                revivalUrls[r.id] = r.revival;
+                // Assuming spotify URL is constructing in artist object, but we map it here for consistency if needed or extract from team
             });
+
+            // Construct Spotify URLs map from Team Data
+            if (userTeam.slot_1) spotifyUrls[userTeam.slot_1.id] = `https://open.spotify.com/artist/${userTeam.slot_1.id}`;
+            if (userTeam.slot_2) spotifyUrls[userTeam.slot_2.id] = `https://open.spotify.com/artist/${userTeam.slot_2.id}`;
+            if (userTeam.slot_3) spotifyUrls[userTeam.slot_3.id] = `https://open.spotify.com/artist/${userTeam.slot_3.id}`;
+            if (userTeam.slot_4) spotifyUrls[userTeam.slot_4.id] = `https://open.spotify.com/artist/${userTeam.slot_4.id}`;
+            if (userTeam.slot_5) spotifyUrls[userTeam.slot_5.id] = `https://open.spotify.com/artist/${userTeam.slot_5.id}`;
+
         } catch (error) {
             console.error('Error in parallel data fetching:', error);
-            // Default empty status
-            artistIds.forEach(id => {
-                if (!promoStatus[id]) promoStatus[id] = { profile_click: false, release_click: false, share: false };
-            });
         }
     }
 
@@ -179,12 +188,15 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
         <div className="lg:col-span-7">
             <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold text-white">La tua Label <span className="text-gray-400 text-sm font-normal md:ml-2 block md:inline">(Settimana Corrente)</span></h3>
-                <Link
-                    href="/dashboard/draft"
-                    className="px-4 py-2 rounded-full bg-[#1a1a24] border border-white/10 text-sm text-purple-400 font-medium hover:bg-purple-500 hover:text-white transition-all whitespace-nowrap"
-                >
-                    {hasTeam ? 'Gestisci Roster' : 'Crea Team'}
-                </Link>
+                {hasTeam && (
+                    <DailyPromoFeature
+                        teamSlots={teamSlots}
+                        initialState={dailyPromoState}
+                        spotifyUrls={spotifyUrls}
+                        releaseUrls={releaseUrls}
+                        revivalUrls={revivalUrls}
+                    />
+                )}
             </div>
 
             {hasTeam ? (
@@ -193,10 +205,6 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
                         <ArtistPromoCard
                             key={slot.id}
                             slot={slot}
-                            promoStatus={slot.artist ? promoStatus[slot.artist.id] : { profile_click: false, release_click: false, share: false }} // Fallback
-                            spotifyUrl={slot.artist?.external_urls?.spotify}
-                            releaseUrl={slot.artist ? artistReleases[slot.artist.id]?.latest : undefined}
-                            revivalUrl={slot.artist ? artistReleases[slot.artist.id]?.revival : undefined}
                         />
                     ))}
                 </div>
