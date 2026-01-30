@@ -28,23 +28,20 @@ export default async function LeaderboardPage() {
     return (
         <>
             {/* Mobile Header */}
-            <div className="md:hidden pt-12 px-6 flex justify-between items-center mb-6">
+            <div className="md:hidden pt-12 px-6 flex justify-between items-center mb-4 bg-[#0a0a0e]/80 backdrop-blur-xl border-b border-white/5 pb-4 sticky top-0 z-30">
                 <div className="flex items-center gap-3">
-                    <div className="relative w-12 h-12 flex-shrink-0 bg-white/5 rounded-2xl p-2 border border-white/10 backdrop-blur-xl">
+                    <div className="relative w-10 h-10 flex-shrink-0">
                         <Image
                             src="/logo.png"
                             alt="FantaMusiké Logo"
                             fill
-                            className="object-contain p-1"
+                            className="object-contain"
                             priority
                         />
                     </div>
                     <div>
-                        <h1 className="text-xl font-black text-white italic uppercase tracking-tighter">FantaMusiké</h1>
-                        <div className="flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></div>
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{seasonName}</p>
-                        </div>
+                        <h1 className="text-xl font-black text-white tracking-tighter uppercase italic leading-none">FantaMusiké</h1>
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{seasonName}</p>
                     </div>
                 </div>
                 <LogoutButton />

@@ -53,7 +53,8 @@ export default function DailyPromoFeature({
                 )}
 
                 {allActionsDone && (
-                    <div className="ml-4 p-1.5 bg-green-500/20 rounded-lg border border-green-500/20 relative z-10">
+                    //TODO: Hidden for now
+                    <div className="hidden ml-4 p-1.5 bg-green-500/20 rounded-lg border border-green-500/20 relative z-10">
                         <Sparkles size={12} className="text-green-400" />
                     </div>
                 )}
