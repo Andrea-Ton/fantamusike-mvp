@@ -750,9 +750,9 @@ export default function TalentScoutPage() {
                                 <div>
                                     <div className="flex items-center gap-2 mb-1.5">
                                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none">La tua Label</p>
+                                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none">Componi il tuo team di artisti</p>
                                     </div>
-                                    <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Draft Roster</h2>
+                                    <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">La tua Label</h2>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <div className="px-4 py-2 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-2 shadow-inner">
