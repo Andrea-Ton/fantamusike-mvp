@@ -410,6 +410,8 @@ export async function startBetAction(artistId: string): Promise<{ success: boole
     }
 }
 
+import { BOOST_CONFIG, BET_CONFIG } from '@/config/promo';
+
 export async function placeBetAction(artistId: string, prediction: 'my_artist' | 'rival'): Promise<ClaimPromoResult> {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -429,8 +431,27 @@ export async function placeBetAction(artistId: string, prediction: 'my_artist' |
         }
 
         if (promo.bet_done) {
-            return { success: false, message: 'Bet already placed' };
+            return { success: false, message: 'Scommessa già piazzata' };
         }
+
+        // Check and Deduct MusiCoins
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('musi_coins')
+            .eq('id', user.id)
+            .single();
+
+        if (!profile || (profile.musi_coins || 0) < BET_CONFIG.ENTRY_FEE) {
+            return { success: false, message: 'MusiCoins insufficient' };
+        }
+
+        // Deduct Coins from Profile
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .update({ musi_coins: (profile.musi_coins || 0) - BET_CONFIG.ENTRY_FEE })
+            .eq('id', user.id);
+
+        if (profileError) throw profileError;
 
         // Fetch current weekly scores to establish a baseline
         const { data: scores } = await supabase
@@ -466,7 +487,7 @@ export async function placeBetAction(artistId: string, prediction: 'my_artist' |
 
         return {
             success: true,
-            message: 'Bet placed successfully',
+            message: `Scommessa piazzata! (-${BET_CONFIG.ENTRY_FEE} MusiCoins)`,
             musiCoinsAwarded: 0 // No coins yet, delayed result
         };
 
@@ -523,7 +544,6 @@ export async function getPendingBetResultAction() {
 // MUSIBOOST ACTIONS
 // ------------------------------------------------------------------
 
-import { BOOST_CONFIG } from '@/config/promo';
 
 export async function startBoostAction(artistId: string): Promise<{ success: boolean; options?: any[]; message?: string }> {
     const supabase = await createClient();

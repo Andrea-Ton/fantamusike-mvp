@@ -33,6 +33,34 @@ async function getSpotifyToken() {
     return data.access_token
 }
 
+/**
+ * Helper to fetch all records from a table using pagination to bypass Supabase 1000 limit
+ */
+async function fetchAll(supabase: any, table: string, select = '*', filterBuilder?: (query: any) => any) {
+    let allData: any[] = [];
+    let from = 0;
+    const step = 1000;
+    let hasMore = true;
+
+    while (hasMore) {
+        let query = supabase.from(table).select(select).range(from, from + step - 1);
+        if (filterBuilder) {
+            query = filterBuilder(query);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        if (!data || data.length === 0) {
+            hasMore = false;
+        } else {
+            allData = [...allData, ...data];
+            from += step;
+            if (data.length < step) hasMore = false;
+        }
+    }
+    return allData;
+}
+
 // Deno.serve is the standard way to handle requests in Supabase Edge Functions
 Deno.serve(async (_req: Request) => {
     // We must use the Edge-specific client initialization
@@ -62,13 +90,10 @@ Deno.serve(async (_req: Request) => {
 
         console.log(`Calculating Daily Scores for Week ${weekNumber}...`)
 
-        // 3. Fetch snapshots for the week
-        const { data: snapshots, error: snapError } = await supabaseClient
-            .from('weekly_snapshots')
-            .select('*')
-            .eq('week_number', weekNumber)
+        // 3. Fetch snapshots for the week (with pagination)
+        const snapshots = await fetchAll(supabaseClient, 'weekly_snapshots', '*', (q: any) => q.eq('week_number', weekNumber));
 
-        if (snapError || !snapshots || snapshots.length === 0) {
+        if (!snapshots || snapshots.length === 0) {
             return new Response(JSON.stringify({ message: 'No snapshots found for current week. Skipping scoring.' }), { status: 200 })
         }
 
@@ -215,8 +240,6 @@ Deno.serve(async (_req: Request) => {
 
                     // Award to Profile immediately
                     if (isWin) {
-                        // We fetch profile first to increment safely? Or blindly increment using RPC if available?
-                        // Simple fetch-update pattern here since traffic is low
                         const { data: prof } = await supabaseClient.from('profiles').select('listen_score, musi_coins').eq('id', promo.user_id).single();
                         if (prof) {
                             await supabaseClient
@@ -235,11 +258,8 @@ Deno.serve(async (_req: Request) => {
             }
         }
 
-        // 5. Recalculate User Totals (Batch approach)
-        const { data: allWeeklyScores } = await supabaseClient
-            .from('weekly_scores')
-            .select('week_number, artist_id, total_points')
-            .lte('week_number', weekNumber);
+        // 5. Recalculate User Totals (Batch approach with pagination)
+        const allWeeklyScores = await fetchAll(supabaseClient, 'weekly_scores', 'week_number, artist_id, total_points', (q: any) => q.lte('week_number', weekNumber));
 
         const scoresMap: Record<number, Record<string, number>> = {};
         (allWeeklyScores as WeeklyScore[])?.forEach((s) => {
@@ -247,11 +267,11 @@ Deno.serve(async (_req: Request) => {
             scoresMap[s.week_number][s.artist_id] = s.total_points;
         });
 
-        const { data: featuredArtists } = await supabaseClient.from('featured_artists').select('spotify_id');
+        const featuredArtists = await fetchAll(supabaseClient, 'featured_artists', 'spotify_id');
         const featuredIds = new Set((featuredArtists as any[])?.map((f: any) => f.spotify_id) || []);
 
-        const { data: profiles } = await supabaseClient.from('profiles').select('id, total_score');
-        const { data: allTeams } = await supabaseClient.from('teams').select('*').lte('week_number', weekNumber).order('week_number', { ascending: true });
+        const profiles = await fetchAll(supabaseClient, 'profiles', 'id, total_score');
+        const allTeams = await fetchAll(supabaseClient, 'teams', '*', (q: any) => q.lte('week_number', weekNumber).order('week_number', { ascending: true }));
 
         const teamsByUser: Record<string, any[]> = {};
         (allTeams as any[])?.forEach((t: any) => {

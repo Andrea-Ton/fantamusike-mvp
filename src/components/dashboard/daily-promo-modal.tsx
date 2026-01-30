@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Trophy, Loader2, ChevronRight, Lock, HelpCircle, Target, TrendingUp, CheckCircle, Rocket, Library, Radio, Music2 } from 'lucide-react';
 import { selectDailyArtistAction, PromoActionType, DailyPromoState, ClaimPromoResult } from '@/app/actions/promo';
-import { ArtistCategory, QUIZ_CONFIG } from '@/config/promo';
+import { ArtistCategory, QUIZ_CONFIG, BET_CONFIG } from '@/config/promo';
 import { Slot } from './artist-card';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence, useSpring, useTransform } from 'framer-motion';
@@ -227,20 +227,29 @@ export default function DailyPromoModal({
         }
     };
 
-    const handlePlaceBet = async (prediction: 'my_artist' | 'rival') => {
-        if (!selectedSlot?.artist) return;
+    const handlePlaceBet = (prediction: 'my_artist' | 'rival') => {
+        setBetPrediction(prediction);
+    };
+
+    const handleConfirmBet = async () => {
+        if (!betPrediction || !selectedSlot?.artist || loadingAction) return;
+
         setLoadingAction('place-bet');
         try {
             const { placeBetAction } = await import('@/app/actions/promo');
-            const res = await placeBetAction(selectedSlot.artist.id, prediction);
+            const res = await placeBetAction(selectedSlot.artist.id, betPrediction);
             if (res.success) {
                 setPromoStatus(prev => ({ ...prev, bet: true }));
                 setBetPlaced(true);
-                setBetPrediction(prediction);
-                // No confetti for bet since result is deferred, unless we add visual feedback for "Bet Placed"
+                triggerConfetti(); // Visual feedback for successful bet placement
+            } else if (res.message === 'MusiCoins insufficient') {
+                alert("Non hai abbastanza MusiCoins per piazzare questa scommessa!");
             }
-        } catch (e) { console.error(e); }
-        finally { setLoadingAction(null); }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoadingAction(null);
+        }
     };
 
     const handleStartBoost = async () => {
@@ -332,7 +341,7 @@ export default function DailyPromoModal({
                     transform-style: preserve-3d;
                 }
             `}</style>
-            <div className={`w-full max-w-lg bg-[#1a1a24] border border-white/10 rounded-3xl p-6 relative shadow-2xl flex flex-col transition-all max-h-[90vh] overflow-y-auto ${viewState === 'actions' ? 'md:aspect-auto md:min-h-[550px]' : 'min-h-[400px]'}`}>
+            <div className={`w-full max-w-lg bg-[#0f0f13] border border-white/10 rounded-[2.5rem] p-6 relative shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col transition-all max-h-[90vh] overflow-y-auto ${viewState === 'actions' ? 'md:aspect-auto md:min-h-[600px]' : 'min-h-[400px]'}`}>
 
                 <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 rounded-full text-white z-20">
                     <X size={20} />
@@ -349,21 +358,24 @@ export default function DailyPromoModal({
                                     key={slot.artist.id}
                                     onClick={() => handleSelectArtist(slot)}
                                     disabled={!!loadingAction}
-                                    className="flex items-center gap-4 p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-purple-500/50 transition-all text-left group"
+                                    className="flex items-center gap-4 p-4 rounded-3xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-purple-500/50 transition-all text-left group relative overflow-hidden"
                                 >
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 blur-3xl -mr-16 -mt-16 group-hover:bg-purple-500/10 transition-colors"></div>
                                     <div className="relative">
-                                        <img src={slot.artist.image} className="w-12 h-12 rounded-lg object-cover" alt={slot.artist.name} />
+                                        <img src={slot.artist.image} className="w-14 h-14 rounded-2xl object-cover border border-white/10" alt={slot.artist.name} />
                                         {loadingAction === slot.artist.id && (
-                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
-                                                <Loader2 size={16} className="text-white animate-spin" />
+                                            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center rounded-2xl">
+                                                <Loader2 size={18} className="text-white animate-spin" />
                                             </div>
                                         )}
                                     </div>
                                     <div className="flex-1">
-                                        <div className="font-bold text-white group-hover:text-purple-400 transition-colors">{slot.artist.name}</div>
-                                        <div className="text-xs text-gray-400">{slot.type} Artist</div>
+                                        <div className="font-black text-white uppercase tracking-tight group-hover:text-purple-400 transition-colors">{slot.artist.name}</div>
+                                        <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{slot.type} Artist</div>
                                     </div>
-                                    <ChevronRight size={18} className="text-gray-600 group-hover:text-purple-400" />
+                                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-purple-500 group-hover:text-black transition-all">
+                                        <ChevronRight size={18} />
+                                    </div>
                                 </button>
                             ))}
                         </div>
@@ -373,12 +385,17 @@ export default function DailyPromoModal({
                 {viewState === 'actions' && selectedSlot?.artist && (
                     <div className="flex-1 flex flex-col pt-2 animate-in slide-in-from-right-10 duration-200">
                         {/* Header */}
-                        <div className="flex items-center gap-4 mb-4 p-3 bg-white/5 rounded-2xl border border-white/5">
-                            <img src={selectedSlot.artist.image} className="w-12 h-12 rounded-xl" alt={selectedSlot.artist.name} />
+                        <div className="flex items-center gap-4 mb-6 p-4 bg-white/5 rounded-3xl border border-white/10 backdrop-blur-md shadow-inner">
+                            <div className="relative">
+                                <img src={selectedSlot.artist.image} className="w-14 h-14 rounded-2xl border-2 border-white/10" alt={selectedSlot.artist.name} />
+                                <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1 border-2 border-[#0f0f13]">
+                                    <Lock size={8} className="text-black" />
+                                </div>
+                            </div>
                             <div>
-                                <h2 className="text-lg font-bold text-white leading-tight">{selectedSlot.artist.name}</h2>
-                                <div className="flex items-center gap-2 text-[10px] text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full w-fit mt-1">
-                                    <Lock size={10} /> Scelta Bloccata
+                                <h2 className="text-xl font-black text-white leading-tight tracking-tight uppercase italic">{selectedSlot.artist.name}</h2>
+                                <div className="flex items-center gap-2 text-[10px] text-gray-400 mt-1 uppercase tracking-widest font-bold">
+                                    Promozione Giornaliera Attiva
                                 </div>
                             </div>
                         </div>
@@ -426,12 +443,18 @@ export default function DailyPromoModal({
                                             </div>
 
                                             {promoStatus.quiz && !quizSubmitted ? (
-                                                <div className="flex-1 flex flex-col items-center justify-center animate-in fade-in zoom-in duration-300">
-                                                    <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mb-4 text-green-500">
-                                                        <CheckCircle size={40} />
+                                                <div className="flex-1 flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500">
+                                                    <div className="relative mb-6">
+                                                        <div className="absolute inset-0 bg-green-500 blur-2xl opacity-20 animate-pulse"></div>
+                                                        <div className="w-24 h-24 rounded-full bg-green-500/10 border-4 border-green-500/30 flex items-center justify-center text-green-500 shadow-[0_0_30px_rgba(34,197,94,0.2)]">
+                                                            <CheckCircle size={48} className="animate-in zoom-in duration-500 delay-150" />
+                                                        </div>
                                                     </div>
-                                                    <h4 className="text-xl font-bold text-white">Quiz Completato!</h4>
-                                                    <p className="text-gray-400 mt-2">Torna domani per un nuovo quiz.</p>
+                                                    <h4 className="text-2xl font-black text-white uppercase italic tracking-tighter">Quiz Completato!</h4>
+                                                    <p className="text-gray-500 mt-2 text-sm font-medium uppercase tracking-widest">Ottimo lavoro!</p>
+                                                    <div className="mt-8 px-4 py-2 bg-white/5 rounded-full border border-white/10 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                                                        Torna domani per una nuova sfida
+                                                    </div>
                                                 </div>
                                             ) : (
                                                 <>
@@ -450,13 +473,13 @@ export default function DailyPromoModal({
                                                                     const isCorrect = quizResult?.correctAnswerIndex === idx;
                                                                     const showResult = quizSubmitted;
 
-                                                                    let statusClass = 'border-white/10 text-gray-300 hover:bg-white/10';
-                                                                    if (isSelected) statusClass = 'bg-purple-500/20 border-purple-500 text-white shadow-purple-500/10';
+                                                                    let statusClass = 'border-white/10 text-gray-400 bg-white/5 hover:bg-white/10 hover:border-white/20';
+                                                                    if (isSelected) statusClass = 'bg-purple-500/10 border-purple-500 text-white shadow-purple-500/10';
 
                                                                     if (showResult) {
-                                                                        if (isCorrect) statusClass = 'bg-green-500/20 border-green-500 text-white shadow-green-500/10';
-                                                                        else if (isSelected) statusClass = 'bg-red-500/20 border-red-500 text-white shadow-red-500/10';
-                                                                        else statusClass = 'opacity-50 border-transparent';
+                                                                        if (isCorrect) statusClass = 'bg-green-500/10 border-green-500 text-white shadow-green-500/10';
+                                                                        else if (isSelected) statusClass = 'bg-red-500/10 border-red-500 text-white shadow-red-500/10';
+                                                                        else statusClass = 'opacity-30 border-white/5 text-gray-600 grayscale';
                                                                     }
 
                                                                     return (
@@ -464,20 +487,25 @@ export default function DailyPromoModal({
                                                                             key={idx}
                                                                             onClick={() => setSelectedOption(idx)}
                                                                             disabled={quizSubmitted}
-                                                                            className={`p-4 rounded-xl border text-sm font-medium transition-all relative flex items-center justify-between group ${statusClass} ${isSelected && !showResult ? 'shadow-lg' : ''}`}
+                                                                            className={`p-4 rounded-2xl border text-sm font-black transition-all relative flex items-center justify-between group backdrop-blur-sm ${statusClass} ${isSelected && !showResult ? 'shadow-[0_0_20px_rgba(168,85,247,0.2)]' : ''}`}
                                                                         >
-                                                                            <span>{opt}</span>
+                                                                            <div className="flex items-center gap-3">
+                                                                                <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black border transition-colors ${isSelected ? 'bg-white text-black border-white' : 'bg-white/5 text-gray-400 border-white/10'}`}>
+                                                                                    {String.fromCharCode(65 + idx)}
+                                                                                </div>
+                                                                                <span className="uppercase tracking-tight">{opt}</span>
+                                                                            </div>
                                                                             {showResult && (
                                                                                 <div className="flex items-center gap-2">
                                                                                     {isCorrect && (
-                                                                                        <span className="text-xs font-bold bg-green-500 text-black px-2 py-0.5 rounded-full animate-in zoom-in">
-                                                                                            +{QUIZ_CONFIG.POINTS_CORRECT} pts
-                                                                                        </span>
+                                                                                        <div className="flex items-center gap-1 bg-green-500 text-black px-2 py-1 rounded-lg animate-in zoom-in font-black text-[10px] shadow-lg shadow-green-500/20 uppercase">
+                                                                                            <CheckCircle size={10} /> Correct
+                                                                                        </div>
                                                                                     )}
                                                                                     {isSelected && !isCorrect && (
-                                                                                        <span className="text-xs font-bold bg-red-500/20 text-red-500 px-2 py-0.5 rounded-full animate-in zoom-in">
-                                                                                            +{QUIZ_CONFIG.POINTS_INCORRECT} pts
-                                                                                        </span>
+                                                                                        <div className="flex items-center gap-1 bg-red-500/20 text-red-500 px-2 py-1 rounded-lg animate-in zoom-in font-black text-[10px] uppercase border border-red-500/30">
+                                                                                            Wrong
+                                                                                        </div>
                                                                                     )}
                                                                                 </div>
                                                                             )}
@@ -490,9 +518,22 @@ export default function DailyPromoModal({
                                                                 <button
                                                                     onClick={handleAnswerQuiz}
                                                                     disabled={selectedOption === null || loadingAction === 'answer-quiz'}
-                                                                    className="w-full py-3 bg-white text-black font-bold rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-auto shadow-xl"
+                                                                    className="w-full group py-4 bg-gradient-to-br from-purple-500 to-purple-700 rounded-2xl font-bold text-white shadow-xl shadow-purple-500/30 hover:shadow-purple-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:translate-y-0 flex items-center justify-between px-6 mt-auto"
                                                                 >
-                                                                    {loadingAction === 'answer-quiz' ? <Loader2 className="animate-spin mx-auto" /> : 'Conferma Risposta'}
+                                                                    {loadingAction === 'answer-quiz' ? (
+                                                                        <div className="w-full flex justify-center"><Loader2 className="animate-spin" size={24} /></div>
+                                                                    ) : (
+                                                                        <>
+                                                                            <div className="flex flex-col items-start gap-0 text-left">
+                                                                                <span className="text-sm sm:text-base font-black uppercase tracking-tight">Conferma Risposta</span>
+                                                                                <span className="text-[10px] opacity-70 font-medium">Invia la tua scelta</span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-1.5 bg-black/20 px-3 py-1.5 rounded-xl border border-white/10 backdrop-blur-sm shadow-inner shrink-0">
+                                                                                <span className="text-xs font-bold">+{QUIZ_CONFIG.POINTS_CORRECT}</span>
+                                                                                <span className="text-[10px] font-black opacity-80 uppercase">Points</span>
+                                                                            </div>
+                                                                        </>
+                                                                    )}
                                                                 </button>
                                                             )}
                                                         </div>
@@ -510,15 +551,20 @@ export default function DailyPromoModal({
                                             </div>
 
                                             {promoStatus.bet && betPrediction ? (
-                                                <div className="flex-1 flex flex-col items-center justify-center animate-in fade-in zoom-in duration-300">
-                                                    <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mb-4 text-green-500">
-                                                        <CheckCircle size={40} />
+                                                <div className="flex-1 flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500">
+                                                    <div className="relative mb-6">
+                                                        <div className="absolute inset-0 bg-green-500 blur-2xl opacity-20 animate-pulse"></div>
+                                                        <div className="w-24 h-24 rounded-full bg-green-500/10 border-4 border-green-500/30 flex items-center justify-center text-green-500 shadow-[0_0_30px_rgba(34,197,94,0.2)]">
+                                                            <CheckCircle size={48} className="animate-in zoom-in duration-500 delay-150" />
+                                                        </div>
                                                     </div>
-                                                    <h4 className="text-xl font-bold text-white">Scommessa Piazzata!</h4>
-                                                    <p className="text-gray-400 mt-2 text-sm">
-                                                        Hai puntato su <span className="text-white font-bold">{betPrediction === 'my_artist' ? selectedSlot.artist.name : rivalData?.name}</span>.
+                                                    <h4 className="text-2xl font-black text-white uppercase italic tracking-tighter">Scommessa Piazzata!</h4>
+                                                    <p className="text-gray-400 mt-2 text-center text-sm font-medium uppercase tracking-widest max-w-[200px]">
+                                                        Hai puntato su <span className="text-white">{betPrediction === 'my_artist' ? selectedSlot.artist.name : rivalData?.name}</span>
                                                     </p>
-                                                    <p className="text-gray-500 text-xs mt-4">Torna domani per vedere se hai vinto!</p>
+                                                    <div className="mt-8 px-4 py-2 bg-white/5 rounded-full border border-white/10 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                                                        Risultati disponibili domani
+                                                    </div>
                                                 </div>
                                             ) : (
                                                 <>
@@ -531,19 +577,19 @@ export default function DailyPromoModal({
                                                         <div className="w-full flex-1 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
                                                             <p className="text-lg text-white font-medium mb-6 text-center leading-relaxed">Chi farà più punti oggi?</p>
 
-                                                            <div className="flex items-center justify-between gap-4 mb-8">
+                                                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 w-full">
                                                                 {/* Left: My Artist */}
-                                                                <div className={`flex-1 flex flex-col items-center p-3 rounded-2xl border transition-all cursor-pointer hover:bg-white/5 ${betPrediction === 'my_artist' ? 'border-orange-500 bg-orange-500/10' : 'border-white/10'}`}
+                                                                <div className={`w-full sm:flex-1 flex flex-col items-center p-3 rounded-2xl border transition-all cursor-pointer hover:bg-white/5 ${betPrediction === 'my_artist' ? 'border-orange-500 bg-orange-500/10' : 'border-white/10'}`}
                                                                     onClick={() => handlePlaceBet('my_artist')}>
                                                                     <img src={selectedSlot.artist.image} className="w-16 h-16 rounded-full mb-2 object-cover" alt="My Artist" />
                                                                     <span className="font-bold text-sm text-white text-center line-clamp-1">{selectedSlot.artist.name}</span>
                                                                     <span className="text-xs text-gray-500">Il tuo Artista</span>
                                                                 </div>
 
-                                                                <div className="text-2xl font-black text-orange-500 italic">VS</div>
+                                                                <div className="text-2xl font-black text-orange-500 italic py-2 sm:py-0">VS</div>
 
                                                                 {/* Right: Rival */}
-                                                                <div className={`flex-1 flex flex-col items-center p-3 rounded-2xl border transition-all cursor-pointer hover:bg-white/5 ${betPrediction === 'rival' ? 'border-orange-500 bg-orange-500/10' : 'border-white/10'}`}
+                                                                <div className={`w-full sm:flex-1 flex flex-col items-center p-3 rounded-2xl border transition-all cursor-pointer hover:bg-white/5 ${betPrediction === 'rival' ? 'border-orange-500 bg-orange-500/10' : 'border-white/10'}`}
                                                                     onClick={() => handlePlaceBet('rival')}>
                                                                     <img src={rivalData.image} className="w-16 h-16 rounded-full mb-2 object-cover" alt="Rival" />
                                                                     <span className="font-bold text-sm text-white text-center line-clamp-1">{rivalData.name}</span>
@@ -551,8 +597,32 @@ export default function DailyPromoModal({
                                                                 </div>
                                                             </div>
 
-                                                            <div className="mt-auto text-center text-xs text-gray-500">
-                                                                <p>Scegli il vincitore cliccando sul box corrispondente.</p>
+                                                            <div className="mt-auto flex flex-col items-center gap-4">
+                                                                {!betPrediction ? (
+                                                                    <div className="text-center text-xs text-gray-500">
+                                                                        <p>Scegli il vincitore cliccando sul box corrispondente.</p>
+                                                                    </div>
+                                                                ) : (
+                                                                    <button
+                                                                        onClick={handleConfirmBet}
+                                                                        disabled={!!loadingAction}
+                                                                        className="w-full group py-4 bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl font-bold text-white shadow-xl shadow-orange-500/30 hover:shadow-orange-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:translate-y-0 flex items-center justify-between px-6"
+                                                                    >
+                                                                        {loadingAction === 'place-bet' ? (
+                                                                            <div className="w-full flex justify-center"><Loader2 className="animate-spin" size={24} /></div>
+                                                                        ) : (
+                                                                            <>
+                                                                                <div className="flex flex-col items-start gap-0">
+                                                                                    <span className="text-sm sm:text-base font-black uppercase tracking-tight">Piazza Scommessa</span>
+                                                                                </div>
+                                                                                <div className="flex ml-3 items-center gap-1 bg-black/20 px-3 py-1.5 rounded-xl border border-white/10 backdrop-blur-sm shadow-inner shrink-0">
+                                                                                    <span className="text-xs font-bold">-{BET_CONFIG.ENTRY_FEE}</span>
+                                                                                    <span className="text-[10px] font-black opacity-80">MUSICOINS</span>
+                                                                                </div>
+                                                                            </>
+                                                                        )}
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     )}
@@ -569,15 +639,20 @@ export default function DailyPromoModal({
                                             </div>
 
                                             {promoStatus.boost ? (
-                                                <div className="flex-1 flex flex-col items-center justify-center animate-in fade-in zoom-in duration-300">
-                                                    <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mb-4 text-green-500">
-                                                        <CheckCircle size={40} />
+                                                <div className="flex-1 flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500">
+                                                    <div className="relative mb-6">
+                                                        <div className="absolute inset-0 bg-green-500 blur-2xl opacity-20 animate-pulse"></div>
+                                                        <div className="w-24 h-24 rounded-full bg-green-500/10 border-4 border-green-500/30 flex items-center justify-center text-green-500 shadow-[0_0_30px_rgba(34,197,94,0.2)]">
+                                                            <CheckCircle size={48} className="animate-in zoom-in duration-500 delay-150" />
+                                                        </div>
                                                     </div>
-                                                    <h4 className="text-xl font-bold text-white">Boost Completato!</h4>
-                                                    <p className="text-gray-400 mt-2 text-sm italic">
-                                                        Hai supportato {selectedSlot.artist.name} con un'azione speciale.
+                                                    <h4 className="text-2xl font-black text-white uppercase italic tracking-tighter">Boost Completato!</h4>
+                                                    <p className="text-gray-400 mt-2 text-center text-sm font-medium uppercase tracking-widest max-w-[200px]">
+                                                        Hai supportato <span className="text-white">{selectedSlot.artist.name}</span>
                                                     </p>
-                                                    <p className="text-gray-500 text-[10px] mt-6 uppercase tracking-widest">Torna domani per un nuovo boost!</p>
+                                                    <div className="mt-8 px-4 py-2 bg-white/5 rounded-full border border-white/10 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                                                        Torna domani per un nuovo boost
+                                                    </div>
                                                 </div>
                                             ) : (promoResult || initialState.boostSnapshot?.reward) ? (
                                                 <div className="flex-1 flex flex-col items-center justify-center py-4 animate-in zoom-in duration-300">
@@ -665,15 +740,16 @@ export default function DailyPromoModal({
                                                                             key={opt.id}
                                                                             onClick={() => { setSelectedBoostId(opt.id); handleClaim(opt.id); }}
                                                                             disabled={!!loadingAction}
-                                                                            className={`relative p-5 rounded-2xl border transition-all text-left flex flex-col group border-white/10 hover:border-cyan-500/50 hover:bg-white/5 shadow-lg active:scale-95`}
+                                                                            className={`relative p-5 rounded-2xl border transition-all text-left flex flex-col group border-white/10 hover:border-cyan-500/50 bg-white/5 hover:bg-cyan-500/5 shadow-xl active:scale-95 overflow-hidden`}
                                                                         >
-                                                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 bg-cyan-500/20 text-cyan-400 group-hover:bg-cyan-500 group-hover:text-black transition-colors`}>
+                                                                            <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/5 blur-3xl -mr-10 -mt-10 group-hover:bg-cyan-500/10 transition-colors"></div>
+                                                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 bg-cyan-500/20 text-cyan-400 group-hover:scale-110 transition-transform shadow-inner border border-cyan-500/20`}>
                                                                                 <IconComp size={24} />
                                                                             </div>
-                                                                            <span className={`font-bold text-sm mb-1 text-white`}>{opt.label}</span>
-                                                                            <span className="text-[10px] text-gray-500 uppercase tracking-widest">{opt.subLabel}</span>
+                                                                            <span className={`font-black text-sm mb-1 text-white uppercase tracking-tight`}>{opt.label}</span>
+                                                                            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{opt.subLabel}</span>
 
-                                                                            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
                                                                                 <ChevronRight size={16} className="text-cyan-500" />
                                                                             </div>
                                                                         </button>
@@ -707,17 +783,19 @@ function TabButton({ active, done, onClick, icon: Icon, label }: { active: boole
     return (
         <button
             onClick={onClick}
-            className={`flex-1 py-3 px-2 rounded-lg flex flex-col items-center gap-1 transition-all relative ${active ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'
+            className={`flex-1 py-3 px-2 rounded-xl flex flex-col items-center gap-1.5 transition-all relative ${active ? 'bg-white/10 text-white shadow-inner border border-white/5' : 'text-gray-500 hover:text-gray-300'
                 }`}
         >
             {done ? (
-                <CheckCircle size={18} className="text-green-500 animate-in zoom-in duration-300" />
+                <div className="bg-green-500 rounded-full p-0.5">
+                    <CheckCircle size={14} className="text-black" />
+                </div>
             ) : (
-                <Icon size={18} className={active ? 'scale-110' : ''} />
+                <Icon size={18} className={`${active ? 'scale-110 text-white' : ''} transition-transform`} />
             )}
-            <span className="text-[10px] font-bold uppercase">{label}</span>
+            <span className={`text-[9px] font-black uppercase tracking-tighter ${active ? 'opacity-100' : 'opacity-60'}`}>{label}</span>
             {active && (
-                <motion.div layoutId="tab-underline" className="absolute bottom-0 left-2 right-2 h-0.5 bg-purple-500" />
+                <motion.div layoutId="tab-underline" className="absolute bottom-1 left-4 right-4 h-0.5 bg-gradient-to-r from-transparent via-purple-500 to-transparent" />
             )}
         </button>
     );
