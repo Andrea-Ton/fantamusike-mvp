@@ -2,12 +2,12 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { getCurrentWeekAction } from './game';
-import { UserTeamResponse, getUserTeamAction } from './team';
-import { PROMO_POINTS, ArtistCategory, PROMO_LUCKY_DROP } from '@/config/promo';
+import { ArtistCategory, QUIZ_CONFIG } from '@/config/promo';
 import { ARTIST_TIERS } from '@/config/game';
+import { generateQuiz } from '@/lib/quiz-generator';
+import { getArtist, getArtistReleases, getArtistTopTracks } from '@/lib/spotify';
 
-export type PromoActionType = 'profile_click' | 'release_click' | 'share';
+export type PromoActionType = 'quiz' | 'bet' | 'boost';
 
 export type ClaimPromoResult = {
     success: boolean;
@@ -17,6 +17,7 @@ export type ClaimPromoResult = {
     musiCoinsAwarded?: number;
     dropLabel?: string;
     error?: string;
+    correctAnswerIndex?: number;
 };
 
 // Helper to determine artist category
@@ -26,166 +27,744 @@ function getArtistCategory(popularity: number): ArtistCategory {
     return 'New Gen';
 }
 
-export async function claimPromoAction(artistId: string, actionType: PromoActionType): Promise<ClaimPromoResult> {
-    const supabase = await createClient();
+export type DailyPromoState = {
+    selectedArtistId: string | null;
+    status: {
+        quiz: boolean;
+        bet: boolean;
+        boost: boolean;
+    };
+    locked: boolean; // True if selected
+    quizSnapshot?: {
+        question: string;
+        options: string[];
+        type: string;
+    } | null;
+    betSnapshot?: {
+        rival: any;
+        wager: 'my_artist' | 'rival' | null;
+        status: 'pending' | 'won' | 'lost';
+    } | null;
+    boostSnapshot?: {
+        options: any[]; // {id, label, url, icon, type}
+        selected_id?: string | null;
+        reward?: { type: 'points' | 'coins'; amount: number } | null;
+    } | null;
+};
 
-    // 1. Auth Check
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-        return { success: false, message: 'Unauthorized' };
+export async function getDailyPromoStateAction(): Promise<DailyPromoState> {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return { selectedArtistId: null, status: { quiz: false, bet: false, boost: false }, locked: false };
+
+    const today = new Date().toISOString().split('T')[0];
+
+    // Fetch daily promo row
+    const { data: promo } = await supabase
+        .from('daily_promos')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .single();
+
+    if (!promo) {
+        return {
+            selectedArtistId: null,
+            status: { quiz: false, bet: false, boost: false },
+            locked: false
+        };
     }
 
+    return {
+        selectedArtistId: promo.artist_id,
+        status: {
+            quiz: promo.quiz_done,
+            bet: promo.bet_done,
+            boost: promo.boost_done
+        },
+        locked: true,
+        quizSnapshot: promo.quiz_snapshot ? {
+            question: promo.quiz_snapshot.text,
+            options: promo.quiz_snapshot.options,
+            type: promo.quiz_snapshot.type
+        } : null,
+        betSnapshot: promo.bet_snapshot ? {
+            rival: promo.bet_snapshot.rival,
+            wager: promo.bet_snapshot.wager,
+            status: promo.bet_snapshot.status
+        } : null,
+        boostSnapshot: promo.boost_snapshot ? {
+            options: promo.boost_snapshot.options,
+            selected_id: promo.boost_snapshot.selected_id,
+            reward: promo.boost_snapshot.reward
+        } : null
+    };
+}
+
+export async function selectDailyArtistAction(artistId: string): Promise<{ success: boolean; message: string }> {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return { success: false, message: 'Unauthorized' };
+
     try {
-        // 2. Validation: Is artist in active team?
-        const currentWeek = await getCurrentWeekAction();
-        const userTeam = await getUserTeamAction(currentWeek);
+        const today = new Date().toISOString().split('T')[0];
 
-        if (!userTeam) {
-            return { success: false, message: 'No active team found' };
-        }
-
-        // Find the artist in the team to get popularity for Tier calculation
-        const slots = [userTeam.slot_1, userTeam.slot_2, userTeam.slot_3, userTeam.slot_4, userTeam.slot_5];
-        const artistSlot = slots.find(s => s && s.id === artistId);
-
-        if (!artistSlot) {
-            return { success: false, message: 'Artist not in your active team' };
-        }
-
-        // 3. Validation: Already claimed THIS action today?
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-
-        const { count } = await supabase
-            .from('daily_promo_logs')
-            .select('*', { count: 'exact', head: true })
+        const { data: existing } = await supabase
+            .from('daily_promos')
+            .select('id')
             .eq('user_id', user.id)
-            .eq('artist_id', artistId)
-            .eq('action_type', actionType)
-            .filter('created_at', 'gte', `${today}T00:00:00+00:00`);
+            .eq('date', today)
+            .single();
 
-        if (count && count > 0) {
-            return { success: false, message: 'This specific promo action already claimed today' };
-        }        // 4. Determine Rewards
-        const category = getArtistCategory(artistSlot.popularity);
-        const standardPoints = PROMO_POINTS[category][actionType];
-
-        // 5. Calculate Lucky Drop FIRST
-        let musiCoinsAwarded = 0;
-        let dropLabel = '';
-        const dropTiers = PROMO_LUCKY_DROP[category];
-
-        if (dropTiers && dropTiers.length > 0) {
-            const roll = Math.random();
-            let accumulatedProbability = 0;
-            for (const tier of dropTiers) {
-                accumulatedProbability += tier.probability;
-                if (roll < accumulatedProbability) {
-                    musiCoinsAwarded = tier.amount;
-                    dropLabel = tier.label;
-                    break;
-                }
-            }
+        if (existing) {
+            return { success: false, message: 'Artist already selected for today' };
         }
 
-        // 6. Point Logic: IF MusiCoins won, Points = 0. Else, Points = Standard.
-        const points = musiCoinsAwarded > 0 ? 0 : standardPoints;
-
-        // 7. Execute Claim (Log)
-        const { error: insertError } = await supabase
-            .from('daily_promo_logs')
+        const { error } = await supabase
+            .from('daily_promos')
             .insert({
                 user_id: user.id,
                 artist_id: artistId,
-                action_type: actionType,
-                points_awarded: points
+                date: today
             });
 
-        if (insertError) {
-            if (insertError.code === '23505') { // Unique violation
-                return { success: false, message: 'Promo action already claimed today' };
-            }
-            console.error('Promo Log Error:', insertError);
-            return { success: false, message: 'Failed to log promo' };
+        if (error) {
+            console.error('Select Artist Error:', error);
+            return { success: false, message: 'Failed to select artist' };
         }
 
-        // 8. Award Rewards to Profile
+        revalidatePath('/dashboard');
+        return { success: true, message: 'Artist selected!' };
+
+    } catch (error) {
+        console.error('Select Artist Exception:', error);
+        return { success: false, message: 'Unexpected error' };
+    }
+}
+
+
+export async function startQuizAction(artistId: string): Promise<{ success: boolean; quiz?: any; message?: string }> {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, message: 'Unauthorized' };
+
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        const { data: promo } = await supabase
+            .from('daily_promos')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('date', today)
+            .single();
+
+        if (!promo || promo.artist_id !== artistId) {
+            return { success: false, message: 'Invalid promo session' };
+        }
+
+        if (promo.quiz_snapshot) {
+            return {
+                success: true,
+                quiz: {
+                    question: promo.quiz_snapshot.text,
+                    options: promo.quiz_snapshot.options,
+                    type: promo.quiz_snapshot.type
+                }
+            };
+        }
+
+        // Fetch Data
+        const artist = await getArtist(artistId);
+        if (!artist) return { success: false, message: 'Artist not found' };
+
+        // Fetch Distractors from Cache directly
+        const { data: pool } = await supabase
+            .from('artists_cache')
+            .select('spotify_id')
+            .neq('spotify_id', artistId)
+            .limit(20);
+
+        const shuffledPool = (pool || []).sort(() => 0.5 - Math.random()).slice(0, 3);
+
+        const distractors = [];
+        for (const d of shuffledPool) {
+            const dArtist = await getArtist(d.spotify_id);
+            if (dArtist) {
+                const dRel = await getArtistReleases(d.spotify_id);
+                const dTracks = await getArtistTopTracks(d.spotify_id);
+                distractors.push({
+                    name: dArtist.name,
+                    popularity: dArtist.popularity,
+                    followers: dArtist.followers.total,
+                    genres: dArtist.genres,
+                    latestRelease: dRel?.[0] ? { name: dRel[0].name, type: dRel[0].album_type } : undefined,
+                    topTracks: dTracks
+                });
+            }
+        }
+
+        // Fetch Target Details
+        const releases = await getArtistReleases(artistId);
+        const topTracks = await getArtistTopTracks(artistId);
+
+        const artistData = {
+            name: artist.name,
+            popularity: artist.popularity,
+            followers: artist.followers.total,
+            genres: artist.genres,
+            latestRelease: releases?.[0] ? { name: releases[0].name, type: releases[0].album_type } : undefined,
+            topTracks: topTracks
+        };
+
+        const quiz = await generateQuiz(supabase, artistData, distractors);
+
+        // Save Snapshot
+        const { error } = await supabase
+            .from('daily_promos')
+            .update({ quiz_snapshot: quiz })
+            .eq('id', promo.id);
+
+        if (error) throw error;
+
+        return {
+            success: true,
+            quiz: {
+                question: quiz.text,
+                options: quiz.options,
+                type: quiz.type
+            }
+        };
+
+    } catch (e) {
+        console.error("Quiz Generation Error:", e);
+        return { success: false, message: 'Failed to generate quiz' };
+    }
+}
+
+export async function answerQuizAction(artistId: string, answerIndex: number): Promise<ClaimPromoResult> {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, message: 'Unauthorized' };
+
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        const { data: promo } = await supabase
+            .from('daily_promos')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('date', today)
+            .single();
+
+        if (!promo || !promo.quiz_snapshot) {
+            return { success: false, message: 'No active quiz' };
+        }
+
+        if (promo.quiz_done) {
+            return { success: false, message: 'Quiz already done' };
+        }
+
+        const isCorrect = promo.quiz_snapshot.correctAnswerIndex === answerIndex;
+        const points = isCorrect ? QUIZ_CONFIG.POINTS_CORRECT : QUIZ_CONFIG.POINTS_INCORRECT;
+
+        // Update Promo
+        const { error } = await supabase
+            .from('daily_promos')
+            .update({
+                quiz_done: true,
+                total_points: (promo.total_points || 0) + points
+            })
+            .eq('id', promo.id);
+
+        if (error) throw error;
+
+        // Award Points to Profile
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('listen_score')
+            .eq('id', user.id)
+            .single();
+
+        let newScore = (profile?.listen_score || 0) + points;
+
+        if (profile) {
+            await supabase
+                .from('profiles')
+                .update({ listen_score: newScore })
+                .eq('id', user.id);
+        }
+
+        revalidatePath('/dashboard');
+
+        return {
+            success: true,
+            message: isCorrect ? 'Correct!' : 'Wrong answer',
+            pointsAwarded: points,
+            newScore,
+            correctAnswerIndex: promo.quiz_snapshot.correctAnswerIndex
+        };
+
+    } catch (e) {
+        console.error(e);
+        return { success: false, message: 'Error submitting answer' };
+    }
+}
+
+export async function startBetAction(artistId: string): Promise<{ success: boolean; rival?: any; message?: string }> {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, message: 'Unauthorized' };
+
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        const { data: promo } = await supabase
+            .from('daily_promos')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('date', today)
+            .single();
+
+        if (!promo || promo.artist_id !== artistId) {
+            return { success: false, message: 'Invalid promo session' };
+        }
+
+        if (promo.bet_snapshot) {
+            return {
+                success: true,
+                rival: promo.bet_snapshot.rival
+            };
+        }
+
+        // Fetch My Artist for Tier info
+        const { data: myArtist } = await supabase
+            .from('artists_cache')
+            .select('*')
+            .eq('spotify_id', artistId)
+            .single();
+
+        if (!myArtist) return { success: false, message: 'Artist not found' };
+
+        const myTier = getArtistCategory(myArtist.current_popularity);
+        const tierRange = ARTIST_TIERS[myTier === 'New Gen' ? 'NEW_GEN' : myTier === 'Mid' ? 'MID' : 'BIG'];
+
+        // Get User Team to exclude
+        const { data: teams } = await supabase
+            .from('teams')
+            .select('slot_1_id, slot_2_id, slot_3_id, slot_4_id, slot_5_id')
+            .eq('user_id', user.id)
+            .order('week_number', { ascending: false })
+            .limit(1);
+
+        const currentTeam = teams?.[0] || {};
+        const teamIds = Object.values(currentTeam).filter(Boolean) as string[];
+
+        // Find Rival
+        // Ideally same tier, not in team, not the artist itself
+        const { data: potentialRivals } = await supabase
+            .from('artists_cache')
+            .select('*')
+            .gte('current_popularity', tierRange.min)
+            .lte('current_popularity', tierRange.max)
+            .neq('spotify_id', artistId);
+
+        // Filter out team members client-side (or could do 'not.in' if list is small)
+        const validRivals = (potentialRivals || []).filter(a => !teamIds.includes(a.spotify_id));
+
+        if (validRivals.length === 0) {
+            // Fallback to any artist not in team if strict tier matching fails
+            // (Simple handle: just pick random from full cache if needed, but for now assuming cache has enough)
+            return { success: false, message: 'No valid rival found' };
+        }
+
+        const rival = validRivals[Math.floor(Math.random() * validRivals.length)];
+
+        const rivalData = {
+            id: rival.spotify_id,
+            name: rival.name,
+            image: rival.image_url,
+            popularity: rival.current_popularity
+        };
+
+        const snapshot = {
+            rival: rivalData,
+            wager: null,
+            status: 'pending',
+            scores: null
+        };
+
+        const { error } = await supabase
+            .from('daily_promos')
+            .update({ bet_snapshot: snapshot })
+            .eq('id', promo.id);
+
+        if (error) throw error;
+
+        return {
+            success: true,
+            rival: rivalData
+        };
+
+    } catch (e) {
+        console.error("Start Bet Error:", e);
+        return { success: false, message: 'Failed to start bet' };
+    }
+}
+
+import { BOOST_CONFIG, BET_CONFIG } from '@/config/promo';
+
+export async function placeBetAction(artistId: string, prediction: 'my_artist' | 'rival'): Promise<ClaimPromoResult> {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, message: 'Unauthorized' };
+
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        const { data: promo } = await supabase
+            .from('daily_promos')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('date', today)
+            .single();
+
+        if (!promo || !promo.bet_snapshot) {
+            return { success: false, message: 'No active bet session' };
+        }
+
+        if (promo.bet_done) {
+            return { success: false, message: 'Scommessa già piazzata' };
+        }
+
+        // Check and Deduct MusiCoins
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('musi_coins')
+            .eq('id', user.id)
+            .single();
+
+        if (!profile || (profile.musi_coins || 0) < BET_CONFIG.ENTRY_FEE) {
+            return { success: false, message: 'MusiCoins insufficient' };
+        }
+
+        // Deduct Coins from Profile
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .update({ musi_coins: (profile.musi_coins || 0) - BET_CONFIG.ENTRY_FEE })
+            .eq('id', user.id);
+
+        if (profileError) throw profileError;
+
+        // Fetch current weekly scores to establish a baseline
+        const { data: scores } = await supabase
+            .from('weekly_scores')
+            .select('artist_id, total_points')
+            .in('artist_id', [artistId, promo.bet_snapshot.rival.id])
+            .order('week_number', { ascending: false }); // Get latest week
+
+        const myStartScore = scores?.find(s => s.artist_id === artistId)?.total_points || 0;
+        const rivalStartScore = scores?.find(s => s.artist_id === promo.bet_snapshot.rival.id)?.total_points || 0;
+
+        // Update Snapshot with wager and initial scores
+        const newSnapshot = {
+            ...promo.bet_snapshot,
+            wager: prediction,
+            initial_scores: {
+                my: myStartScore,
+                rival: rivalStartScore
+            }
+        };
+
+        const { error } = await supabase
+            .from('daily_promos')
+            .update({
+                bet_snapshot: newSnapshot,
+                bet_done: true
+            })
+            .eq('id', promo.id);
+
+        if (error) throw error;
+
+        revalidatePath('/dashboard');
+
+        return {
+            success: true,
+            message: `Scommessa piazzata! (-${BET_CONFIG.ENTRY_FEE} MusiCoins)`,
+            musiCoinsAwarded: 0 // No coins yet, delayed result
+        };
+
+    } catch (e) {
+        console.error("Place Bet Error:", e);
+        return { success: false, message: 'Failed to place bet' };
+    }
+}
+
+export async function markBetSeenAction(promoId: string) {
+    const supabase = await createClient();
+    const { error } = await supabase
+        .from('daily_promos')
+        .update({ bet_result_seen: true })
+        .eq('id', promoId);
+
+    if (error) console.error("Mark Bet Seen Error:", error);
+    revalidatePath('/dashboard');
+}
+
+export async function getPendingBetResultAction() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data: promo } = await supabase
+        .from('daily_promos')
+        .select('id, bet_snapshot, artist_id')
+        .eq('user_id', user.id)
+        .eq('bet_resolved', true)
+        .eq('bet_result_seen', false)
+        .limit(1)
+        .single();
+
+    if (!promo) return null;
+
+    // Fetch my artist name for UI
+    const { data: artist } = await supabase
+        .from('artists_cache')
+        .select('name')
+        .eq('spotify_id', promo.artist_id)
+        .single();
+
+    return {
+        id: promo.id,
+        betSnapshot: {
+            ...promo.bet_snapshot,
+            my_artist_name: artist?.name || 'Il Tuo Artista'
+        }
+    };
+}
+
+// ------------------------------------------------------------------
+// MUSIBOOST ACTIONS
+// ------------------------------------------------------------------
+
+
+export async function startBoostAction(artistId: string): Promise<{ success: boolean; options?: any[]; message?: string }> {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, message: 'Unauthorized' };
+
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        const { data: promo } = await supabase
+            .from('daily_promos')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('date', today)
+            .single();
+
+        if (!promo || promo.artist_id !== artistId) {
+            return { success: false, message: 'Invalid promo session' };
+        }
+
+        if (promo.boost_snapshot) {
+            return {
+                success: true,
+                options: promo.boost_snapshot.options
+            };
+        }
+
+        // Fetch Artist Data
+        const artist = await getArtist(artistId);
+        if (!artist) return { success: false, message: 'Artist not found' };
+        const releases = await getArtistReleases(artistId);
+
+        // Randomly select 2 unique templates
+        const templates = [...BOOST_CONFIG.ACTION_TEMPLATES];
+        const shuffled = templates.sort(() => 0.5 - Math.random());
+        const selectedTemplates = shuffled.slice(0, 2);
+
+        const selectedOptions = selectedTemplates.map(tpl => {
+            // Priority: URL from tpl if available, else artist profile (clean)
+            let url = artist.external_urls.spotify.split('?')[0];
+
+            if (tpl.id === 'latest' && releases?.[0]) {
+                url = releases[0].external_urls.spotify.split('?')[0];
+            } else if (tpl.id === 'revival' && releases && releases.length > 1) {
+                // Pick a "classic" (not the newest 2)
+                const index = releases.length > 2 ? 2 + Math.floor(Math.random() * (releases.length - 2)) : 1;
+                const revUrl = releases[index]?.external_urls.spotify;
+                if (revUrl) url = revUrl.split('?')[0];
+            } else if (tpl.id === 'discography') {
+                url = `${artist.external_urls.spotify.split('?')[0]}/discography`;
+            } else if (tpl.id === 'top_tracks') {
+                url = artist.external_urls.spotify.split('?')[0]; // Profile usually shows top tracks first
+            } else if (tpl.id === 'metrics') {
+                url = artist.external_urls.spotify.split('?')[0]; // Fallback for metrics
+            } else if (tpl.id === 'radio') {
+                url = artist.external_urls.spotify.split('?')[0]; // Fallback
+            }
+
+            return {
+                id: tpl.id,
+                label: tpl.label,
+                subLabel: tpl.subLabel,
+                icon: tpl.icon,
+                type: tpl.type,
+                url
+            };
+        });
+
+        const snapshot = {
+            options: selectedOptions,
+            selected_id: null,
+            reward: null
+        };
+
+        const { error } = await supabase
+            .from('daily_promos')
+            .update({ boost_snapshot: snapshot })
+            .eq('id', promo.id);
+
+        if (error) throw error;
+
+        return {
+            success: true,
+            options: selectedOptions
+        };
+
+    } catch (e) {
+        console.error("Start Boost Error:", e);
+        return { success: false, message: 'Failed to start boost' };
+    }
+}
+
+export async function claimBoostAction(artistId: string, optionId: string): Promise<ClaimPromoResult & { url?: string }> {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, message: 'Unauthorized' };
+
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        const { data: promo } = await supabase
+            .from('daily_promos')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('date', today)
+            .single();
+
+        if (!promo || !promo.boost_snapshot) {
+            return { success: false, message: 'No active boost session' };
+        }
+
+        if (promo.boost_done) {
+            return { success: false, message: 'Boost already accumulated' };
+        }
+
+        const selectedOption = promo.boost_snapshot.options.find((o: any) => o.id === optionId);
+        if (!selectedOption) {
+            return { success: false, message: 'Invalid option selected' };
+        }
+
+        // Determine Reward Logic
+        const isCoinWin = Math.random() < BOOST_CONFIG.REWARDS.COINS_PROBABILITY;
+        const reward = {
+            type: isCoinWin ? 'coins' : 'points',
+            amount: isCoinWin ? BOOST_CONFIG.REWARDS.COINS_AMOUNT : BOOST_CONFIG.REWARDS.POINTS_AMOUNT
+        };
+
+        const points = reward.type === 'points' ? reward.amount : 0;
+        const coins = reward.type === 'coins' ? reward.amount : 0;
+
+        // Update Snapshot (Selection Only - NO mark as done yet)
+        const newSnapshot = {
+            ...promo.boost_snapshot,
+            selected_id: optionId,
+            reward: reward
+        };
+
+        const { error } = await supabase
+            .from('daily_promos')
+            .update({
+                boost_snapshot: newSnapshot
+            })
+            .eq('id', promo.id);
+
+        if (error) throw error;
+
+        return {
+            success: true,
+            message: isCoinWin ? 'MusiCoins Found!' : 'Points Collected!',
+            pointsAwarded: points > 0 ? points : undefined,
+            musiCoinsAwarded: coins > 0 ? coins : undefined,
+            url: selectedOption.url
+        };
+
+    } catch (e) {
+        console.error("Claim Boost Error:", e);
+        return { success: false, message: 'Failed to claim boost' };
+    }
+}
+
+export async function finalizeBoostAction(artistId: string): Promise<ClaimPromoResult> {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, message: 'Unauthorized' };
+
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        const { data: promo } = await supabase
+            .from('daily_promos')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('date', today)
+            .single();
+
+        if (!promo || !promo.boost_snapshot || !promo.boost_snapshot.reward) {
+            return { success: false, message: 'Invalid or missing boost reward' };
+        }
+
+        if (promo.boost_done) {
+            return { success: true, message: 'Already done' };
+        }
+
+        const reward = promo.boost_snapshot.reward;
+        const points = reward.type === 'points' ? reward.amount : 0;
+        const coins = reward.type === 'coins' ? reward.amount : 0;
+
+        // Update Promo Flags (Done + Accreditation)
+        const { error: updateError } = await supabase
+            .from('daily_promos')
+            .update({
+                boost_done: true,
+                total_points: (promo.total_points || 0) + points,
+                total_coins: (promo.total_coins || 0) + coins
+            })
+            .eq('id', promo.id);
+
+        if (updateError) throw updateError;
+
+        // Update Profile
         const { data: profile } = await supabase
             .from('profiles')
             .select('listen_score, musi_coins')
             .eq('id', user.id)
             .single();
 
-        let updateData: any = {};
-        let newScore = profile?.listen_score || 0;
+        if (profile && user) {
+            const updates: any = {};
+            if (points > 0) updates.listen_score = (profile.listen_score || 0) + points;
+            if (coins > 0) updates.musi_coins = (profile.musi_coins || 0) + coins;
 
-        if (points > 0) {
-            newScore += points;
-            updateData.listen_score = newScore;
-        }
-
-        if (musiCoinsAwarded > 0) {
-            updateData.musi_coins = (profile?.musi_coins || 0) + musiCoinsAwarded;
-        }
-
-        if (Object.keys(updateData).length > 0 && profile) {
-            await supabase
-                .from('profiles')
-                .update(updateData)
-                .eq('id', user.id);
+            if (Object.keys(updates).length > 0) {
+                await supabase
+                    .from('profiles')
+                    .update(updates)
+                    .eq('id', user.id);
+            }
         }
 
         revalidatePath('/dashboard');
-        return {
-            success: true,
-            message: musiCoinsAwarded > 0
-                ? `Promo claimed! You won MusiCoins!`
-                : `Promo claimed! +${points} Points`,
-            newScore,
-            pointsAwarded: points,
-            musiCoinsAwarded: musiCoinsAwarded > 0 ? musiCoinsAwarded : undefined,
-            dropLabel: dropLabel || undefined
-        };
+        return { success: true, message: 'Boost finalized' };
 
-    } catch (error) {
-        console.error('Claim Promo Error:', error);
-        return { success: false, message: 'An unexpected error occurred' };
+    } catch (e) {
+        console.error("Finalize Boost Error:", e);
+        return { success: false, message: 'Failed to finalize boost' };
     }
-}
-
-// Map of Action Type -> Boolean (Claimed/Not Claimed)
-export type ArtistPromoStatus = Record<PromoActionType, boolean>;
-
-export async function getDailyPromoStatusAction(artistIds: string[]): Promise<Record<string, ArtistPromoStatus>> {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user || artistIds.length === 0) return {};
-
-    const today = new Date().toISOString().split('T')[0];
-
-    // Fetch all logs for these artists today
-    const { data: logs } = await supabase
-        .from('daily_promo_logs')
-        .select('artist_id, action_type')
-        .eq('user_id', user.id)
-        .in('artist_id', artistIds)
-        .gte('created_at', `${today}T00:00:00+00:00`);
-
-    // Initialize map
-    const statusMap: Record<string, ArtistPromoStatus> = {};
-    const defaultStatus: ArtistPromoStatus = { profile_click: false, release_click: false, share: false };
-
-    artistIds.forEach(id => {
-        statusMap[id] = { ...defaultStatus };
-    });
-
-    if (logs) {
-        logs.forEach((log: { artist_id: string; action_type: PromoActionType }) => {
-            if (statusMap[log.artist_id]) {
-                statusMap[log.artist_id][log.action_type] = true;
-            }
-        });
-    }
-
-    return statusMap;
 }

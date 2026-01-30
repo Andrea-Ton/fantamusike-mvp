@@ -36,8 +36,8 @@ export default function Sidebar({ avatarUrl, displayName, seasonName, isAdmin }:
     const season = seasonName || 'Season Zero';
 
     return (
-        <div className="hidden md:flex flex-col w-64 h-screen bg-[#0f0f15] border-r border-white/5 fixed left-0 top-0 z-50">
-            <div className="p-6 flex items-center gap-3">
+        <div className="hidden md:flex flex-col w-64 h-screen bg-[#050507]/80 backdrop-blur-3xl border-r border-white/5 fixed left-0 top-0 z-50">
+            <div className="p-8 flex items-center gap-3">
                 <div className="relative w-10 h-10 flex-shrink-0">
                     <Image
                         src="/logo.png"
@@ -48,75 +48,82 @@ export default function Sidebar({ avatarUrl, displayName, seasonName, isAdmin }:
                     />
                 </div>
                 <div>
-                    <span className="block text-xl font-bold text-white tracking-tight leading-none">FantaMusiké</span>
-                    <span className="text-xs text-gray-500 font-medium">{season}</span>
+                    <h1 className="text-xl font-black text-white tracking-tighter uppercase italic leading-none">FantaMusiké</h1>
+                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{season}</p>
                 </div>
             </div>
 
-            <div className="flex-1 px-4 py-6 space-y-2">
-                <p className="text-xs font-bold text-gray-500 uppercase px-4 mb-2">Menu</p>
+            <div className="flex-1 px-4 py-8 space-y-1.5 flex flex-col">
+                <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] px-4 mb-3">Menu</p>
                 {NAV_ITEMS.map((item) => {
                     const isActive = pathname === item.href;
                     return (
                         <Link
                             key={item.href}
                             href={item.href}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${isActive
-                                ? 'bg-purple-600/10 text-purple-400 border border-purple-500/20'
-                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                            className={`group w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 relative overflow-hidden ${isActive
+                                ? 'bg-white/5 text-white border border-white/10 shadow-inner'
+                                : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]'
                                 }`}
                         >
-                            <item.icon size={20} />
-                            <span className="font-medium text-sm">{item.label}</span>
+                            {isActive && (
+                                <div className="absolute left-0 top-3 bottom-3 w-1 bg-purple-500 rounded-r-full" />
+                            )}
+                            <item.icon size={18} className={`${isActive ? 'text-purple-400' : 'group-hover:text-gray-300'} transition-colors`} />
+                            <span className="font-black uppercase tracking-widest text-[11px]">{item.label}</span>
                         </Link>
                     );
                 })}
 
                 {isAdmin && (
                     <>
-                        <div className="my-4 border-t border-white/5 mx-4" />
-                        <p className="text-xs font-bold text-gray-500 uppercase px-4 mb-2">Admin</p>
+                        <div className="mt-8 mb-4 border-t border-white/5 mx-4" />
+                        <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] px-4 mb-3">Amministrazione</p>
                         <Link
                             href="/admin"
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${pathname === '/admin'
-                                ? 'bg-red-500/10 text-red-400 border border-red-500/20'
-                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                            className={`group w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 relative overflow-hidden ${pathname.startsWith('/admin')
+                                ? 'bg-red-500/10 text-red-500 border border-red-500/20 shadow-inner'
+                                : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]'
                                 }`}
                         >
-                            <Shield size={20} />
-                            <span className="font-medium text-sm">Pannello Admin</span>
+                            {pathname.startsWith('/admin') && (
+                                <div className="absolute left-0 top-3 bottom-3 w-1 bg-red-500 rounded-r-full" />
+                            )}
+                            <Shield size={18} className={`${pathname.startsWith('/admin') ? 'text-red-500' : 'group-hover:text-gray-300'} transition-colors`} />
+                            <span className="font-black uppercase tracking-widest text-[11px]">Pannello Admin</span>
                         </Link>
                     </>
                 )}
             </div>
 
-            <div className="p-4 mt-auto">
-                <Link href="/dashboard/profile" className="bg-[#1a1a24] rounded-2xl p-4 border border-white/5 flex items-center gap-3 mb-2 hover:bg-white/5 transition-colors group cursor-pointer">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 p-0.5 relative group-hover:scale-105 transition-transform">
+            <div className="p-6 mt-auto">
+                <Link href="/dashboard/profile" className="bg-white/5 rounded-[1.5rem] p-4 border border-white/10 flex items-center gap-3 mb-2 hover:bg-white/10 transition-all group cursor-pointer shadow-inner backdrop-blur-md">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 p-0.5 relative group-hover:scale-105 transition-transform shadow-lg">
                         {avatarUrl ? (
                             <Image
                                 src={avatarUrl}
                                 alt="Avatar"
                                 fill
-                                className="rounded-full object-cover border-2 border-[#0f0f15]"
+                                className="rounded-full object-cover border-2 border-[#050507]"
                             />
                         ) : (
-                            <div className="w-full h-full rounded-full bg-[#0f0f15] flex items-center justify-center">
-                                <span className="text-sm font-bold text-white">{display.charAt(0).toUpperCase()}</span>
+                            <div className="w-full h-full rounded-full bg-[#050507] flex items-center justify-center">
+                                <span className="text-[10px] font-black text-white italic uppercase">{display.charAt(0)}</span>
                             </div>
                         )}
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-[#050507]"></div>
                     </div>
                     <div className="flex-1 overflow-hidden">
-                        <p className="text-sm font-bold text-white truncate group-hover:text-purple-400 transition-colors">{display}</p>
+                        <p className="text-[11px] font-black text-white tracking-wider truncate group-hover:text-purple-400 transition-colors">{display}</p>
                     </div>
                     <button
                         onClick={(e) => {
-                            e.preventDefault(); // Prevent navigation when clicking logout
+                            e.preventDefault();
                             handleSignOut();
                         }}
-                        className="text-gray-500 hover:text-red-400 transition-colors p-2 hover:bg-white/10 rounded-full"
+                        className="text-gray-600 hover:text-red-500 transition-all p-2 hover:bg-red-500/10 rounded-xl"
                     >
-                        <LogOut size={18} />
+                        <LogOut size={16} />
                     </button>
                 </Link>
             </div>

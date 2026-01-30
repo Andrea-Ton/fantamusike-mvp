@@ -1,136 +1,90 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Minus, Crown, ExternalLink, CheckCircle, Plus, Rocket, Gift } from 'lucide-react';
-import { ArtistPromoStatus } from '@/app/actions/promo';
-import { Slot } from './artist-card'; // Reuse types
+import React from 'react';
+import { Crown, Plus, CheckCircle, Gift } from 'lucide-react';
+import { Slot } from './artist-card';
 import CountdownTimer from './countdown-timer';
-import PromoModal from './promo-modal';
 
 interface ArtistPromoCardProps {
     slot: Slot;
-    promoStatus: ArtistPromoStatus;
+    // We keep these props for compatibility but use them for simplified view
+    promoStatus?: any;
     spotifyUrl?: string;
     releaseUrl?: string;
     revivalUrl?: string;
 }
 
-export default function ArtistPromoCard({ slot, promoStatus, spotifyUrl, releaseUrl, revivalUrl }: ArtistPromoCardProps) {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-
-    // Check if ALL daily actions are done
-    const allDone = promoStatus.profile_click && promoStatus.release_click && promoStatus.share;
-
-    // Calculate progress
-    const completedCount = [promoStatus.profile_click, promoStatus.release_click, promoStatus.share].filter(Boolean).length;
-    const totalActions = 3;
+export default function ArtistPromoCard({ slot }: ArtistPromoCardProps) {
 
     if (!slot.artist) {
         return (
-            <div className="w-full h-20 md:h-24 rounded-2xl border border-dashed border-white/20 bg-white/5 flex items-center justify-between px-4 md:px-6 relative overflow-hidden group hover:bg-white/10 transition-all cursor-pointer">
+            <div className="w-full h-24 rounded-[1.5rem] border border-dashed border-white/10 bg-white/[0.02] flex items-center justify-between px-6 relative overflow-hidden group hover:bg-white/5 transition-all cursor-pointer backdrop-blur-sm shadow-inner">
                 <div className="flex flex-col">
-                    <span className="text-xs md:text-sm font-bold text-purple-300 uppercase tracking-wider">{slot.label}</span>
-                    <span className="text-xs md:text-sm text-gray-400 mt-1">{slot.requirement}</span>
+                    <span className="text-[10px] font-black text-purple-400 uppercase tracking-[0.2em]">{slot.label}</span>
+                    <span className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">{slot.requirement}</span>
                 </div>
-                <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-purple-500 group-hover:text-white transition-all">
-                    <Plus size={16} />
+                <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center group-hover:bg-purple-500 group-hover:text-black transition-all border border-white/10 group-hover:border-purple-400">
+                    <Plus size={18} />
                 </div>
             </div>
         );
     }
 
     return (
-        <>
-            <div className={`w-full h-20 md:h-24 rounded-2xl bg-[#1a1a24] flex items-center justify-between px-3 md:px-4 relative overflow-hidden border ${slot.artist.isCaptain ? 'border-yellow-500/50' : 'border-white/5'
-                } transition-all`}>
+        <div className={`w-full h-24 rounded-[1.5rem] bg-white/[0.03] flex items-center justify-between px-4 relative overflow-hidden border backdrop-blur-md transition-all group ${slot.artist.isCaptain ? 'border-yellow-500/30' : 'border-white/10'}`}>
 
-                <div className="flex items-center gap-3 md:gap-4 z-10 flex-1">
-                    <div className="relative">
-                        <img src={slot.artist.image} alt={slot.artist.name} className="w-12 h-12 md:w-16 md:h-16 rounded-xl object-cover shadow-lg" />
-                        {slot.artist.isCaptain && (
-                            <div className="absolute -top-2 -right-2 bg-yellow-500 text-black p-1 rounded-full shadow-lg">
-                                <Crown size={12} className="fill-black" />
+            {/* Background Accent Gradient */}
+            <div className={`absolute right-0 top-0 w-48 h-full bg-gradient-to-l opacity-20 ${slot.artist.isCaptain ? 'from-yellow-500/20' :
+                slot.type === 'Big' ? 'from-purple-500/20' :
+                    slot.type === 'Mid' ? 'from-blue-500/20' : 'from-green-500/20'
+                } to-transparent pointer-events-none group-hover:opacity-30 transition-opacity`} />
+
+            <div className="flex items-center gap-4 z-10 flex-1">
+                <div className="relative">
+                    <img src={slot.artist.image} alt={slot.artist.name} className="w-16 h-16 rounded-2xl object-cover shadow-2xl border border-white/10 group-hover:scale-105 transition-transform duration-500" />
+                    {slot.artist.isCaptain && (
+                        <div className="absolute -top-2 -right-2 bg-yellow-500 text-black p-1.5 rounded-xl shadow-[0_0_15px_rgba(234,179,8,0.4)] border border-yellow-400">
+                            <Crown size={12} className="fill-black" />
+                        </div>
+                    )}
+                </div>
+                <div className="flex flex-col min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg font-black text-white italic uppercase tracking-tighter truncate max-w-[140px] md:max-w-[200px] pr-2">
+                            {slot.artist.name}
+                        </span>
+                        {slot.artist.multiplier && slot.artist.multiplier > 1 && (
+                            <div className={`text-[10px] flex-shrink-0 font-black px-2 py-0.5 rounded-lg border uppercase tracking-tighter shimmer-effect ${slot.artist.multiplier === 2 ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' : 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+                                }`}>
+                                x{slot.artist.multiplier}
                             </div>
                         )}
                     </div>
-                    <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm md:text-lg font-bold text-white truncate max-w-[120px] md:max-w-[200px]">{slot.artist.name}</span>
-                            {slot.artist.isCaptain && (
-                                <span className="text-[10px] font-bold bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded uppercase tracking-wider border border-yellow-500/20 hidden md:block">
-                                    CAPTAIN
-                                </span>
-                            )}
-                            {slot.artist.multiplier && slot.artist.multiplier > 1 && (
-                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider border ${slot.artist.multiplier === 2 ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/20' : 'bg-purple-500/20 text-purple-400 border-purple-500/20'}`}>
-                                    x{slot.artist.multiplier}
-                                </span>
-                            )}
+                    <div className="flex items-center gap-4">
+                        {/* Fanta Trend */}
+                        <div className="flex items-center gap-1.5">
+                            <span className={`text-base font-black italic ${slot.artist.fantaTrend! > 0 ? 'text-green-400' : slot.artist.fantaTrend! < 0 ? 'text-red-400' : 'text-gray-500'}`}>
+                                {slot.artist.fantaTrend! > 0 ? '+' : ''}{Math.round(slot.artist.fantaTrend || 0)}
+                            </span>
+                            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Fanta</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className={`text-[10px] md:text-xs flex items-center gap-0.5 ${slot.artist.trend > 0 ? 'text-green-400' : slot.artist.trend < 0 ? 'text-red-400' : 'text-gray-400'}`}>
-                                {slot.artist.trend > 0 ? <TrendingUp size={12} /> : slot.artist.trend < 0 ? <TrendingDown size={12} /> : <Minus size={12} />}
-                                {slot.artist.trend > 0 ? '+' : ''}{Math.round(slot.artist.trend)} pts
+
+                        <div className="w-px h-3 bg-white/5"></div>
+
+                        {/* Promo Trend */}
+                        <div className="flex items-center gap-1.5">
+                            <span className={`text-base font-black italic ${slot.artist.promoTrend! > 0 ? 'text-yellow-400' : 'text-gray-500'}`}>
+                                {slot.artist.promoTrend! > 0 ? '+' : ''}{Math.round(slot.artist.promoTrend || 0)}
                             </span>
-                            <span className="text-[10px] md:text-xs flex items-center gap-0.5 text-gray-400">
-                                <span className="hidden md:inline">Promozioni giornaliere:</span>
-                                <span className="md:hidden">Promo:</span>
-                                <span className={completedCount === totalActions ? 'text-green-400 font-bold' : 'text-white'}>
-                                    {completedCount}/{totalActions}
-                                </span>
-                            </span>
+                            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Promo</span>
                         </div>
                     </div>
                 </div>
-
-                {/* Action Button */}
-                <div className="z-10 flex-shrink-0 ml-2">
-                    {allDone ? (
-                        <div className="flex flex-col items-center justify-center min-w-[80px]">
-                            <div className="flex items-center gap-1 text-green-400 mb-1">
-                                <CheckCircle size={14} />
-                                <span className="text-[10px] font-bold uppercase">Done</span>
-                            </div>
-                            <CountdownTimer />
-                        </div>
-                    ) : (
-                        <button
-                            onClick={() => setIsModalOpen(true)}
-                            className="group relative flex flex-col items-center justify-center px-4 py-2 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl text-white shadow-lg shadow-purple-900/20 hover:shadow-purple-500/30 active:scale-95 transition-all min-w-[80px]"
-                        >
-                            <Rocket size={18} className="mb-1 group-hover:-translate-y-1 group-hover:scale-110 transition-transform hidden" />
-                            <span className="text-[10px] font-bold uppercase whitespace-nowrap">
-                                Promuovi
-                            </span>
-                        </button>
-                    )}
-                </div>
-
-                {/* CTA Bouncing Pill */}
-                {!allDone && (
-                    <div className="absolute md:top-4 top-2 right-2 z-20">
-                        <div className="bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg shadow-yellow-500/20 animate-bounce flex items-center gap-1">
-                            <span>+ Points</span>
-                            <span className="opacity-50">|</span>
-                            <Gift size={12} className="stroke-[3]" />
-                        </div>
-                    </div>
-                )}
-
-                {/* Background Gradient */}
-                <div className={`absolute right-0 top-0 w-32 h-full bg-gradient-to-l ${slot.artist.isCaptain ? 'from-yellow-500/10' : slot.type === 'New Gen' ? 'from-green-500/10' : slot.type === 'Big' ? 'from-purple-500/10' : 'from-blue-500/10'
-                    } to-transparent pointer-events-none`} />
             </div>
 
-            <PromoModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                slot={slot}
-                spotifyUrl={spotifyUrl}
-                releaseUrl={releaseUrl}
-                revivalUrl={revivalUrl}
-                promoStatus={promoStatus}
-            />
-        </>
+            <div className="z-10 bg-white/5 px-3 py-1.5 rounded-xl border border-white/5 text-[9px] font-black text-gray-500 uppercase tracking-widest group-hover:bg-white/10 transition-colors">
+                {slot.label}
+            </div>
+        </div>
     );
 }

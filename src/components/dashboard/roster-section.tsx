@@ -7,9 +7,10 @@ import ArtistPromoCard from '@/components/dashboard/artist-promo-card';
 import { UserTeamResponse } from '@/app/actions/team';
 import { getWeeklyScoresAction } from '@/app/actions/dashboard';
 import { getFeaturedArtistsAction } from '@/app/actions/artist';
-import { getDailyPromoStatusAction, ArtistPromoStatus } from '@/app/actions/promo';
+import { getDailyPromoStateAction, DailyPromoState } from '@/app/actions/promo';
 import { getArtistReleases } from '@/lib/spotify';
 import { ARTIST_TIERS } from '@/config/game';
+import DailyPromoFeature from './daily-promo-feature';
 
 interface RosterSectionProps {
     userTeamPromise: Promise<UserTeamResponse>;
@@ -21,10 +22,18 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
     const hasTeam = userTeam !== null;
 
     let weeklyScores: Record<string, number> = {};
+    let fantaScores: Record<string, number> = {};
+    let promoScores: Record<string, number> = {};
     const featuredArtists = await getFeaturedArtistsAction();
     const featuredIds = new Set(featuredArtists.map(a => a.id));
-    let promoStatus: Record<string, ArtistPromoStatus> = {};
-    let artistReleases: Record<string, { latest?: string; revival?: string }> = {};
+
+    // New State Fetching
+    const dailyPromoState = await getDailyPromoStateAction();
+
+    // Maps for URLs to pass to client feature
+    let spotifyUrls: Record<string, string | undefined> = {};
+    let releaseUrls: Record<string, string | undefined> = {};
+    let revivalUrls: Record<string, string | undefined> = {};
 
     if (userTeam) {
         const artistIds = [
@@ -37,15 +46,13 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
 
         // Parallel data fetching
         try {
-            const [scoresResult, statusResult, ...releasesResults] = await Promise.all([
+            const [scoresResult, ...releasesResults] = await Promise.all([
                 getWeeklyScoresAction(artistIds, userTeam.captain_id, userId),
-                getDailyPromoStatusAction(artistIds),
                 // Fetch releases for each artist
                 ...artistIds.map(id => getArtistReleases(id).then(releases => {
                     const latest = releases[0]?.external_urls?.spotify;
                     let revival = undefined;
                     if (releases.length > 1) {
-                        // Pick a random one from indices 1 to end
                         const randomIndex = Math.floor(Math.random() * (releases.length - 1)) + 1;
                         revival = releases[randomIndex]?.external_urls?.spotify;
                     }
@@ -57,18 +64,25 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
             ]);
 
             weeklyScores = scoresResult.scores;
-            promoStatus = statusResult;
+            fantaScores = scoresResult.fantaScores || {};
+            promoScores = scoresResult.promoScores || {};
 
-            // Map releases
+            // Map URLs
             releasesResults.forEach((r: any) => {
-                artistReleases[r.id] = { latest: r.latest, revival: r.revival };
+                releaseUrls[r.id] = r.latest;
+                revivalUrls[r.id] = r.revival;
+                // Assuming spotify URL is constructing in artist object, but we map it here for consistency if needed or extract from team
             });
+
+            // Construct Spotify URLs map from Team Data
+            if (userTeam.slot_1) spotifyUrls[userTeam.slot_1.id] = `https://open.spotify.com/artist/${userTeam.slot_1.id}`;
+            if (userTeam.slot_2) spotifyUrls[userTeam.slot_2.id] = `https://open.spotify.com/artist/${userTeam.slot_2.id}`;
+            if (userTeam.slot_3) spotifyUrls[userTeam.slot_3.id] = `https://open.spotify.com/artist/${userTeam.slot_3.id}`;
+            if (userTeam.slot_4) spotifyUrls[userTeam.slot_4.id] = `https://open.spotify.com/artist/${userTeam.slot_4.id}`;
+            if (userTeam.slot_5) spotifyUrls[userTeam.slot_5.id] = `https://open.spotify.com/artist/${userTeam.slot_5.id}`;
+
         } catch (error) {
             console.error('Error in parallel data fetching:', error);
-            // Default empty status
-            artistIds.forEach(id => {
-                if (!promoStatus[id]) promoStatus[id] = { profile_click: false, release_click: false, share: false };
-            });
         }
     }
 
@@ -76,15 +90,17 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
         {
             id: 1,
             type: 'Big',
-            label: 'Headliner',
+            label: ARTIST_TIERS.BIG.label,
             requirement: `Popolarità > ${ARTIST_TIERS.BIG.min - 1}`,
             artist: userTeam?.slot_1 ? {
                 id: userTeam.slot_1.id,
                 name: userTeam.slot_1.name,
                 image: userTeam.slot_1.images[0]?.url || '',
                 popularity: userTeam.slot_1.popularity,
-                category: 'Big',
+                category: ARTIST_TIERS.BIG.label,
                 trend: weeklyScores[userTeam.slot_1.id] || 0,
+                fantaTrend: typeof fantaScores !== 'undefined' ? fantaScores[userTeam.slot_1.id] || 0 : 0,
+                promoTrend: typeof promoScores !== 'undefined' ? promoScores[userTeam.slot_1.id] || 0 : 0,
                 isCaptain: userTeam.captain_id === userTeam.slot_1.id,
                 multiplier: userTeam.captain_id === userTeam.slot_1.id ? (featuredIds.has(userTeam.slot_1.id) ? 2 : 1.5) : undefined,
                 external_urls: { spotify: `https://open.spotify.com/artist/${userTeam.slot_1.id}` }
@@ -93,15 +109,17 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
         {
             id: 2,
             type: 'Mid',
-            label: 'Rising Star 1',
+            label: ARTIST_TIERS.MID.label,
             requirement: `Popolarità ${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max}`,
             artist: userTeam?.slot_2 ? {
                 id: userTeam.slot_2.id,
                 name: userTeam.slot_2.name,
                 image: userTeam.slot_2.images[0]?.url || '',
                 popularity: userTeam.slot_2.popularity,
-                category: 'Mid',
+                category: ARTIST_TIERS.MID.label,
                 trend: weeklyScores[userTeam.slot_2.id] || 0,
+                fantaTrend: typeof fantaScores !== 'undefined' ? fantaScores[userTeam.slot_2.id] || 0 : 0,
+                promoTrend: typeof promoScores !== 'undefined' ? promoScores[userTeam.slot_2.id] || 0 : 0,
                 isCaptain: userTeam.captain_id === userTeam.slot_2.id,
                 multiplier: userTeam.captain_id === userTeam.slot_2.id ? (featuredIds.has(userTeam.slot_2.id) ? 2 : 1.5) : undefined,
                 external_urls: { spotify: `https://open.spotify.com/artist/${userTeam.slot_2.id}` }
@@ -110,15 +128,17 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
         {
             id: 3,
             type: 'Mid',
-            label: 'Rising Star 2',
+            label: ARTIST_TIERS.MID.label,
             requirement: `Popolarità ${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max}`,
             artist: userTeam?.slot_3 ? {
                 id: userTeam.slot_3.id,
                 name: userTeam.slot_3.name,
                 image: userTeam.slot_3.images[0]?.url || '',
                 popularity: userTeam.slot_3.popularity,
-                category: 'Mid',
+                category: ARTIST_TIERS.MID.label,
                 trend: weeklyScores[userTeam.slot_3.id] || 0,
+                fantaTrend: typeof fantaScores !== 'undefined' ? fantaScores[userTeam.slot_3.id] || 0 : 0,
+                promoTrend: typeof promoScores !== 'undefined' ? promoScores[userTeam.slot_3.id] || 0 : 0,
                 isCaptain: userTeam.captain_id === userTeam.slot_3.id,
                 multiplier: userTeam.captain_id === userTeam.slot_3.id ? (featuredIds.has(userTeam.slot_3.id) ? 2 : 1.5) : undefined,
                 external_urls: { spotify: `https://open.spotify.com/artist/${userTeam.slot_3.id}` }
@@ -127,15 +147,17 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
         {
             id: 4,
             type: 'New Gen',
-            label: 'Scout Pick 1',
+            label: ARTIST_TIERS.NEW_GEN.label,
             requirement: `Popolarità < ${ARTIST_TIERS.NEW_GEN.max + 1}`,
             artist: userTeam?.slot_4 ? {
                 id: userTeam.slot_4.id,
                 name: userTeam.slot_4.name,
                 image: userTeam.slot_4.images[0]?.url || '',
                 popularity: userTeam.slot_4.popularity,
-                category: 'New Gen',
+                category: ARTIST_TIERS.NEW_GEN.label,
                 trend: weeklyScores[userTeam.slot_4.id] || 0,
+                fantaTrend: typeof fantaScores !== 'undefined' ? fantaScores[userTeam.slot_4.id] || 0 : 0,
+                promoTrend: typeof promoScores !== 'undefined' ? promoScores[userTeam.slot_4.id] || 0 : 0,
                 isCaptain: userTeam.captain_id === userTeam.slot_4.id,
                 multiplier: userTeam.captain_id === userTeam.slot_4.id ? (featuredIds.has(userTeam.slot_4.id) ? 2 : 1.5) : undefined,
                 external_urls: { spotify: `https://open.spotify.com/artist/${userTeam.slot_4.id}` }
@@ -144,15 +166,17 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
         {
             id: 5,
             type: 'New Gen',
-            label: 'Scout Pick 2',
+            label: ARTIST_TIERS.NEW_GEN.label,
             requirement: `Popolarità < ${ARTIST_TIERS.NEW_GEN.max + 1}`,
             artist: userTeam?.slot_5 ? {
                 id: userTeam.slot_5.id,
                 name: userTeam.slot_5.name,
                 image: userTeam.slot_5.images[0]?.url || '',
                 popularity: userTeam.slot_5.popularity,
-                category: 'New Gen',
+                category: ARTIST_TIERS.NEW_GEN.label,
                 trend: weeklyScores[userTeam.slot_5.id] || 0,
+                fantaTrend: typeof fantaScores !== 'undefined' ? fantaScores[userTeam.slot_5.id] || 0 : 0,
+                promoTrend: typeof promoScores !== 'undefined' ? promoScores[userTeam.slot_5.id] || 0 : 0,
                 isCaptain: userTeam.captain_id === userTeam.slot_5.id,
                 multiplier: userTeam.captain_id === userTeam.slot_5.id ? (featuredIds.has(userTeam.slot_5.id) ? 2 : 1.5) : undefined,
                 external_urls: { spotify: `https://open.spotify.com/artist/${userTeam.slot_5.id}` }
@@ -162,14 +186,25 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
 
     return (
         <div className="lg:col-span-7">
-            <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-white">La tua Label <span className="text-gray-400 text-sm font-normal md:ml-2 block md:inline">(Settimana Corrente)</span></h3>
-                <Link
-                    href="/dashboard/draft"
-                    className="px-4 py-2 rounded-full bg-[#1a1a24] border border-white/10 text-sm text-purple-400 font-medium hover:bg-purple-500 hover:text-white transition-all whitespace-nowrap"
-                >
-                    {hasTeam ? 'Gestisci Roster' : 'Crea Team'}
-                </Link>
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+                <div>
+                    <div className="flex items-center gap-2 mb-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none">Settimana corrente</span>
+                    </div>
+                    <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">La tua Label</h3>
+                </div>
+                {hasTeam && (
+                    <div className="flex flex-col md:items-end gap-2">
+                        <DailyPromoFeature
+                            teamSlots={teamSlots}
+                            initialState={dailyPromoState}
+                            spotifyUrls={spotifyUrls}
+                            releaseUrls={releaseUrls}
+                            revivalUrls={revivalUrls}
+                        />
+                    </div>
+                )}
             </div>
 
             {hasTeam ? (
@@ -178,25 +213,23 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
                         <ArtistPromoCard
                             key={slot.id}
                             slot={slot}
-                            promoStatus={slot.artist ? promoStatus[slot.artist.id] : { profile_click: false, release_click: false, share: false }} // Fallback
-                            spotifyUrl={slot.artist?.external_urls?.spotify}
-                            releaseUrl={slot.artist ? artistReleases[slot.artist.id]?.latest : undefined}
-                            revivalUrl={slot.artist ? artistReleases[slot.artist.id]?.revival : undefined}
                         />
                     ))}
                 </div>
             ) : (
-                <div className="bg-[#1a1a24] border border-white/5 rounded-3xl p-8 text-center flex flex-col items-center justify-center min-h-[400px]">
-                    <div className="w-16 h-16 bg-purple-500/10 rounded-full flex items-center justify-center mb-4">
+                <div className="bg-white/[0.02] border border-white/10 rounded-[2.5rem] p-12 text-center flex flex-col items-center justify-center min-h-[400px] relative overflow-hidden backdrop-blur-sm">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 blur-[100px] -mr-32 -mt-32"></div>
+                    <div className="w-20 h-20 bg-white/5 rounded-[2rem] border border-white/10 flex items-center justify-center mb-6 shadow-inner">
                         <Trophy className="text-purple-400" size={32} />
                     </div>
-                    <h3 className="text-2xl font-bold text-white mb-2">Nessun Team Trovato</h3>
-                    <p className="text-gray-400 mb-6 max-w-md">Non hai ancora creato la tua etichetta discografica. Inizia subito a fare scouting per vincere la stagione!</p>
+                    <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-4">Nessun Team Trovato</h3>
+                    <p className="text-gray-500 mb-8 max-w-sm font-medium">Non hai ancora creato la tua etichetta discografica. Inizia subito a fare scouting per vincere la stagione!</p>
                     <Link
                         href="/dashboard/draft"
-                        className="px-8 py-3 bg-white text-black font-bold rounded-xl hover:bg-purple-400 hover:shadow-lg hover:shadow-purple-500/20 transition-all"
+                        className="group relative px-10 py-4 bg-white text-black font-black uppercase tracking-tighter italic rounded-2xl hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)]"
                     >
-                        Inizia il Draft
+                        <span className="relative z-10">Inizia il Draft</span>
+                        <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-blue-400 opacity-0 group-hover:opacity-20 transition-opacity rounded-2xl"></div>
                     </Link>
                 </div>
             )}

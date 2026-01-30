@@ -8,8 +8,10 @@ export type Artist = {
     name: string;
     image: string;
     popularity: number;
-    category: 'Big' | 'Mid' | 'New Gen';
+    category: string;
     trend: number;
+    fantaTrend?: number;
+    promoTrend?: number;
     isCaptain?: boolean;
     multiplier?: number;
     external_urls?: { spotify: string };
@@ -17,7 +19,7 @@ export type Artist = {
 
 export type Slot = {
     id: number;
-    type: 'Big' | 'Mid' | 'New Gen';
+    type: string;
     label: string;
     requirement: string;
     artist: Artist | null;

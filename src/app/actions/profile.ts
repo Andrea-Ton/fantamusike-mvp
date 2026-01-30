@@ -79,9 +79,9 @@ export async function deleteAccountAction() {
             .update({ referred_by: null })
             .eq('referred_by', userId);
 
-        // 2. Delete Promo Logs
+        // 2. Delete Daily Promos
         await supabaseAdmin
-            .from('daily_promo_logs')
+            .from('daily_promos')
             .delete()
             .eq('user_id', userId);
 

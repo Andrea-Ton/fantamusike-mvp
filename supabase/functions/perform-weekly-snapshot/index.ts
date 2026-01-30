@@ -33,24 +33,46 @@ Deno.serve(async (_req: Request) => {
 
     console.log(`Performing weekly snapshot for Week ${weekNumber}...`)
 
-    // 3. Fetch all cached artists
-    const { data: artists, error: fetchError } = await supabaseClient
-      .from('artists_cache')
-      .select('*')
+    /**
+     * Helper to fetch all records from a table using pagination to bypass Supabase 1000 limit
+     */
+    async function fetchAll(supabase: any, table: string, select = '*', filterBuilder?: (query: any) => any) {
+      let allData: any[] = [];
+      let from = 0;
+      const step = 1000;
+      let hasMore = true;
 
-    if (fetchError || !artists) {
-      throw new Error(`Failed to fetch artists: ${fetchError?.message}`)
+      while (hasMore) {
+        let query = supabase.from(table).select(select).range(from, from + step - 1);
+        if (filterBuilder) {
+          query = filterBuilder(query);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          hasMore = false;
+        } else {
+          allData = [...allData, ...data];
+          from += step;
+          if (data.length < step) hasMore = false;
+        }
+      }
+      return allData;
     }
 
-    // 4. Check for existing snapshots (Prevent Duplicates)
-    const { data: existingSnapshots } = await supabaseClient
-      .from('weekly_snapshots')
-      .select('artist_id')
-      .eq('week_number', weekNumber)
+    // 3. Fetch all cached artists (with pagination)
+    const artists = await fetchAll(supabaseClient, 'artists_cache');
 
-    const existingIds = new Set((existingSnapshots as { artist_id: string }[])?.map((s) => s.artist_id) || [])
+    if (!artists || artists.length === 0) {
+      return new Response(JSON.stringify({ message: 'No artists found in cache. Skipping snapshot.' }), { status: 200 })
+    }
 
-    // 5. Create Snapshots for NEW artists only
+    // 4. Fetch existing snapshots for THIS week only to prevent duplicates (with pagination)
+    const existingSnapshots = await fetchAll(supabaseClient, 'weekly_snapshots', 'artist_id', (q: any) => q.eq('week_number', weekNumber));
+    const existingIds = new Set(existingSnapshots.map((s: any) => s.artist_id));
+
+    // 5. Create Snapshots for MISSING artists only
     const snapshots = (artists as ArtistCache[])
       .filter(artist => !existingIds.has(artist.spotify_id))
       .map(artist => ({
@@ -67,17 +89,20 @@ Deno.serve(async (_req: Request) => {
       })
     }
 
-    const { error: insertError } = await supabaseClient
-      .from('weekly_snapshots')
-      .insert(snapshots)
+    // 6. Bulk Insert snapshots (handling potential large sets)
+    const BATCH_SIZE = 500;
+    for (let i = 0; i < snapshots.length; i += BATCH_SIZE) {
+      const batch = snapshots.slice(i, i + BATCH_SIZE);
+      const { error: insertError } = await supabaseClient
+        .from('weekly_snapshots')
+        .insert(batch);
 
-    if (insertError) {
-      throw insertError
+      if (insertError) throw insertError;
     }
 
     return new Response(JSON.stringify({
       success: true,
-      message: `Snapshot created for Week ${weekNumber} (${snapshots.length} artists)`
+      message: `Snapshot created for Week ${weekNumber} (${snapshots.length} new artists)`
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }

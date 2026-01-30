@@ -11,14 +11,49 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 type EmailPayload =
-    | { type: 'html', content: string }
-    | { type: 'template', templateName: string };
+    | { type: 'html', content: string, recipientMode?: 'opted-in' | 'manual', manualEmails?: string[] }
+    | { type: 'template', templateName: string, templateData?: any, recipientMode?: 'opted-in' | 'manual', manualEmails?: string[] };
+
+/**
+ * Renders a template to HTML for previewing.
+ * Only accessible by admins.
+ */
+export async function previewEmailAction(templateName: string, templateData: any) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'Not authenticated' };
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single();
+
+    if (!profile?.is_admin) return { error: 'Unauthorized' };
+
+    const { render } = await import('@react-email/render');
+
+    if (templateName === 'newsletter') {
+        try {
+            const html = await render(React.createElement(FantaMusikeBetaEmail, templateData));
+            return { success: true, html };
+        } catch (err) {
+            console.error('Failed to render preview:', err);
+            return { error: 'Failed to render preview' };
+        }
+    }
+
+    return { error: 'Template not found' };
+}
 
 export async function sendAdminMarketingEmail(subject: string, payload: EmailPayload | string) {
     // Payload handling
     const isLegacy = typeof payload === 'string';
     const content = isLegacy ? payload : (payload.type === 'html' ? payload.content : '');
     const templateName = !isLegacy && payload.type === 'template' ? payload.templateName : null;
+    const templateData = !isLegacy && payload.type === 'template' ? payload.templateData : {};
+    const recipientMode = !isLegacy ? payload.recipientMode || 'opted-in' : 'opted-in';
+    const manualEmails = !isLegacy ? payload.manualEmails || [] : [];
 
     const supabase = await createClient();
 
@@ -36,123 +71,128 @@ export async function sendAdminMarketingEmail(subject: string, payload: EmailPay
         return { error: 'Unauthorized' };
     }
 
-    // Fetch opted-in users
-    const { data: recipients, error } = await supabase
-        .from('profiles')
-        .select('id, username') // We need email. BUT profiles table *usually* doesn't store email for security, it's in auth.users.
-        // Wait, 'profiles' usually references auth.users.
-        // If 'profiles' doesn't have email, we need to join or use admin API.
-        .eq('marketing_opt_in', true);
+    let targetEmails: { email: string, id?: string }[] = [];
 
-    if (error) return { error: 'Database error: ' + error.message };
-    if (!recipients || recipients.length === 0) return { error: 'No opted-in users found.' };
+    if (recipientMode === 'manual' && manualEmails.length > 0) {
+        // Manual mode: use provided emails directly. 
+        // We don't have user IDs for these necessarily, so we might skip unsubscribe tokens 
+        // or handle them differently. For manual lists, we just send.
+        targetEmails = manualEmails.map(email => ({ email: email.trim() }));
+    } else {
+        // Opted-in mode: fetch from database
+        const { data: recipients, error } = await supabase
+            .from('profiles')
+            .select('id, username')
+            .eq('marketing_opt_in', true);
 
-    // Check if we have service role key available in env
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!serviceRoleKey) {
-        return { error: 'Server configuration error: Service role key missing.' };
+        if (error) return { error: 'Database error: ' + error.message };
+        if (!recipients || recipients.length === 0) return { error: 'No opted-in users found.' };
+
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!serviceRoleKey) {
+            return { error: 'Server configuration error: Service role key missing.' };
+        }
+
+        const { createClient: createSupabaseClient } = require('@supabase/supabase-js');
+        const adminSupabase = createSupabaseClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            serviceRoleKey,
+            {
+                auth: {
+                    autoRefreshToken: false,
+                    persistSession: false
+                }
+            }
+        );
+
+        const { data: { users }, error: authError } = await adminSupabase.auth.admin.listUsers({
+            perPage: 1000
+        });
+
+        if (authError) return { error: 'Auth error: ' + authError.message };
+
+        const optedInIds = new Set(recipients.map((r: { id: string }) => r.id));
+        targetEmails = users
+            .filter((u: any) => optedInIds.has(u.id) && u.email)
+            .map((u: any) => ({ email: u.email!, id: u.id }));
     }
 
-    // Create Admin Client for fetching emails
-    // We import createClient from supabase-js directly for admin usage
-    const { createClient: createSupabaseClient } = require('@supabase/supabase-js');
-    const adminSupabase = createSupabaseClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        serviceRoleKey,
-        {
-            auth: {
-                autoRefreshToken: false,
-                persistSession: false
-            }
-        }
-    );
-
-    // Fetch all users from auth (Admin API)
-    // Pagination might be needed for large userbases, but for MVP/Startup it's fine.
-    const { data: { users }, error: authError } = await adminSupabase.auth.admin.listUsers({
-        perPage: 1000 // reasonable limit for MVP
-    });
-
-    if (authError) return { error: 'Auth error: ' + authError.message };
-
-    // Filter users who are in our recipients list
-    // recipients is array of { id, username } where marketing_opt_in is true
-    const optedInIds = new Set(recipients.map((r: { id: string }) => r.id));
-    const targetEmails = users
-        .filter((u: any) => optedInIds.has(u.id) && u.email)
-        .map((u: any) => ({ email: u.email!, id: u.id }));
-
-    if (targetEmails.length === 0) return { error: 'No valid email addresses found for opted-in users.' };
-
-    let sentCount = 0;
-    let failCount = 0;
-
-    // Send emails (Iterative approach for individual unsubscribe links)
-    // Note: Resend supports batching, but we need unique unsubscribe links per user.
-
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    if (targetEmails.length === 0) return { error: 'No valid email addresses found.' };
 
     // Helper to render template if needed
     // Use @react-email/render to support Suspense (required for Tailwind etc)
     const { render } = await import('@react-email/render');
 
-    for (const target of targetEmails) {
-        // Append Unsubscribe Link
-        const unsubscribeLink = await getUnsubscribeLink(target.id);
+    let baseHtml = '';
 
-        let finalHtml = '';
-
-        if (templateName === 'newsletter') {
-            try {
-                // Render the Newsletter Template (formerly Pioneer)
-                // We use 'render' which handles Suspense/Async components (like Tailwind)
-                // It returns the full HTML document including doctype usually, or we can check.
-                // Default render options: pretty: false, plainText: false
-                finalHtml = await render(React.createElement(FantaMusikeBetaEmail));
-            } catch (err) {
-                console.error('Failed to render template newsletter:', err);
-                return { error: 'Failed to render template.' };
-            }
-        } else {
-            // Default to content provided (HTML mode)
-            finalHtml = content;
-        }
-
-        // Simple footer injection for Unsubscribe
-        // We ensure we append it before </body> if present, or just at end
-        const footerHtml = `
-            <div style="padding: 48px 20px; text-align: center;">
-                <hr style="border: none; border-top: 1px solid #eaeaea; margin-bottom: 24px;" />
-                <p style="font-size: 12px; color: #666; margin: 0;">
-                    Non vuoi più ricevere queste email? <a href="${unsubscribeLink}" style="color: #666; text-decoration: underline;">Disiscriviti qui</a>.
-                </p>
-            </div>
-        `;
-
-        // If HTML has </body>, inject before it. Else append.
-        if (finalHtml.includes('</body>')) {
-            finalHtml = finalHtml.replace('</body>', `${footerHtml}</body>`);
-        } else {
-            finalHtml += footerHtml;
-        }
-
+    // 1. Render Base HTML (Once)
+    if (templateName === 'newsletter') {
         try {
-            await resend.emails.send({
-                from: 'FantaMusiké <no-reply@notifications.musike.fm>',
-                to: target.email,
-                subject: subject,
-                html: finalHtml,
-            });
-            sentCount++;
-        } catch (e) {
-            console.error(`Failed to send to ${target.email}`, e);
-            failCount++;
+            baseHtml = await render(React.createElement(FantaMusikeBetaEmail, templateData));
+        } catch (err) {
+            console.error('Failed to render template newsletter:', err);
+            return { error: 'Failed to render template.' };
         }
+    } else {
+        baseHtml = content;
     }
 
-    return {
-        success: true,
-        message: `Sent ${sentCount} emails. Failed: ${failCount}.`,
-        count: sentCount
-    };
+    // 2. Prepare Batch Payload
+    const emailBatch = [];
+
+    for (const target of targetEmails) {
+        let finalHtml = baseHtml;
+
+        // Append Unsubscribe Link only if we have a user ID (database users)
+        if (target.id) {
+            const unsubscribeLink = await getUnsubscribeLink(target.id);
+            const footerHtml = `
+                <div style="padding: 48px 20px; text-align: center;">
+                    <hr style="border: none; border-top: 1px solid #eaeaea; margin-bottom: 24px;" />
+                    <p style="font-size: 12px; color: #666; margin: 0;">
+                        Non vuoi più ricevere queste email? <a href="${unsubscribeLink}" style="color: #666; text-decoration: underline;">Disiscriviti qui</a>.
+                    </p>
+                </div>
+            `;
+
+            if (finalHtml.includes('</body>')) {
+                finalHtml = finalHtml.replace('</body>', `${footerHtml}</body>`);
+            } else {
+                finalHtml += footerHtml;
+            }
+        }
+
+        emailBatch.push({
+            from: 'FantaMusiké <no-reply@notifications.musike.fm>',
+            to: target.email,
+            subject: subject,
+            html: finalHtml,
+        });
+    }
+
+    // 3. Send Batch (Single HTTP Request)
+    try {
+        console.log(`Attempting to batch send ${emailBatch.length} emails...`);
+        const { data, error } = await resend.batch.send(emailBatch);
+
+        if (error) {
+            console.error('Resend Batch API Error:', error);
+            return { error: 'Batch send failed: ' + error.message };
+        }
+
+        console.log('Batch send success:', data);
+
+        // Count successful IDs
+        const sentCount = data?.data?.length || 0;
+
+        return {
+            success: true,
+            message: `Batch processed. Sent ${sentCount} emails.`,
+            count: sentCount
+        };
+
+    } catch (e) {
+        console.error('Unexpected error during batch send:', e);
+        return { error: 'Unexpected error during sending.' };
+    }
 }

@@ -33,22 +33,23 @@ export default function DeleteAccount() {
 
     if (!isOpen) {
         return (
-            <div className="mt-12 pt-8 border-t border-white/10 group">
-                <div className="flex items-center justify-between p-6 rounded-2xl border border-red-500/10 bg-red-500/5 hover:bg-red-500/10 hover:border-red-500/20 transition-all duration-300">
-                    <div>
-                        <h3 className="text-lg font-bold text-red-400 mb-1 flex items-center gap-2">
-                            <Skull size={18} />
-                            Danger Zone
-                        </h3>
-                        <p className="text-sm text-red-500/70">Eliminazione definitiva dell'account e dei dati.</p>
+            <div className="group/danger">
+                <div className="flex items-center justify-between p-8 rounded-[2rem] border border-red-500/10 bg-red-500/[0.02] hover:bg-red-500/[0.05] hover:border-red-500/30 transition-all duration-500 shadow-2xl">
+                    <div className="flex items-center gap-6">
+                        <div className="p-4 bg-red-500/10 rounded-2xl border border-red-500/20 text-red-500 group-hover/danger:scale-110 transition-transform duration-500 shadow-inner">
+                            <Skull size={24} />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Chiudi Account</h3>
+                            <p className="text-[10px] font-black text-red-500/70 uppercase tracking-widest mt-1">Eliminazione account definitiva</p>
+                        </div>
                     </div>
 
                     <button
                         onClick={() => setIsOpen(true)}
-                        className="px-5 py-2.5 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl text-sm font-bold hover:bg-red-500 hover:text-white hover:shadow-lg hover:shadow-red-900/40 transition-all duration-300 flex items-center gap-2"
+                        className="px-5 py-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white hover:shadow-[0_0_30px_rgba(239,68,68,0.4)] transition-all duration-500 transform hover:-translate-y-1"
                     >
-                        <Trash2 size={16} />
-                        Elimina
+                        Chiudi
                     </button>
                 </div>
             </div>
@@ -56,57 +57,57 @@ export default function DeleteAccount() {
     }
 
     return (
-        <div className="mt-12 pt-8 border-t border-white/10 animate-fade-in">
-            <div className="bg-gradient-to-br from-red-950/40 to-black border border-red-500/30 rounded-3xl p-8 relative overflow-hidden backdrop-blur-sm shadow-xl shadow-red-900/10">
+        <div className="animate-fade-in">
+            <div className="bg-gradient-to-br from-red-950/40 via-[#0a0a0e] to-black border border-red-500/30 rounded-[3rem] p-10 relative overflow-hidden backdrop-blur-3xl shadow-[0_0_80px_rgba(239,68,68,0.15)] ring-1 ring-red-500/10">
                 {/* Background Decor */}
-                <div className="absolute -right-20 -top-20 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div className="absolute -right-20 -top-20 w-80 h-80 bg-red-600/10 rounded-full blur-[100px] pointer-events-none animate-pulse"></div>
 
-                <div className="flex items-start gap-6 mb-8 relative z-10">
-                    <div className="p-4 bg-red-500/10 rounded-2xl text-red-500 border border-red-500/20 shadow-inner">
-                        <AlertTriangle size={32} />
+                <div className="flex flex-col md:flex-row items-center md:items-start gap-8 mb-10 relative z-10">
+                    <div className="p-6 bg-red-500/10 rounded-3xl text-red-500 border border-red-500/20 shadow-inner scale-110">
+                        <AlertTriangle size={48} />
                     </div>
-                    <div className="flex-1">
-                        <h3 className="text-xl font-bold text-white mb-2">Sei assolutamente sicuro?</h3>
-                        <p className="text-gray-400 leading-relaxed">
-                            Questa azione è <span className="text-red-400 font-bold">irreversibile</span>. Tutti i tuoi dati, i team creati, i punteggi storici e le impostazioni verranno eliminati permanentemente dai nostri server.
+                    <div className="text-center md:text-left">
+                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-3 leading-none">Azione Irreversibile</h3>
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] leading-relaxed max-w-xl">
+                            Tutti i dati, i team creati, i punteggi storici e le impostazioni verranno <span className="text-red-500 underline decoration-red-500/30 underline-offset-4">eliminati permanentemente</span> dal Metaverso.
                         </p>
                     </div>
                 </div>
 
-                <div className="space-y-6 relative z-10 bg-black/20 p-6 rounded-2xl border border-white/5">
+                <div className="space-y-8 relative z-10 bg-white/[0.01] p-8 rounded-[2rem] border border-white/5 backdrop-blur-sm shadow-inner group/form">
                     <div>
-                        <label className="block text-sm font-bold text-gray-400 mb-2">
-                            Digita <span className="font-mono text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20">DELETE</span> per confermare
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-4 text-center">
+                            Conferma digitando <span className="font-mono text-red-500 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">DELETE</span>
                         </label>
                         <input
                             type="text"
                             value={confirmation}
                             onChange={(e) => setConfirmation(e.target.value)}
                             placeholder="DELETE"
-                            className="w-full bg-[#0b0b10] border border-red-500/30 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all font-mono"
+                            className="w-full bg-black/40 border border-red-500/30 rounded-2xl px-6 py-4 text-white placeholder-gray-700 focus:outline-none focus:border-red-500 focus:ring-8 focus:ring-red-500/5 transition-all duration-500 font-mono text-center text-xl tracking-widest uppercase"
                         />
                     </div>
 
-                    <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4">
+                    <div className="flex flex-col-reverse sm:flex-row gap-4">
                         <button
                             onClick={() => {
                                 setIsOpen(false);
                                 setConfirmation('');
                             }}
-                            className="w-full sm:flex-1 p-3.5 rounded-xl font-bold bg-white/5 text-white hover:bg-white/10 transition-colors border border-white/5"
+                            className="w-full sm:flex-1 py-5 rounded-2xl font-black italic uppercase tracking-tighter text-gray-500 hover:text-white hover:bg-white/5 transition-all duration-500 border border-white/5"
                         >
-                            Annulla
+                            Ripensaci
                         </button>
                         <button
                             onClick={handleDelete}
                             disabled={confirmation !== 'DELETE' || isDeleting}
-                            className={`w-full sm:flex-1 p-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-300 ${confirmation === 'DELETE'
-                                ? 'bg-red-600 text-white hover:bg-red-500 shadow-lg shadow-red-600/30 hover:scale-[1.02]'
-                                : 'bg-white/5 text-gray-500 cursor-not-allowed border border-white/5'
+                            className={`w-full sm:flex-1 py-5 px-2 rounded-2xl font-black italic uppercase tracking-tighter flex items-center justify-center gap-3 transition-all duration-500 transform ${confirmation === 'DELETE'
+                                ? 'bg-red-600 text-white hover:bg-red-500 shadow-[0_0_40px_rgba(220,38,38,0.4)] hover:-translate-y-1 hover:scale-[1.02]'
+                                : 'bg-white/5 text-gray-700 cursor-not-allowed border border-white/5'
                                 }`}
                         >
                             {isDeleting ? <Loader2 className="animate-spin" size={20} /> : <Trash2 size={20} />}
-                            Conferma Eliminazione
+                            Elimina Definitivamente
                         </button>
                     </div>
                 </div>
