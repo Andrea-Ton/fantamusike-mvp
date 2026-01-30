@@ -3,17 +3,7 @@ import { motion, AnimatePresence, useSpring, useTransform } from 'framer-motion'
 import confetti from 'canvas-confetti';
 import { Trophy, TrendingUp, X, Loader2 } from 'lucide-react';
 import { markScoreLogsSeenAction } from '@/app/actions/dashboard';
-
-function SpringCounter({ from, to }: { from: number; to: number }) {
-    const spring = useSpring(from, { mass: 0.8, stiffness: 75, damping: 15 });
-    const display = useTransform(spring, (current) => Math.round(current));
-
-    useEffect(() => {
-        spring.set(to);
-    }, [spring, to]);
-
-    return <motion.span>{display}</motion.span>;
-}
+import SpringCounter from '@/components/spring-counter';
 
 interface ScoreLog {
     id: string;

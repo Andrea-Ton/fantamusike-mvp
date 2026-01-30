@@ -5,17 +5,7 @@ import { motion, AnimatePresence, useSpring, useTransform } from 'framer-motion'
 import { X, Trophy, Frown, CheckCircle, Loader2, Skull, Minus, TrendingUp } from 'lucide-react';
 import { markBetSeenAction } from '@/app/actions/promo';
 import confetti from 'canvas-confetti';
-
-function SpringCounter({ from, to }: { from: number; to: number }) {
-    const spring = useSpring(from, { mass: 0.8, stiffness: 75, damping: 15 });
-    const display = useTransform(spring, (current) => Math.round(current));
-
-    useEffect(() => {
-        spring.set(to);
-    }, [spring, to]);
-
-    return <motion.span>{display}</motion.span>;
-}
+import SpringCounter from '@/components/spring-counter';
 
 interface BetResultModalProps {
     promoId: string;

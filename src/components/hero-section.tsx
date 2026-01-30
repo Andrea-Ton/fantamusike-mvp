@@ -10,125 +10,106 @@ import { User } from '@supabase/supabase-js';
 
 export default function HeroSection({ seasonName = 'Season Zero', featuredArtists = [], user }: { seasonName?: string, featuredArtists?: SpotifyArtist[], user?: User | null }) {
     return (
-        <main className="relative z-10 max-w-7xl mx-auto px-6 pt-32 pb-9 lg:pt-52 lg:pb-32 flex flex-col lg:flex-row items-center gap-16">
+        <main className="relative z-10 max-w-7xl mx-auto px-6 pt-40 pb-20 lg:pt-64 lg:pb-40 flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
+            {/* Background Bloom Layers */}
+            <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[150px] -z-10 animate-pulse"></div>
+            <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[150px] -z-10 delay-1000 animate-pulse"></div>
+
             {/* Text Content */}
-            <div className="flex-1 text-center lg:text-left space-y-8 animate-fade-in-up">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 backdrop-blur-sm text-purple-300 text-xs font-bold uppercase tracking-wider mb-4">
-                    <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" /> {seasonName} Live
+            <div className="flex-1 text-center lg:text-left space-y-10 animate-fade-in-up">
+                <div className="inline-flex items-center gap-3 px-5 py-2 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-xl shadow-2xl">
+                    <span className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-pulse shadow-[0_0_10px_rgba(168,85,247,0.8)]" />
+                    <span className="text-[10px] font-black text-white uppercase tracking-[0.3em]">{seasonName} LIVE NOW</span>
                 </div>
-                <h1 className="text-5xl lg:text-7xl font-black tracking-tighter leading-[1.1] text-white">
-                    Il Fantacalcio <br />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-blue-500">
-                        della Musica
-                    </span>
-                </h1>
-                <p className="text-lg text-gray-400 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                    Non basta ascoltare. Devi scoprire. Crea la tua Label, scova i talenti emergenti prima dei tuoi amici e scala la classifica italiana.
+
+                <div className="space-y-4">
+                    <h1 className="text-5xl md:text-7xl xl:text-8xl font-black tracking-tighter leading-[0.85] text-white uppercase">
+                        <span className="text-white whitespace-nowrap">IL FANTACALCIO</span><br />
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-blue-500 drop-shadow-sm">
+                            MUSICALE
+                        </span>
+                    </h1>
+                </div>
+
+                <p className="text-lg md:text-xl text-gray-500 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
+                    Crea la tua label, promuovi i tuoi artisti e domina la scena musicale.
                 </p>
 
-                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
+                <div className="flex flex-col sm:flex-row gap-5 justify-center lg:justify-start pt-6">
                     {user ? (
-                        <Link href="/dashboard" className="group relative px-8 py-4 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-all shadow-xl shadow-white/10 hover:shadow-white/20 flex items-center justify-center gap-3 cursor-pointer">
-                            <span className="text-lg">La mia Dashboard</span>
-                            <ArrowRight className="group-hover:translate-x-1 transition-transform" />
+                        <Link href="/dashboard" className="group relative px-10 py-5 bg-white text-black font-black italic uppercase tracking-tighter rounded-2xl shadow-[0_20px_50px_rgba(255,255,255,0.1)] hover:shadow-purple-500/40 transform hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                            <span className="relative z-10 group-hover:text-white transition-colors">La mia Dashboard</span>
+                            <ArrowRight className="relative z-10 group-hover:text-white group-hover:translate-x-1 transition-transform" />
                         </Link>
                     ) : (
-                        <Link href="/signup" className="group relative px-8 py-4 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-all shadow-xl shadow-white/10 hover:shadow-white/20 flex items-center justify-center gap-3 cursor-pointer">
-                            <span className="text-lg">Inizia la Carriera</span>
-                            <ArrowRight className="group-hover:translate-x-1 transition-transform" />
+                        <Link href="/signup" className="group relative px-10 py-5 bg-white text-black font-black italic uppercase tracking-tighter rounded-2xl shadow-[0_20px_50px_rgba(255,255,255,0.1)] hover:shadow-purple-500/40 transform hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                            <span className="relative z-10 group-hover:text-white transition-colors text-lg">Inizia la Carriera</span>
+                            <ArrowRight className="relative z-10 group-hover:text-white group-hover:translate-x-1 transition-transform" size={24} />
                         </Link>
                     )}
-                    <button className="px-8 py-4 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold transition-all backdrop-blur-md flex items-center justify-center gap-2 cursor-pointer">
-                        <PlayCircle size={20} />
-                        <span>Come funziona</span>
-                    </button>
                 </div>
             </div>
 
-            {/* Visual Mockup / Glass Cards */}
-            <div className="flex-1 relative w-full max-w-lg lg:max-w-none flex justify-center lg:justify-end animate-fade-in-left">
-                {/* Main Glass Card */}
-                <div className="relative z-20 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[40px] p-6 shadow-2xl shadow-purple-500/10 transform rotate-[-2deg] hover:rotate-0 transition-all duration-500 w-full max-w-md">
-                    {/* Header of card */}
-                    <div className="flex justify-between items-center mb-6 opacity-50">
-                        <div className="flex gap-2">
-                            <div className="w-3 h-3 rounded-full bg-red-500" />
-                            <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                            <div className="w-3 h-3 rounded-full bg-green-500" />
-                        </div>
-                        <div className="text-xs font-mono text-white">fantamusike.app</div>
-                    </div>
+            {/* Visual Workspace - Redesigned Visuals */}
+            <div className="flex-1 relative w-full max-w-xl lg:max-w-none flex justify-center lg:justify-end animate-fade-in-left">
+                {/* Decorative Background Glow for cards */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-purple-500/20 blur-[100px] -z-10 rounded-full"></div>
 
-                    {/* Content simulation */}
-                    <div className="space-y-4">
-                        {featuredArtists.length > 0 ? (
-                            <>
-                                <div className="text-xs font-bold text-yellow-500 uppercase tracking-wider mb-2 flex items-center gap-2">
-                                    <Star size={12} className="fill-yellow-500" /> Featured Artists
-                                </div>
-                                {featuredArtists.slice(0, 3).map((artist) => (
-                                    <div key={artist.id} className="flex gap-4 items-center p-3 rounded-2xl bg-white/5 border border-yellow-500/20 hover:bg-white/10 transition-colors cursor-pointer">
-                                        <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-gray-800">
+                {/* Floating Widget Column */}
+                <div className="space-y-6 relative transform lg:rotate-[-4deg] hover:rotate-0 transition-transform duration-700 w-full max-w-md">
+
+                    {/* Main "Live Data" Card */}
+                    <div className="bg-white/[0.03] backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-8 shadow-2xl ring-1 ring-white/5 relative overflow-hidden group/card">
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-blue-500/5 opacity-0 group-hover/card:opacity-100 transition-opacity duration-1000"></div>
+
+                        <div className="flex justify-between items-center mb-8 relative z-10">
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Artisti in evidenza</span>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4 relative z-10">
+                            {featuredArtists.length > 0 ? (
+                                featuredArtists.slice(0, 3).map((artist, idx) => (
+                                    <div key={idx} className="flex gap-5 items-center p-4 rounded-3xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 transition-all group/item">
+                                        <div className="relative w-14 h-14 rounded-2xl overflow-hidden shadow-2xl">
                                             {artist.images[0] && (
-                                                <Image src={artist.images[0].url} alt={artist.name} fill className="object-cover" />
+                                                <Image src={artist.images[0].url} alt={artist.name} fill className="object-cover transition-transform duration-700 group-hover/item:scale-125" />
                                             )}
                                         </div>
                                         <div className="flex-1">
-                                            <div className="text-white font-bold text-sm">{artist.name}</div>
-                                            <div className="text-gray-500 text-xs">Pop {artist.popularity}</div>
+                                            <div className="text-white font-black italic uppercase tracking-tighter text-sm mb-1">{artist.name}</div>
+                                            <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Growth: +{12 + idx * 4}%</div>
                                         </div>
-                                        <div className="text-yellow-500 text-xs font-bold flex items-center gap-1">
-                                            x2 Pts
+                                        <div className="flex flex-col items-end">
+                                            <div className="text-purple-400 text-xs font-black italic uppercase tracking-tighter">+{342 - idx * 50} PTS</div>
+                                            <div className="w-12 h-1 bg-white/10 rounded-full mt-2 overflow-hidden">
+                                                <div className="h-full bg-purple-500 rounded-full w-3/4 animate-pulse"></div>
+                                            </div>
                                         </div>
                                     </div>
-                                ))}
-                            </>
-                        ) : (
-                            <>
-                                {/* Row 1 */}
-                                <div className="flex gap-4 items-center p-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer">
-                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center">
-                                        <Music size={20} className="text-white" />
+                                ))
+                            ) : (
+                                // Fallback static preview
+                                [1, 2, 3].map((i) => (
+                                    <div key={i} className="flex gap-5 items-center p-4 rounded-3xl bg-white/[0.02] border border-white/5 animate-pulse">
+                                        <div className="w-14 h-14 rounded-2xl bg-white/5"></div>
+                                        <div className="flex-1 space-y-2">
+                                            <div className="h-4 bg-white/10 rounded w-24"></div>
+                                            <div className="h-2 bg-white/5 rounded w-16"></div>
+                                        </div>
                                     </div>
-                                    <div className="flex-1">
-                                        <div className="text-white font-bold text-sm">Lazza</div>
-                                        <div className="text-gray-500 text-xs">Headliner • Pop 88</div>
-                                    </div>
-                                    <div className="text-green-400 text-xs font-bold flex items-center gap-1">
-                                        <TrendingUp size={14} /> +124
-                                    </div>
-                                </div>
-                                {/* Row 2 */}
-                                <div className="flex gap-4 items-center p-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer">
-                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 to-orange-600 flex items-center justify-center">
-                                        <Music size={20} className="text-white" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="text-white font-bold text-sm">Anna</div>
-                                        <div className="text-gray-500 text-xs">Mid Tier • Pop 68</div>
-                                    </div>
-                                    <div className="text-green-400 text-xs font-bold flex items-center gap-1">
-                                        <TrendingUp size={14} /> +89
-                                    </div>
-                                </div>
-                            </>
-                        )}
-
-                        {/* Row 3 (Placeholder) */}
-                        <div className="flex gap-4 items-center p-3 rounded-2xl bg-white/5 border border-white/5 opacity-70">
-                            <div className="w-12 h-12 rounded-xl bg-gray-800 flex items-center justify-center">
-                                <Plus size={20} className="text-gray-500" />
-                            </div>
-                            <div className="flex-1">
-                                <div className="text-gray-400 font-bold text-sm">Crea la tua Label</div>
-                                <div className="text-gray-600 text-xs">Scegli i tuoi 5 artisti...</div>
-                            </div>
+                                ))
+                            )}
                         </div>
                     </div>
                 </div>
 
-                {/* Decorative Elements behind */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/20 to-blue-500/20 rounded-[40px] transform rotate-[3deg] z-10 blur-sm pointer-events-none" />
+                {/* Decorative Layering */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/20 to-blue-500/20 rounded-[4rem] transform rotate-[4deg] -z-20 blur-2xl animate-pulse" />
             </div>
         </main>
     );
