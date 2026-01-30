@@ -108,3 +108,29 @@ body {
   );
   animation: shimmer 2.5s infinite;
 }
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+
+.animate-marquee {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee 15s linear infinite;
+  padding-right: 2rem;
+}
+
+.marquee-container {
+  overflow: hidden;
+  white-space: nowrap;
+  position: relative;
+}
+
+.marquee-container:hover .animate-marquee {
+  animation-play-state: running;
+}
+
+/* Pause marquee when not hovered or only animate on overflow? 
+   For simplicity, let's keep it constant or hover-based. 
+   The user asked for "movimento", so constant is better for premium feel.
+*/
