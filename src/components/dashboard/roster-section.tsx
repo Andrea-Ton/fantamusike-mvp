@@ -90,14 +90,14 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
         {
             id: 1,
             type: 'Big',
-            label: 'Headliner',
+            label: ARTIST_TIERS.BIG.label,
             requirement: `Popolarità > ${ARTIST_TIERS.BIG.min - 1}`,
             artist: userTeam?.slot_1 ? {
                 id: userTeam.slot_1.id,
                 name: userTeam.slot_1.name,
                 image: userTeam.slot_1.images[0]?.url || '',
                 popularity: userTeam.slot_1.popularity,
-                category: 'Big',
+                category: ARTIST_TIERS.BIG.label,
                 trend: weeklyScores[userTeam.slot_1.id] || 0,
                 fantaTrend: typeof fantaScores !== 'undefined' ? fantaScores[userTeam.slot_1.id] || 0 : 0,
                 promoTrend: typeof promoScores !== 'undefined' ? promoScores[userTeam.slot_1.id] || 0 : 0,
@@ -109,14 +109,14 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
         {
             id: 2,
             type: 'Mid',
-            label: 'Rising Star 1',
+            label: ARTIST_TIERS.MID.label,
             requirement: `Popolarità ${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max}`,
             artist: userTeam?.slot_2 ? {
                 id: userTeam.slot_2.id,
                 name: userTeam.slot_2.name,
                 image: userTeam.slot_2.images[0]?.url || '',
                 popularity: userTeam.slot_2.popularity,
-                category: 'Mid',
+                category: ARTIST_TIERS.MID.label,
                 trend: weeklyScores[userTeam.slot_2.id] || 0,
                 fantaTrend: typeof fantaScores !== 'undefined' ? fantaScores[userTeam.slot_2.id] || 0 : 0,
                 promoTrend: typeof promoScores !== 'undefined' ? promoScores[userTeam.slot_2.id] || 0 : 0,
@@ -128,14 +128,14 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
         {
             id: 3,
             type: 'Mid',
-            label: 'Rising Star 2',
+            label: ARTIST_TIERS.MID.label,
             requirement: `Popolarità ${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max}`,
             artist: userTeam?.slot_3 ? {
                 id: userTeam.slot_3.id,
                 name: userTeam.slot_3.name,
                 image: userTeam.slot_3.images[0]?.url || '',
                 popularity: userTeam.slot_3.popularity,
-                category: 'Mid',
+                category: ARTIST_TIERS.MID.label,
                 trend: weeklyScores[userTeam.slot_3.id] || 0,
                 fantaTrend: typeof fantaScores !== 'undefined' ? fantaScores[userTeam.slot_3.id] || 0 : 0,
                 promoTrend: typeof promoScores !== 'undefined' ? promoScores[userTeam.slot_3.id] || 0 : 0,
@@ -147,14 +147,14 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
         {
             id: 4,
             type: 'New Gen',
-            label: 'Scout Pick 1',
+            label: ARTIST_TIERS.NEW_GEN.label,
             requirement: `Popolarità < ${ARTIST_TIERS.NEW_GEN.max + 1}`,
             artist: userTeam?.slot_4 ? {
                 id: userTeam.slot_4.id,
                 name: userTeam.slot_4.name,
                 image: userTeam.slot_4.images[0]?.url || '',
                 popularity: userTeam.slot_4.popularity,
-                category: 'New Gen',
+                category: ARTIST_TIERS.NEW_GEN.label,
                 trend: weeklyScores[userTeam.slot_4.id] || 0,
                 fantaTrend: typeof fantaScores !== 'undefined' ? fantaScores[userTeam.slot_4.id] || 0 : 0,
                 promoTrend: typeof promoScores !== 'undefined' ? promoScores[userTeam.slot_4.id] || 0 : 0,
@@ -166,14 +166,14 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
         {
             id: 5,
             type: 'New Gen',
-            label: 'Scout Pick 2',
+            label: ARTIST_TIERS.NEW_GEN.label,
             requirement: `Popolarità < ${ARTIST_TIERS.NEW_GEN.max + 1}`,
             artist: userTeam?.slot_5 ? {
                 id: userTeam.slot_5.id,
                 name: userTeam.slot_5.name,
                 image: userTeam.slot_5.images[0]?.url || '',
                 popularity: userTeam.slot_5.popularity,
-                category: 'New Gen',
+                category: ARTIST_TIERS.NEW_GEN.label,
                 trend: weeklyScores[userTeam.slot_5.id] || 0,
                 fantaTrend: typeof fantaScores !== 'undefined' ? fantaScores[userTeam.slot_5.id] || 0 : 0,
                 promoTrend: typeof promoScores !== 'undefined' ? promoScores[userTeam.slot_5.id] || 0 : 0,
@@ -186,16 +186,24 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
 
     return (
         <div className="lg:col-span-7">
-            <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-white">La tua Label <span className="text-gray-400 text-sm font-normal md:ml-2 block md:inline">(Settimana Corrente)</span></h3>
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+                <div>
+                    <div className="flex items-center gap-2 mb-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none">Settimana corrente</span>
+                    </div>
+                    <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">La tua Label</h3>
+                </div>
                 {hasTeam && (
-                    <DailyPromoFeature
-                        teamSlots={teamSlots}
-                        initialState={dailyPromoState}
-                        spotifyUrls={spotifyUrls}
-                        releaseUrls={releaseUrls}
-                        revivalUrls={revivalUrls}
-                    />
+                    <div className="flex flex-col md:items-end gap-2">
+                        <DailyPromoFeature
+                            teamSlots={teamSlots}
+                            initialState={dailyPromoState}
+                            spotifyUrls={spotifyUrls}
+                            releaseUrls={releaseUrls}
+                            revivalUrls={revivalUrls}
+                        />
+                    </div>
                 )}
             </div>
 
@@ -209,17 +217,19 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
                     ))}
                 </div>
             ) : (
-                <div className="bg-[#1a1a24] border border-white/5 rounded-3xl p-8 text-center flex flex-col items-center justify-center min-h-[400px]">
-                    <div className="w-16 h-16 bg-purple-500/10 rounded-full flex items-center justify-center mb-4">
+                <div className="bg-white/[0.02] border border-white/10 rounded-[2.5rem] p-12 text-center flex flex-col items-center justify-center min-h-[400px] relative overflow-hidden backdrop-blur-sm">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 blur-[100px] -mr-32 -mt-32"></div>
+                    <div className="w-20 h-20 bg-white/5 rounded-[2rem] border border-white/10 flex items-center justify-center mb-6 shadow-inner">
                         <Trophy className="text-purple-400" size={32} />
                     </div>
-                    <h3 className="text-2xl font-bold text-white mb-2">Nessun Team Trovato</h3>
-                    <p className="text-gray-400 mb-6 max-w-md">Non hai ancora creato la tua etichetta discografica. Inizia subito a fare scouting per vincere la stagione!</p>
+                    <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-4">Nessun Team Trovato</h3>
+                    <p className="text-gray-500 mb-8 max-w-sm font-medium">Non hai ancora creato la tua etichetta discografica. Inizia subito a fare scouting per vincere la stagione!</p>
                     <Link
                         href="/dashboard/draft"
-                        className="px-8 py-3 bg-white text-black font-bold rounded-xl hover:bg-purple-400 hover:shadow-lg hover:shadow-purple-500/20 transition-all"
+                        className="group relative px-10 py-4 bg-white text-black font-black uppercase tracking-tighter italic rounded-2xl hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)]"
                     >
-                        Inizia il Draft
+                        <span className="relative z-10">Inizia il Draft</span>
+                        <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-blue-400 opacity-0 group-hover:opacity-20 transition-opacity rounded-2xl"></div>
                     </Link>
                 </div>
             )}

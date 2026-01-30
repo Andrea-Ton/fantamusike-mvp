@@ -47,7 +47,7 @@ export default async function DashboardPage() {
     return (
         <>
             {/* Mobile Header */}
-            <div className="md:hidden pt-12 px-6 flex justify-between items-center mb-2">
+            <div className="md:hidden pt-12 px-6 flex justify-between items-center mb-4 bg-[#0a0a0e]/80 backdrop-blur-xl border-b border-white/5 pb-4 sticky top-0 z-30">
                 <div className="flex items-center gap-3">
                     <div className="relative w-10 h-10 flex-shrink-0">
                         <Image
@@ -59,18 +59,20 @@ export default async function DashboardPage() {
                         />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-white tracking-tight">FantaMusiké</h1>
-                        <p className="text-xs text-gray-400">{seasonName}</p>
+                        <h1 className="text-xl font-black text-white tracking-tighter uppercase italic leading-none">FantaMusiké</h1>
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{seasonName}</p>
                     </div>
                 </div>
                 <LogoutButton />
             </div>
 
             {/* Mobile Stats Row */}
-            <div className="md:hidden px-6 mb-2 mt-2 flex gap-3">
-                <div className="px-2 py-2 bg-[#1a1a24] rounded-lg border border-white/10 text-sm font-medium text-yellow-400 flex items-center gap-2 flex-1 justify-center">
-                    <span>MusiCoins:</span>
-                    <span className="font-bold">{musiCoins}</span>
+            <div className="md:hidden px-6 mb-6 flex gap-3">
+                <div className="px-4 py-2.5 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md text-sm font-black text-yellow-400 flex items-center gap-2 flex-1 justify-between shadow-inner">
+                    <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">MusiCoins</span>
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-base">{musiCoins}</span>
+                    </div>
                 </div>
                 <div className="flex-1">
                     <InviteButton referralCode={profile?.referral_code} />
@@ -87,18 +89,23 @@ export default async function DashboardPage() {
             )}
 
             {/* Content Area */}
-            <main className="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full animate-fade-in">
-                <header className="hidden md:flex justify-between items-end mb-10">
+            <main className="flex-1 p-6 mb-4 md:p-10 max-w-7xl mx-auto w-full animate-fade-in">
+                <header className="hidden md:flex justify-between items-end mb-12">
                     <div>
-                        <h1 className="text-4xl font-bold text-white mb-2">Bentornato {profile?.username},</h1>
-                        <p className="text-gray-400">Controlla come sta andando la tua Label.</p>
-                        <p className="text-gray-400">Promuovi i tuoi artisti preferiti per guadagnare punti extra e vincere MusiCoins!</p>
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="w-8 h-px bg-purple-500"></span>
+                            <span className="text-[10px] font-black text-purple-400 uppercase tracking-[0.2em]">Management Dashboard</span>
+                        </div>
+                        <h1 className="text-5xl font-black text-white italic tracking-tighter uppercase leading-none">Bentornato {profile?.username},</h1>
+                        <p className="text-gray-500 mt-3 font-medium text-lg">Controlla la tua Label e scala le classifiche mondiali.</p>
                     </div>
                     <div className="flex gap-4">
                         {/* Status indicators */}
-                        <div className="px-4 py-2 bg-[#1a1a24] rounded-lg border border-white/10 text-sm font-medium text-yellow-400 flex items-center gap-2">
-                            <span>MusiCoins:</span>
-                            <span className="font-bold">{musiCoins}</span>
+                        <div className="px-6 py-3 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md text-sm font-black text-yellow-400 flex items-center gap-4 shadow-inner group transition-all hover:bg-white/10">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold leading-none mb-1">MUSICOINS</span>
+                                <div className='flex justify-center items-center'><span className="text-xl tracking-tighter ">{musiCoins}</span></div>
+                            </div>
                         </div>
                         <InviteButton referralCode={profile?.referral_code} />
                     </div>

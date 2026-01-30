@@ -87,9 +87,9 @@ export default function CountdownTimer({
     }
 
     return (
-        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800/50 rounded-lg border border-white/5 text-gray-400 text-xs font-mono">
-            <Timer size={12} />
-            <span>{timeLeft}</span>
+        <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 rounded-full border border-white/5 text-gray-400 text-[10px] font-mono shadow-inner backdrop-blur-sm">
+            <Timer size={10} className="text-purple-400/70" />
+            <span className="tracking-tight">{timeLeft}</span>
         </div>
     );
 }
