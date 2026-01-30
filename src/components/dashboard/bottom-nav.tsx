@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Home, Search, Trophy, Shield, User } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -14,16 +13,21 @@ const NAV_ITEMS = [
 
 export default function BottomNav({ isAdmin }: { isAdmin?: boolean }) {
     const pathname = usePathname();
+    const router = useRouter();
+
+    const handleNavigation = (href: string) => {
+        router.push(href);
+    };
 
     return (
         <div className="md:hidden fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-5 right-5 bg-[#0a0a0e]/90 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] px-4 py-2.5 flex justify-around items-center z-50 animate-fade-in-up-subtle shadow-[0_8px_32px_rgba(0,0,0,0.8)]">
             {NAV_ITEMS.map((item) => {
                 const isActive = pathname === item.href;
                 return (
-                    <Link
+                    <button
                         key={item.href}
-                        href={item.href}
-                        className={`flex flex-col items-center gap-1.5 transition-all relative ${isActive ? 'text-white scale-110' : 'text-gray-500 hover:text-gray-300'
+                        onClick={() => handleNavigation(item.href)}
+                        className={`flex flex-col items-center gap-1.5 transition-all relative outline-none ${isActive ? 'text-white scale-110' : 'text-gray-500 hover:text-gray-300'
                             }`}
                     >
                         <div className={`p-2 rounded-xl transition-all ${isActive ? 'bg-white/10 shadow-inner' : ''}`}>
@@ -35,13 +39,13 @@ export default function BottomNav({ isAdmin }: { isAdmin?: boolean }) {
                         {isActive && (
                             <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-purple-500 rounded-full shadow-[0_0_10px_rgba(168,85,247,0.5)]" />
                         )}
-                    </Link>
+                    </button>
                 );
             })}
             {isAdmin && (
-                <Link
-                    href="/admin"
-                    className={`flex flex-col items-center gap-1.5 transition-all relative ${pathname.startsWith('/admin') ? 'text-white scale-110' : 'text-gray-500 hover:text-gray-300'
+                <button
+                    onClick={() => handleNavigation('/admin')}
+                    className={`flex flex-col items-center gap-1.5 transition-all relative outline-none ${pathname.startsWith('/admin') ? 'text-white scale-110' : 'text-gray-500 hover:text-gray-300'
                         }`}
                 >
                     <div className={`p-2 rounded-xl transition-all ${pathname.startsWith('/admin') ? 'bg-red-500/10 shadow-inner' : ''}`}>
@@ -53,7 +57,7 @@ export default function BottomNav({ isAdmin }: { isAdmin?: boolean }) {
                     {pathname.startsWith('/admin') && (
                         <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.5)]" />
                     )}
-                </Link>
+                </button>
             )}
         </div>
     );

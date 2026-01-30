@@ -23,11 +23,11 @@ body {
   .glass-panel {
     @apply bg-white/5 backdrop-blur-md border border-white/10;
   }
-  
+
   .glass-card {
     @apply bg-white/5 backdrop-blur-2xl border border-white/10 shadow-2xl;
   }
-  
+
   .text-gradient {
     @apply text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-blue-500;
   }
@@ -39,6 +39,7 @@ body {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -54,6 +55,7 @@ body {
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -69,6 +71,7 @@ body {
     opacity: 0;
     transform: translateX(20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -79,6 +82,7 @@ body {
   from {
     transform: translateX(-100%);
   }
+
   to {
     transform: translateX(100%);
   }
@@ -100,17 +104,21 @@ body {
   right: 0;
   bottom: 0;
   left: 0;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.05) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      transparent 100%);
   animation: shimmer 2.5s infinite;
 }
+
 @keyframes marquee {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-100%); }
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-100%);
+  }
 }
 
 .animate-marquee {
@@ -118,6 +126,22 @@ body {
   white-space: nowrap;
   animation: marquee 15s linear infinite;
   padding-right: 2rem;
+}
+
+@keyframes fade-in-up-subtle {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up-subtle {
+  animation: fade-in-up-subtle 0.5s ease-out forwards;
 }
 
 .marquee-container {

@@ -30,14 +30,14 @@ export default function Navbar({ user }: { user?: User | null }) {
             <div className="flex items-center gap-4">
                 {user ? (
                     <Link href="/dashboard">
-                        <button className="group relative px-6 py-2.5 rounded-2xl bg-white/[0.03] border border-white/10 text-[10px] font-black text-white uppercase tracking-widest hover:bg-white hover:text-black transition-all duration-500 shadow-2xl backdrop-blur-md overflow-hidden">
-                            <span className="relative z-10">La mia Dashboard</span>
+                        <button className="group relative px-4 py-2.5 rounded-2xl bg-white/[0.03] border border-white/10 text-[10px] font-black text-white uppercase tracking-widest hover:bg-white hover:text-black transition-all duration-500 shadow-2xl backdrop-blur-md overflow-hidden">
+                            <span className="relative z-10">Dashboard</span>
                         </button>
                     </Link>
                 ) : (
                     <div className="flex items-center gap-3">
                         <Link href="/login">
-                            <button className="group relative px-6 py-2.5 rounded-2xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-purple-600 hover:text-white transition-all duration-500 shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:shadow-purple-500/40 overflow-hidden">
+                            <button className="group relative px-4 py-2.5 rounded-2xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-purple-600 hover:text-white transition-all duration-500 shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:shadow-purple-500/40 overflow-hidden">
                                 <span className="relative z-10">Accedi</span>
                             </button>
                         </Link>
