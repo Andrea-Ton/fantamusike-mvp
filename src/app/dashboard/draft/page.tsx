@@ -479,8 +479,8 @@ export default function TalentScoutPage() {
         <>
             {/* Cost Confirmation Modal */}
             {showCostModal && (
-                <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl animate-fade-in h-[100dvh]">
-                    <div className="bg-[#0a0a0f] border border-white/10 rounded-[2.5rem] w-full max-w-md p-10 shadow-[0_0_100px_rgba(0,0,0,0.8)] animate-scale-in relative overflow-hidden">
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl animate-fade-in">
+                    <div className="bg-[#0a0a0f]/90 border border-white/10 rounded-[2.5rem] w-full max-w-md p-10 shadow-[0_0_100px_rgba(0,0,0,0.8)] animate-scale-in relative overflow-hidden">
                         <div className="absolute -top-20 -right-20 w-40 h-40 bg-purple-500/10 blur-[60px] rounded-full" />
 
                         <div className="relative z-10">
@@ -811,9 +811,9 @@ export default function TalentScoutPage() {
 
                 {/* Mobile Team Modal/Sheet */}
                 {showMobileTeam && (
-                    <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-xl flex items-end justify-center animate-in fade-in duration-300 h-[100dvh]">
+                    <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-xl flex items-end justify-center animate-in fade-in duration-300">
                         <div
-                            className="bg-[#050507] w-full max-w-lg rounded-t-[2.5rem] border-t border-x border-white/10 px-8 pb-20 pt-0 shadow-[0_-20px_50px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-full duration-500 max-h-[95vh] overflow-y-auto relative"
+                            className="bg-[#050507] w-full max-w-lg rounded-t-[2.5rem] border-t border-x border-white/10 px-8 pb-8 pt-0 shadow-[0_-20px_50px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-full duration-500 max-h-[90vh] overflow-y-auto relative"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="sticky top-0 bg-[#050507] z-30 pt-4 pb-2">
@@ -846,15 +846,12 @@ export default function TalentScoutPage() {
                                 </div>
                             </div>
 
-                            <div className="relative z-10 pb-10">
+                            <div className="relative z-10">
                                 <TeamSummaryContent />
                             </div>
-
-                            {/* Over-scroll Bleed / Safe Area Buffer */}
-                            <div className="absolute -bottom-[500px] left-0 right-0 h-[500px] bg-[#050507] pointer-events-none" />
                         </div >
                         {/* Click outside to close */}
-                        < div className="absolute inset-0 -z-10 h-[100dvh]" onClick={() => setShowMobileTeam(false)
+                        < div className="absolute inset-0 -z-10" onClick={() => setShowMobileTeam(false)
                         } />
                     </div >
                 )}

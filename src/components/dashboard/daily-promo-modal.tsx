@@ -330,7 +330,7 @@ export default function DailyPromoModal({
     // --- Render ---
 
     return (
-        <div className="fixed top-0 left-0 w-full h-[100dvh] z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
             <style jsx global>{`
                 @keyframes spin3d {
                     0% { transform: rotateY(0deg); }
@@ -342,8 +342,6 @@ export default function DailyPromoModal({
                 }
             `}</style>
             <div className={`w-full max-w-lg bg-[#0f0f13] border border-white/10 rounded-[2.5rem] p-6 relative shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col transition-all max-h-[90vh] overflow-y-auto ${viewState === 'actions' ? 'md:aspect-auto md:min-h-[600px]' : 'min-h-[400px]'}`}>
-                {/* Over-scroll Bleed Buffer for Mobile */}
-                <div className="absolute -bottom-[500px] left-0 right-0 h-[500px] bg-[#0f0f13] pointer-events-none" />
 
                 <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 rounded-full text-white z-20">
                     <X size={20} />
