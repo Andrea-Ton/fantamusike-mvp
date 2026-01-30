@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence, useSpring, useTransform } from 'framer-motion';
-import { X, Trophy, Frown, CheckCircle, Loader2, Skull, Minus } from 'lucide-react';
+import { X, Trophy, Frown, CheckCircle, Loader2, Skull, Minus, TrendingUp } from 'lucide-react';
 import { markBetSeenAction } from '@/app/actions/promo';
 import confetti from 'canvas-confetti';
 
@@ -62,95 +62,112 @@ export default function BetResultModal({ promoId, betSnapshot, onClose }: BetRes
         onClose();
     };
 
-    // UI Configuration based on status
+    // UI Configuration based on status - Redesigned for Premium Luxe
     const config = (() => {
         switch (status) {
             case 'won':
                 return {
-                    title: 'Scommessa Vinta!',
-                    desc: 'Ottimo intuito! Hai indovinato il trend dei tuoi artisti.',
-                    color: 'from-purple-500 to-blue-600',
-                    glow: 'bg-purple-500',
-                    icon: <Trophy size={40} className="text-white drop-shadow-lg" />
+                    title: 'VITTORIA',
+                    subtitle: 'SCOMMESSA VINTA',
+                    desc: 'Ottimo intuito! Hai indovinato il trend dei tuoi artisti con precisione chirurgica.',
+                    color: 'from-purple-600 to-blue-700',
+                    glow: 'bg-purple-500/30',
+                    accent: 'text-purple-400',
+                    icon: <Trophy size={48} className="text-white drop-shadow-lg" />
                 };
             case 'draw':
                 return {
-                    title: 'Pareggio!',
-                    desc: 'Incredibile! Entrambi gli artisti hanno performato allo stesso modo.',
-                    color: 'from-amber-400 to-orange-500',
-                    glow: 'bg-amber-500',
-                    icon: <div className="text-white font-black text-3xl">=</div>
+                    title: 'PAREGGIO',
+                    subtitle: 'EQUILIBRIO PERFETTO',
+                    desc: 'Incredibile! Entrambi gli artisti hanno performato allo stesso modo in questa sessione.',
+                    color: 'from-amber-400 to-orange-600',
+                    glow: 'bg-amber-500/30',
+                    accent: 'text-amber-400',
+                    icon: <div className="text-white font-black text-4xl italic tracking-tighter">=</div>
                 };
             case 'lost':
             default:
                 return {
-                    title: 'Scommessa Persa',
-                    desc: 'Questa volta il rivale ha avuto la meglio. Ritenta domani!',
-                    color: 'from-zinc-800 to-black',
-                    glow: 'bg-red-500',
-                    icon: <div className="relative">
-                        <div className="absolute inset-0 blur-xl bg-red-500/40 animate-pulse"></div>
-                        <Skull size={44} className="text-gray-400 relative z-10" />
+                    title: 'SCONFITTA',
+                    subtitle: 'SCOMMESSA PERSA',
+                    desc: 'Questa volta il rivale ha avuto la meglio. Analizza i dati e ritenta domani!',
+                    color: 'from-red-900 via-zinc-900 to-black',
+                    glow: 'bg-red-500/20',
+                    accent: 'text-red-500',
+                    icon: <div className="relative isolate">
+                        <Skull size={48} className="text-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.5)]" />
                     </div>
                 };
         }
     })();
 
     return (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-500">
             <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                initial={{ opacity: 0, scale: 0.9, y: 40 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                className="relative w-full max-w-md bg-[#1a1a24] border border-white/10 rounded-3xl overflow-hidden shadow-2xl"
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="relative w-full max-w-md bg-white/[0.02] border border-white/10 rounded-[3rem] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] backdrop-blur-3xl ring-1 ring-white/5"
             >
+                {/* Background Theme Bloom */}
+                <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-80 h-80 ${config.glow} rounded-full blur-[120px] -z-10 animate-pulse`}></div>
+
                 <button
                     onClick={handleClose}
                     disabled={isClosing}
-                    className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors z-20 disabled:opacity-50"
+                    className="absolute top-6 right-6 p-3 bg-white/5 hover:bg-white/10 rounded-2xl text-gray-400 hover:text-white transition-all z-20 disabled:opacity-50 border border-white/10"
                 >
                     <X size={20} />
                 </button>
 
-                <div className="p-8 flex flex-col items-center text-center">
-                    {/* Pulsating Header UI */}
-                    <div className="relative w-32 h-32 mb-6 flex items-center justify-center">
-                        <div className={`absolute inset-0 ${config.glow} rounded-full blur-2xl opacity-20 animate-pulse`}></div>
+                <div className="p-10 flex flex-col items-center text-center">
+                    {/* Heroic Modal Header Icon */}
+                    <div className="relative w-40 h-40 mb-8 flex items-center justify-center group">
+                        <div className={`absolute inset-0 bg-gradient-to-br ${config.color} rounded-full blur-[40px] opacity-20 group-hover:opacity-40 transition-opacity duration-1000`}></div>
                         <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: 'spring', damping: 12, delay: 0.2 }}
-                            className={`relative w-24 h-24 rounded-full bg-gradient-to-br ${config.color} flex items-center justify-center shadow-xl border-2 border-white/20`}
+                            initial={{ scale: 0, rotate: -15 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{ type: 'spring', damping: 15, delay: 0.2 }}
+                            className={`relative w-28 h-28 rounded-full bg-gradient-to-br ${config.color} flex items-center justify-center shadow-2xl border-4 border-white/20 ring-4 ring-white/5 ring-offset-4 ring-offset-transparent`}
                         >
                             {config.icon}
                         </motion.div>
                     </div>
 
-                    <h2 className="text-2xl font-bold text-white mb-2">
-                        {config.title}
-                    </h2>
-                    <p className="text-gray-400 mb-8 max-w-[280px] text-sm leading-relaxed">
-                        {config.desc}
-                    </p>
+                    <div className="mb-8">
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                            <div className={`w-1.5 h-1.5 rounded-full ${isWin ? 'bg-purple-500' : isDraw ? 'bg-amber-500' : 'bg-red-500'}`}></div>
+                            <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.3em]">{config.subtitle}</p>
+                        </div>
+                        <h2 className={`text-4xl md:text-5xl font-black text-white italic uppercase tracking-tighter leading-none mb-4`}>
+                            {config.title}
+                        </h2>
+                        <p className="text-gray-500 max-w-[300px] text-[11px] font-black uppercase tracking-wider leading-relaxed mx-auto">
+                            {config.desc}
+                        </p>
+                    </div>
 
-                    {/* Rewards Section (Dynamic) */}
+                    {/* Rewards Grid (Glassy) */}
                     {isWin && (
-                        <div className="flex flex-col gap-6 mb-10 w-full">
+                        <div className="grid grid-cols-1 gap-4 mb-8 w-full">
                             {(won_points > 0 || won_points === undefined) && (
-                                <div className="relative">
-                                    <div className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-zinc-500 tabular-nums">
+                                <div className="bg-white/[0.03] border border-white/5 rounded-3xl p-6 backdrop-blur-sm shadow-inner overflow-hidden group/reward relative">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover/reward:opacity-100 transition-opacity duration-500"></div>
+                                    <div className="relative z-10 text-5xl font-black text-white italic tracking-tighter tabular-nums mb-1">
                                         +<SpringCounter from={0} to={won_points ?? 10} />
                                     </div>
-                                    <div className="text-[10px] font-bold text-purple-400 mt-1 tracking-[0.2em] uppercase">
+                                    <div className="relative z-10 text-[9px] font-black text-purple-400 tracking-[0.4em] uppercase opacity-70">
                                         Punti Fantamusiké
                                     </div>
                                 </div>
                             )}
                             {won_coins > 0 && (
-                                <div className="relative">
-                                    <div className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 tabular-nums">
+                                <div className="bg-white/[0.03] border border-white/5 rounded-3xl p-6 backdrop-blur-sm shadow-inner overflow-hidden group/reward-gold relative">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-transparent opacity-0 group-hover/reward-gold:opacity-100 transition-opacity duration-500"></div>
+                                    <div className="relative z-10 text-5xl font-black text-yellow-500 italic tracking-tighter tabular-nums mb-1">
                                         +<SpringCounter from={0} to={won_coins} />
                                     </div>
-                                    <div className="text-[10px] font-bold text-yellow-500 mt-1 tracking-[0.2em] uppercase">
+                                    <div className="relative z-10 text-[9px] font-black text-yellow-600 tracking-[0.4em] uppercase opacity-70">
                                         MusiCoins Guadagnati
                                     </div>
                                 </div>
@@ -158,39 +175,42 @@ export default function BetResultModal({ promoId, betSnapshot, onClose }: BetRes
                         </div>
                     )}
 
-                    {/* Score Comparison (Sleeker) */}
-                    <div className="w-full bg-white/5 rounded-2xl p-4 mb-8 flex items-center justify-between relative border border-white/5">
-                        <div className="flex flex-col items-center flex-1 min-w-0">
-                            <span className="text-[10px] uppercase font-bold text-gray-500 mb-1 tracking-wider w-full truncate px-2" title={my_artist_name || 'Tu'}>
-                                {my_artist_name || 'Tu'}
-                            </span>
-                            <span className={`text-xl font-black tabular-nums ${wager === 'my_artist' ? 'text-white' : 'text-gray-500'} ${isDraw ? 'text-amber-400' : ''}`}>
-                                {scores?.my > 0 ? '+' : ''}{scores?.my || 0}
-                            </span>
-                        </div>
-                        <div className="w-[1px] h-8 bg-white/10 self-center" />
-                        <div className="flex flex-col items-center flex-1 min-w-0">
-                            <span className="text-[10px] uppercase font-bold text-gray-500 mb-1 tracking-wider w-full truncate px-2" title={rival?.name || 'Rivale'}>
-                                {rival?.name || 'Rivale'}
-                            </span>
-                            <span className={`text-xl font-black tabular-nums ${wager === 'rival' ? 'text-white' : 'text-gray-500'} ${isDraw ? 'text-amber-400' : ''}`}>
-                                {scores?.rival > 0 ? '+' : ''}{scores?.rival || 0}
-                            </span>
+                    {/* High-Impact Comparison Grid */}
+                    <div className="w-full bg-white/[0.02] rounded-[2rem] p-6 mb-10 relative border border-white/5 backdrop-blur-3xl shadow-inner group/stats">
+                        <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+
+                        <div className="flex items-center justify-between relative z-10">
+                            <div className="flex flex-col items-center flex-1 min-w-0 pr-4">
+                                <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-2 w-full truncate">MIO: {my_artist_name || 'TU'}</p>
+                                <div className={`text-4xl font-black italic tracking-tighter tabular-nums transition-colors duration-500 ${wager === 'my_artist' ? 'text-white' : 'text-gray-500'} ${isDraw ? 'text-amber-500' : ''}`}>
+                                    {scores?.my > 0 ? '+' : ''}{scores?.my || 0}
+                                </div>
+                            </div>
+
+                            <div className="w-px h-16 bg-white/10 mx-2 shadow-[0_0_10px_rgba(255,255,255,0.1)]"></div>
+
+                            <div className="flex flex-col items-center flex-1 min-w-0 pl-4">
+                                <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-2 w-full truncate">RIVALE: {rival?.name || 'RIVALE'}</p>
+                                <div className={`text-4xl font-black italic tracking-tighter tabular-nums transition-colors duration-500 ${wager === 'rival' ? 'text-white' : 'text-gray-500'} ${isDraw ? 'text-amber-500' : ''}`}>
+                                    {scores?.rival > 0 ? '+' : ''}{scores?.rival || 0}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <button
                         onClick={handleClose}
                         disabled={isClosing}
-                        className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-purple-900/40 transform hover:scale-105 active:scale-95 transition-all w-full flex items-center justify-center gap-2"
+                        className="group relative px-8 py-5 bg-white text-black font-black italic uppercase tracking-tighter rounded-2xl shadow-[0_0_40px_rgba(255,255,255,0.1)] transform hover:-translate-y-1 active:scale-95 transition-all w-full flex items-center justify-center gap-3 overflow-hidden"
                     >
+                        <div className={`absolute inset-0 bg-gradient-to-r ${isWin ? 'from-purple-600 to-blue-600' : isDraw ? 'from-amber-500 to-orange-600' : 'from-zinc-800 to-black'} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+                        <span className="relative z-10 group-hover:text-white transition-colors">
+                            {isClosing ? 'Archiviazione...' : (isLost ? 'Dimentica il Fallimento' : 'Avanti tutta')}
+                        </span>
                         {isClosing ? (
-                            <>
-                                <Loader2 size={20} className="animate-spin" />
-                                <span>Salvataggio...</span>
-                            </>
+                            <Loader2 size={20} className="animate-spin relative z-10 group-hover:text-white" />
                         ) : (
-                            <span>Continua</span>
+                            <TrendingUp size={20} className="relative z-10 group-hover:text-white group-hover:translate-x-1 transition-all" />
                         )}
                     </button>
                 </div>
