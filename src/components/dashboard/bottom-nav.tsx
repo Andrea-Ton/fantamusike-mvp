@@ -16,7 +16,7 @@ export default function BottomNav({ isAdmin }: { isAdmin?: boolean }) {
     const pathname = usePathname();
 
     return (
-        <div className="md:hidden fixed bottom-6 left-6 right-6 bg-[#0a0a0e]/80 backdrop-blur-2xl border border-white/10 rounded-[2rem] px-4 py-3 flex justify-around items-center z-50 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+        <div className="md:hidden fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-5 right-5 bg-[#0a0a0e]/90 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] px-4 py-2.5 flex justify-around items-center z-50 animate-fade-in-up-subtle shadow-[0_8px_32px_rgba(0,0,0,0.8)]">
             {NAV_ITEMS.map((item) => {
                 const isActive = pathname === item.href;
                 return (

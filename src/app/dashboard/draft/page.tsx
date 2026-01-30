@@ -15,6 +15,7 @@ import LogoutButton from '@/components/logout-button';
 import { createClient } from '@/utils/supabase/client';
 import InviteButton from '@/components/dashboard/invite-button';
 import { ARTIST_TIERS } from '@/config/game';
+import { main } from 'framer-motion/client';
 
 const getCategory = (popularity: number) => {
     if (popularity >= ARTIST_TIERS.BIG.min) return ARTIST_TIERS.BIG.label;
@@ -568,7 +569,14 @@ export default function TalentScoutPage() {
                         />
                     </div>
                     <div>
-                        <h1 className="text-xl font-black text-white tracking-tighter uppercase italic leading-none">FantaMusiké</h1>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-xl font-black text-white tracking-tighter uppercase italic leading-none">Talent Scout</h1>
+                            {filledSlotsCount > 0 && (
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-black italic border ${filledSlotsCount === 5 ? 'bg-green-500/20 text-green-400 border-green-500/20' : 'bg-purple-500/20 text-purple-400 border-purple-500/20'}`}>
+                                    {filledSlotsCount}/5
+                                </span>
+                            )}
+                        </div>
                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{seasonName}</p>
                     </div>
                 </div>
@@ -581,7 +589,7 @@ export default function TalentScoutPage() {
                     {/* Left Column: Search */}
                     <div className="lg:col-span-7">
                         <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-                            <div>
+                            <div className="hidden md:block">
                                 <div className="flex items-center gap-2 mb-2">
                                     <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></div>
                                     <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">Drafting Lab</p>
@@ -774,71 +782,83 @@ export default function TalentScoutPage() {
                     </div>
                 </div>
 
-                {/* Mobile Bottom Bar */}
-                <div className="lg:hidden fixed mb-4 bottom-24 left-4 right-4 bg-[#0a0a0f]/80 backdrop-blur-2xl border border-white/10 p-5 z-40 flex justify-between items-center rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-                    <div className="flex flex-col gap-1">
-                        <p className="text-gray-500 text-[9px] font-black uppercase tracking-widest leading-none">Draft Progress</p>
-                        <div className="font-black text-white italic uppercase tracking-tighter text-lg flex items-center gap-2">
-                            {filledSlotsCount}/5 <span className="text-[10px] not-italic text-gray-500 pt-0.5">Artists</span>
-                        </div>
-                    </div>
+                {/* Floating Action Button (FAB) for Mobile Review */}
+                {filledSlotsCount > 0 && (
                     <button
                         onClick={() => setShowMobileTeam(true)}
-                        className="px-6 py-3.5 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-[11px] font-black uppercase tracking-widest rounded-2xl shadow-[0_10px_20px_rgba(168,85,247,0.3)] flex items-center gap-2 active:scale-95 transition-transform"
+                        className={`lg:hidden fixed bottom-[min(110px,env(safe-area-inset-bottom)+100px)] right-6 z-40 transition-all duration-500 flex items-center group ${filledSlotsCount === 5
+                            ? 'w-auto pl-6 pr-4 h-14 bg-gradient-to-br from-purple-500 to-blue-600 rounded-3xl shadow-[0_10px_30px_rgba(168,85,247,0.4)]'
+                            : 'w-14 h-14 bg-[#0a0a0f]/90 backdrop-blur-2xl border border-white/10 rounded-full justify-center shadow-2xl'
+                            }`}
                     >
-                        <span>Vedi Team</span>
-                        <ChevronUp size={16} className="animate-bounce" />
+                        {filledSlotsCount === 5 ? (
+                            <div className="flex items-center gap-3">
+                                <span className="text-[11px] font-black uppercase tracking-widest text-white italic">Review Team</span>
+                                <div className="p-2 bg-white/20 rounded-2xl">
+                                    <ChevronUp size={18} className="text-white animate-bounce" />
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="relative">
+                                <Users size={24} className="text-purple-400" />
+                                <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-purple-500 rounded-full border-2 border-[#0a0a0f] flex items-center justify-center">
+                                    <span className="text-[9px] font-black text-white leading-none">{filledSlotsCount}</span>
+                                </div>
+                            </div>
+                        )}
                     </button>
-                </div>
+                )}
 
                 {/* Mobile Team Modal/Sheet */}
                 {showMobileTeam && (
                     <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-xl flex items-end justify-center animate-in fade-in duration-300">
                         <div
-                            className="bg-[#050507] w-full max-w-lg rounded-t-[2.5rem] border-t border-x border-white/10 p-8 shadow-[0_-20px_50px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-full duration-500 max-h-[90vh] overflow-y-auto relative"
+                            className="bg-[#050507] w-full max-w-lg rounded-t-[2.5rem] border-t border-x border-white/10 px-8 pb-8 pt-0 shadow-[0_-20px_50px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-full duration-500 max-h-[90vh] overflow-y-auto relative"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <div className="absolute top-4 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-white/10 rounded-full" />
-
-                            <div className="flex justify-between items-center mb-10 mt-2 sticky top-0 bg-[#050507] z-20 pb-4">
-                                <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></div>
-                                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Roster Management</p>
+                            <div className="sticky top-0 bg-[#050507] z-30 pt-4 pb-2">
+                                <div className="mx-auto w-12 h-1.5 bg-white/10 rounded-full mb-6" />
+                                <div className="flex justify-between items-center bg-[#050507]">
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></div>
+                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Roster Management</p>
+                                        </div>
+                                        <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Draft Review</h2>
                                     </div>
-                                    <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Draft Review</h2>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <button
-                                        onClick={handleUndo}
-                                        disabled={!hasChanges}
-                                        className={`p-3 rounded-xl border transition-all ${hasChanges
-                                            ? 'text-red-400 border-red-500/20 bg-red-500/5 hover:bg-red-500/10'
-                                            : 'text-gray-700 border-white/5 bg-white/5 cursor-not-allowed'}`}
-                                    >
-                                        <RotateCcw size={18} />
-                                    </button>
-                                    <button
-                                        onClick={() => setShowMobileTeam(false)}
-                                        className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors"
-                                    >
-                                        <X className="text-white" size={20} />
-                                    </button>
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            onClick={handleUndo}
+                                            disabled={!hasChanges}
+                                            className={`p-3 rounded-xl border transition-all ${hasChanges
+                                                ? 'text-red-400 border-red-500/20 bg-red-500/5 hover:bg-red-500/10'
+                                                : 'text-gray-700 border-white/5 bg-white/5 cursor-not-allowed'}`}
+                                        >
+                                            <RotateCcw size={18} />
+                                        </button>
+                                        <button
+                                            onClick={() => setShowMobileTeam(false)}
+                                            className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors"
+                                        >
+                                            <X className="text-white" size={20} />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
                             <div className="relative z-10">
                                 <TeamSummaryContent />
                             </div>
-                        </div>
+                        </div >
                         {/* Click outside to close */}
-                        <div className="absolute inset-0 -z-10" onClick={() => setShowMobileTeam(false)} />
-                    </div>
+                        < div className="absolute inset-0 -z-10" onClick={() => setShowMobileTeam(false)
+                        } />
+                    </div >
                 )}
 
 
 
-            </main>
+            </main >
         </>
     );
 }

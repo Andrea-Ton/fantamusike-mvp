@@ -37,13 +37,8 @@ export default function Navbar({ user }: { user?: User | null }) {
                 ) : (
                     <div className="flex items-center gap-3">
                         <Link href="/login">
-                            <button className="px-6 py-2.5 text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-white transition-colors">
-                                Accedi
-                            </button>
-                        </Link>
-                        <Link href="/signup">
                             <button className="group relative px-6 py-2.5 rounded-2xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-purple-600 hover:text-white transition-all duration-500 shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:shadow-purple-500/40 overflow-hidden">
-                                <span className="relative z-10">Inizia Ora</span>
+                                <span className="relative z-10">Accedi</span>
                             </button>
                         </Link>
                     </div>
