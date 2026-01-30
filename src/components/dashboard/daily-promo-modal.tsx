@@ -319,9 +319,9 @@ export default function DailyPromoModal({
         window.open(url, '_blank');
     };
 
-    const closeResultPoup = () => {
+    const closeResultPoup = (manuallyClosed: boolean = false) => {
         setPromoResult(null);
-        if (pendingRedirectUrl) {
+        if (pendingRedirectUrl && manuallyClosed) {
             smartRedirect(pendingRedirectUrl);
             setPendingRedirectUrl(null);
         }
@@ -695,10 +695,15 @@ export default function DailyPromoModal({
                                                         </>
                                                     )}
 
-                                                    <button
-                                                        onClick={handleFinalizeBoost}
+                                                    <a
+                                                        href={pendingRedirectUrl || '#'}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        onClick={(e) => {
+                                                            if (!pendingRedirectUrl) e.preventDefault();
+                                                            handleFinalizeBoost();
+                                                        }}
                                                         className="px-8 py-3 bg-white text-black font-bold rounded-xl hover:scale-105 transition-transform w-full flex items-center justify-center gap-2 shrink-0"
-                                                        disabled={loadingAction === 'finalize-boost'}
                                                     >
                                                         {loadingAction === 'finalize-boost' ? (
                                                             <Loader2 size={18} className="animate-spin" />
@@ -708,7 +713,7 @@ export default function DailyPromoModal({
                                                                 <img src="/Spotify_Full_Logo_Black.png" alt="Spotify" className="h-4 object-contain" />
                                                             </>
                                                         )}
-                                                    </button>
+                                                    </a>
                                                 </div>
                                             ) : (
                                                 <>
