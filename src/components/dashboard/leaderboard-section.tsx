@@ -9,8 +9,11 @@ interface LeaderboardSectionProps {
 }
 
 export default async function LeaderboardSection({ userId, isMobile = false }: LeaderboardSectionProps) {
-    const { podium, neighborhood } = await getLeaderboardAction(userId);
-    const leaderboardEntries = [...podium, ...neighborhood];
+    const { podium, entries } = await getLeaderboardAction(userId);
+
+    // Filter out podium members from entries to avoid duplicates (especially on Page 1)
+    const filteredEntries = entries.filter(entry => !podium.some(p => p.id === entry.id));
+    const leaderboardEntries = [...podium, ...filteredEntries];
 
     if (isMobile) {
         return (

@@ -13,12 +13,14 @@ export type LeaderboardEntry = {
 
 export type LeaderboardResponse = {
     podium: LeaderboardEntry[];
-    neighborhood: LeaderboardEntry[];
+    entries: LeaderboardEntry[];
     totalCount: number;
     userRank: number | null;
+    totalPages: number;
+    currentPage: number;
 };
 
-export async function getLeaderboardAction(userId?: string): Promise<LeaderboardResponse> {
+export async function getLeaderboardAction(userId?: string, requestedPage?: number, pageSize: number = 20): Promise<LeaderboardResponse> {
     const supabase = await createClient();
 
     try {
@@ -29,10 +31,10 @@ export async function getLeaderboardAction(userId?: string): Promise<Leaderboard
 
         if (error) {
             console.error('Error fetching leaderboard:', error);
-            return { podium: [], neighborhood: [], totalCount: 0, userRank: null };
+            return { podium: [], entries: [], totalCount: 0, userRank: null, totalPages: 0, currentPage: 1 };
         }
 
-        if (!profiles) return { podium: [], neighborhood: [], totalCount: 0, userRank: null };
+        if (!profiles) return { podium: [], entries: [], totalCount: 0, userRank: null, totalPages: 0, currentPage: 1 };
 
         // Calculate combined score and sort
         const rankedProfiles = profiles
@@ -49,54 +51,42 @@ export async function getLeaderboardAction(userId?: string): Promise<Leaderboard
             }));
 
         const totalCount = rankedProfiles.length;
+        const totalPages = Math.ceil(totalCount / pageSize);
         const podium = rankedProfiles.slice(0, 3);
-        let neighborhood: LeaderboardEntry[] = [];
+
         let userRank = null;
+        let userPage = 1;
 
         if (userId) {
             const userIndex = rankedProfiles.findIndex(p => p.id === userId);
             if (userIndex !== -1) {
                 userRank = rankedProfiles[userIndex].rank;
-                // Get 10 above and 10 below
-                const start = Math.max(3, userIndex - 10); // Start after podium (index 3) or 10 above
-                const end = Math.min(totalCount, userIndex + 11); // 10 below
-
-                // If the user is in the podium, we still might want to show the list starting from 4
-                // But specifically the request is "10 above and 10 below". 
-                // If user is #1, show #2-#11 (but #2, #3 are in podium). 
-                // Typically podium is separate. Let's return the list starting from rank 4, 
-                // but focused on the user if they are further down.
-
-                let sliceStart = start;
-                // Ensure we don't show podium members in the list if the user is high up, 
-                // unless we want to duplicate? Usually podium is exclusive.
-                if (sliceStart < 3) sliceStart = 3;
-
-                neighborhood = rankedProfiles.slice(sliceStart, end);
-
-                // If user is in podium (rank 1, 2, 3), show top 20 after podium
-                if (userIndex < 3) {
-                    neighborhood = rankedProfiles.slice(3, 23);
-                }
-            } else {
-                // User not found (shouldn't happen), show top 20 after podium
-                neighborhood = rankedProfiles.slice(3, 23);
+                userPage = Math.ceil(userRank / pageSize);
             }
-        } else {
-            // No user logged in, show top 20 after podium
-            neighborhood = rankedProfiles.slice(3, 23);
         }
+
+        // Determine which page to show
+        let currentPage = requestedPage || userPage;
+        if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+
+        // Slice data for the current page
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        const entries = rankedProfiles.slice(start, end);
 
         return {
             podium,
-            neighborhood,
+            entries,
             totalCount,
-            userRank
+            userRank,
+            totalPages,
+            currentPage
         };
 
     } catch (error) {
         console.error('Unexpected error fetching leaderboard:', error);
-        return { podium: [], neighborhood: [], totalCount: 0, userRank: null };
+        return { podium: [], entries: [], totalCount: 0, userRank: null, totalPages: 0, currentPage: 1 };
     }
 }
 

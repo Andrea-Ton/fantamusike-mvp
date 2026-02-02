@@ -1,29 +1,46 @@
 
 
 import React from 'react';
-import { Zap, LogOut, Crown } from 'lucide-react';
+import { Zap, LogOut, Crown, Medal, ChevronLeft, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { createClient } from '@/utils/supabase/server';
 import { getLeaderboardAction } from '@/app/actions/leaderboard';
 import { getCurrentSeasonAction } from '@/app/actions/season';
 import LogoutButton from '@/components/logout-button';
 
-export default async function LeaderboardPage() {
+interface PageProps {
+    searchParams: Promise<{ page?: string }>;
+}
+
+export default async function LeaderboardPage({ searchParams }: PageProps) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
+    const sParams = await searchParams;
+    const page = sParams.page ? parseInt(sParams.page) : undefined;
+
     // Fetch real leaderboard data
-    const leaderboardData = await getLeaderboardAction(user?.id);
+    const leaderboardData = await getLeaderboardAction(user?.id, page);
 
     // Fetch Current Season
     const currentSeason = await getCurrentSeasonAction();
     const seasonName = currentSeason?.name || 'Season Zero';
 
     const topThree = leaderboardData.podium;
-    const restOfLeaderboard = leaderboardData.neighborhood;
+    const entries = leaderboardData.entries;
 
     // Helper to get initials
     const getInitials = (name: string) => name.substring(0, 1).toUpperCase();
+
+    const getRankIcon = (rank: number) => {
+        switch (rank) {
+            case 1: return <Crown size={18} className="text-yellow-400 fill-yellow-400/20" />;
+            case 2: return <Medal size={18} className="text-gray-400" />;
+            case 3: return <Medal size={18} className="text-amber-700" />;
+            default: return <span className="text-sm font-black italic text-gray-600">#{rank}</span>;
+        }
+    };
 
     return (
         <>
@@ -73,8 +90,6 @@ export default async function LeaderboardPage() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-
-
                     {/* Podium Section */}
                     <div className="lg:col-span-5 order-1 lg:order-1 flex flex-col">
                         <div className="bg-white/[0.03] border border-white/10 rounded-[2.5rem] p-8 relative overflow-hidden backdrop-blur-3xl shadow-2xl group/podium">
@@ -186,6 +201,9 @@ export default async function LeaderboardPage() {
                                     <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Classifica Globale</h3>
                                     <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Full Ranking Details</p>
                                 </div>
+                                <div className="text-[10px] font-black text-purple-400 uppercase tracking-widest bg-purple-500/10 px-3 py-1.5 rounded-lg border border-purple-500/20">
+                                    Pagina {leaderboardData.currentPage} di {leaderboardData.totalPages}
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-12 gap-4 px-8 py-4 bg-white/[0.02] text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-white/5">
@@ -195,16 +213,16 @@ export default async function LeaderboardPage() {
                             </div>
 
                             <div className="overflow-y-auto custom-scrollbar flex-1 relative">
-                                {restOfLeaderboard.length > 0 ? (
-                                    restOfLeaderboard.map((entry) => {
+                                {entries.length > 0 ? (
+                                    entries.map((entry) => {
                                         const isCurrentUser = entry.id === user?.id;
                                         return (
                                             <div
                                                 key={entry.id}
                                                 className={`grid grid-cols-12 gap-4 px-8 py-5 items-center border-b border-white/5 transition-all duration-300 group ${isCurrentUser ? 'bg-purple-500/10' : 'hover:bg-white/[0.02]'}`}
                                             >
-                                                <div className={`col-span-2 text-center font-black italic tracking-tighter text-lg ${isCurrentUser ? 'text-purple-400 scale-110' : 'text-gray-600 group-hover:text-white'}`}>
-                                                    #{entry.rank}
+                                                <div className={`col-span-2 text-center flex justify-center items-center ${isCurrentUser ? 'scale-110' : ''}`}>
+                                                    {getRankIcon(entry.rank)}
                                                 </div>
                                                 <div className="col-span-7 flex items-center gap-4">
                                                     <div className={`relative w-10 h-10 rounded-xl overflow-hidden shadow-lg border-2 ${isCurrentUser ? 'border-purple-500' : 'border-white/10 group-hover:border-white/20'}`}>
@@ -248,6 +266,59 @@ export default async function LeaderboardPage() {
                                     </div>
                                 )}
                             </div>
+
+                            {/* Pagination Controls */}
+                            {leaderboardData.totalPages > 1 && (
+                                <div className="p-6 bg-[#0a0a0f]/50 border-t border-white/5 backdrop-blur-xl flex items-center justify-center gap-4">
+                                    <Link
+                                        href={`/dashboard/leaderboard?page=${leaderboardData.currentPage - 1}`}
+                                        className={`p-3 rounded-xl border border-white/10 flex items-center justify-center transition-all ${leaderboardData.currentPage === 1 ? 'opacity-30 pointer-events-none' : 'bg-white/5 hover:bg-white/10 hover:border-white/20'}`}
+                                        scroll={false}
+                                    >
+                                        <ChevronLeft size={20} className="text-white" />
+                                    </Link>
+
+                                    <div className="flex items-center gap-2">
+                                        {/* Show subset of pages if too many */}
+                                        {Array.from({ length: Math.min(5, leaderboardData.totalPages) }, (_, i) => {
+                                            let pageNum = i + 1;
+                                            // Dynamic windowing
+                                            if (leaderboardData.totalPages > 5) {
+                                                if (leaderboardData.currentPage > 3) {
+                                                    pageNum = leaderboardData.currentPage - 2 + i;
+                                                    if (pageNum + (4 - i) > leaderboardData.totalPages) {
+                                                        pageNum = leaderboardData.totalPages - 4 + i;
+                                                    }
+                                                }
+                                            }
+
+                                            if (pageNum > leaderboardData.totalPages) return null;
+
+                                            const isActive = pageNum === leaderboardData.currentPage;
+                                            return (
+                                                <Link
+                                                    key={pageNum}
+                                                    href={`/dashboard/leaderboard?page=${pageNum}`}
+                                                    className={`w-10 h-10 rounded-xl flex items-center justify-center font-black italic tracking-tighter transition-all border ${isActive
+                                                        ? 'bg-purple-600 border-purple-400 text-white shadow-[0_0_20px_rgba(168,85,247,0.4)] scale-110 z-10'
+                                                        : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'}`}
+                                                    scroll={false}
+                                                >
+                                                    {pageNum}
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <Link
+                                        href={`/dashboard/leaderboard?page=${leaderboardData.currentPage + 1}`}
+                                        className={`p-3 rounded-xl border border-white/10 flex items-center justify-center transition-all ${leaderboardData.currentPage === leaderboardData.totalPages ? 'opacity-30 pointer-events-none' : 'bg-white/5 hover:bg-white/10 hover:border-white/20'}`}
+                                        scroll={false}
+                                    >
+                                        <ChevronRight size={20} className="text-white" />
+                                    </Link>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div >
