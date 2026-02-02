@@ -49,9 +49,9 @@ export default async function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { icon: Search, title: "Talent Scout", desc: "Non scegliere i soliti big. Trova artisti emergenti under 100k ascoltatori mensili." },
-              { icon: Music, title: "Firma i Contratti", desc: "Usa i tuoi MusiCoins per mettere sotto contratto i talenti prima che esplodano." },
-              { icon: Trophy, title: "Vinci Premi", desc: "Scala la classifica stagionale e vinci biglietti per i concerti e merch esclusivo." }
+              { icon: Search, title: "SCOVA I TALENTI", desc: "Facile con il mainstream. La vera gloria è nell'Underground: punta tutto sugli artisti emergenti." },
+              { icon: Music, title: "CREA LA TUA LABEL", desc: "Sei tu il Manager. Usa i MusiCoin per ingaggiare le promesse e scambiarle al momento giusto." },
+              { icon: Trophy, title: "SBLOCCA I PREMI", desc: "Il tuo orecchio vale oro. Domina le classifiche e vinci Mystery Box esclusive." }
             ].map((f, i) => (
               <FeatureCard key={i} icon={f.icon} title={f.title} desc={f.desc} />
             ))}

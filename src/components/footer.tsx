@@ -21,8 +21,8 @@ export default function Footer() {
                             FantaMusiké
                         </span>
                         <p className="text-gray-500 mt-4 text-sm font-medium leading-relaxed max-w-sm">
-                            La prima piattaforma di Talent Scouting gamified in Italia
-                            in cui puoi vincere mistery box e premi reali!
+                            Il primo Fantasy Game musicale in Italia in cui puoi
+                            trasformare il tuo intuito musicale in Mystery Box esclusive.
                         </p>
                     </div>
 
@@ -61,18 +61,18 @@ export default function Footer() {
 
                 <div className="pt-12 border-t border-white/5 flex flex-col items-center md:items-start gap-8">
                     {/* Italian Corporate Data - Complying with Italian Law */}
-                    <div className="text-[10px] font-black text-gray-600 uppercase tracking-widest leading-loose flex flex-wrap justify-center md:justify-start gap-x-4 gap-y-2 text-center md:text-left">
-                        <span>[RAGIONE_SOCIALE]</span>
+                    <div className="text-[9px] font-black text-gray-600 uppercase tracking-widest leading-loose flex flex-wrap justify-center md:justify-start gap-x-4 gap-y-2 text-center md:text-left">
+                        <span>Musiké SRL</span>
                         <span className="hidden md:inline text-white/10">•</span>
-                        <span>Sede Legale: [INDIRIZZO_SEDE_LEGALE]</span>
+                        <span>Sede Legale: Viale Luigi Majno, 28, 20129, Milano (MI)</span>
                         <span className="hidden md:inline text-white/10">•</span>
-                        <span>P.IVA / C.F.: [PARTITA_IVA]</span>
+                        <span>P.IVA / C.F.: 14157980963</span>
                         <span className="hidden md:inline text-white/10">•</span>
-                        <span>Iscr. Reg. Imprese: [REA_INFO]</span>
+                        <span>Iscr. Reg. Imprese: MI - 2764500</span>
                         <span className="hidden md:inline text-white/10">•</span>
-                        <span>Cap. Soc.: [CAPITALE_SOCIALE]</span>
+                        <span>Cap. Soc.: 10.000,00 € i.v.</span>
                         <span className="hidden md:inline text-white/10">•</span>
-                        <span>PEC: [EMAIL_PEC]</span>
+                        <span>PEC: musike@pecimprese.it</span>
                     </div>
 
                     <div className="flex flex-col items-center md:items-start">

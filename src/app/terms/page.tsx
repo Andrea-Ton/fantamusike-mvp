@@ -22,15 +22,15 @@ export default function TermsPage() {
                     <section>
                         <h2 className="text-2xl font-black uppercase italic tracking-tighter text-white border-b border-white/10 pb-4 mb-6">1. Oggetto del Servizio e Requisiti</h2>
                         <p className="text-gray-400 leading-relaxed font-medium">
-                            FantaMusiké è un gioco di simulazione e scouting musicale (attualmente in versione Beta/MVP). Gli utenti assumono il ruolo di Talent Scout virtuali, gestendo team di artisti e competendo in base a dati reali. <strong>L'iscrizione è consentita esclusivamente agli utenti che abbiano compiuto almeno 14 anni.</strong> Creando un account, dichiari di avere l'età minima richiesta.
+                            FantaMusiké è un gioco di simulazione e scouting musicale (attualmente in versione Beta). Gli utenti assumono il ruolo di Manager, gestendo team di artisti e competendo in base a dati reali. <strong>L'iscrizione è consentita esclusivamente agli utenti che abbiano compiuto almeno 14 anni.</strong> Creando un account, dichiari di avere l'età minima richiesta.
                         </p>
                     </section>
 
                     <section>
-                        <h2 className="text-2xl font-black uppercase italic tracking-tighter text-white border-b border-white/10 pb-4 mb-6">2. Stato di MVP (Minimum Viable Product)</h2>
+                        <h2 className="text-2xl font-black uppercase italic tracking-tighter text-white border-b border-white/10 pb-4 mb-6">2. Stato di Beta</h2>
                         <div className="bg-yellow-500/5 border border-yellow-500/20 p-6 rounded-3xl space-y-4">
                             <p className="text-gray-400 leading-relaxed font-medium">
-                                <strong>Attenzione:</strong> La piattaforma è attualmente in fase di sviluppo (Beta/MVP). Il servizio è fornito "nello stato in cui si trova" (as is) e senza alcuna garanzia di continuità. L'utente accetta che:
+                                <strong>Attenzione:</strong> La piattaforma è attualmente in fase di sviluppo (Beta). Il servizio è fornito "nello stato in cui si trova" (as is) e senza alcuna garanzia di continuità. L'utente accetta che:
                             </p>
                             <ul className="list-disc list-inside text-xs text-gray-500 space-y-2 font-medium">
                                 <li>Potrebbero verificarsi bug, crash o interruzioni del servizio.</li>
@@ -55,21 +55,21 @@ export default function TermsPage() {
                     <section>
                         <h2 className="text-2xl font-black uppercase italic tracking-tighter text-white border-b border-white/10 pb-4 mb-6">4. Proprietà Intellettuale e Contenuti di Terze Parti</h2>
                         <p className="text-gray-400 leading-relaxed font-medium">
-                            Il codice sorgente, il marchio "FantaMusiké" e il design della piattaforma sono di proprietà esclusiva di <strong>[RAGIONE_SOCIALE]</strong>. I dati relativi agli artisti (nomi, immagini, statistiche) sono forniti da terze parti (es. Spotify, Apple Music) tramite API pubbliche. Tali contenuti rimangono di proprietà dei rispettivi titolari (Etichette, Artisti, Piattaforme) e vengono utilizzati su FantaMusiké a scopo descrittivo, informativo e di intrattenimento. <strong>FantaMusiké dichiara di non accedere in alcun modo ai dati privati, alle playlist o agli ascolti personali degli utenti sulle piattaforme di streaming collegate.</strong>
+                            Il codice sorgente, il marchio "FantaMusiké" e il design della piattaforma sono di proprietà esclusiva di <strong>Musiké SRL</strong>. I dati relativi agli artisti (nomi, immagini, statistiche) sono forniti da terze parti (es. Spotify, Apple Music) tramite API pubbliche. Tali contenuti rimangono di proprietà dei rispettivi titolari (Etichette, Artisti, Piattaforme) e vengono utilizzati su FantaMusiké a scopo descrittivo, informativo e di intrattenimento. <strong>FantaMusiké dichiara di non accedere in alcun modo ai dati privati, alle playlist o agli ascolti personali degli utenti sulle piattaforme di streaming collegate.</strong>
                         </p>
                     </section>
 
                     <section>
                         <h2 className="text-2xl font-black uppercase italic tracking-tighter text-white border-b border-white/10 pb-4 mb-6">5. Limitazione di Responsabilità</h2>
                         <p className="text-gray-400 leading-relaxed font-medium">
-                            FantaMusiké si impegna a mantenere il servizio attivo e sicuro, ma non può garantirne il funzionamento ininterrotto. Nei limiti massimi consentiti dalla legge vigente, <strong>[RAGIONE_SOCIALE]</strong> non sarà responsabile per danni diretti o indiretti derivanti dall'uso del servizio, inclusa la perdita di dati di gioco o malfunzionamenti dovuti a cause di forza maggiore o problemi delle piattaforme terze (es. API di Spotify down). L'utente è l'unico responsabile della custodia delle proprie credenziali di accesso.
+                            FantaMusiké si impegna a mantenere il servizio attivo e sicuro, ma non può garantirne il funzionamento ininterrotto. Nei limiti massimi consentiti dalla legge vigente, <strong>Musiké SRL</strong> non sarà responsabile per danni diretti o indiretti derivanti dall'uso del servizio, inclusa la perdita di dati di gioco o malfunzionamenti dovuti a cause di forza maggiore o problemi delle piattaforme terze. L'utente è l'unico responsabile della custodia delle proprie credenziali di accesso.
                         </p>
                     </section>
 
                     <section>
                         <h2 className="text-2xl font-black uppercase italic tracking-tighter text-white border-b border-white/10 pb-4 mb-6">6. Modifiche ai Termini</h2>
                         <p className="text-gray-400 leading-relaxed font-medium">
-                            Essendo un MVP, questi termini potrebbero cambiare. Ti informeremo di modifiche sostanziali tramite email o avviso sulla piattaforma. Continuando a usare il gioco dopo le modifiche, accetti i nuovi termini.
+                            Essendo un prodotto in fase di sviluppo, questi termini potrebbero cambiare. Ti informeremo di modifiche sostanziali tramite email o avviso sulla piattaforma. Continuando a usare il gioco dopo le modifiche, accetti i nuovi termini.
                         </p>
                     </section>
 

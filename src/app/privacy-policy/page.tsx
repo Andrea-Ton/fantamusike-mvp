@@ -22,8 +22,8 @@ export default function PrivacyPolicyPage() {
                     <section>
                         <h2 className="text-2xl font-black uppercase italic tracking-tighter text-white border-b border-white/10 pb-4 mb-6">1. Titolare del Trattamento</h2>
                         <p className="text-gray-400 leading-relaxed font-medium">
-                            Il Titolare del trattamento è <strong>[RAGIONE_SOCIALE]</strong>, con sede legale in [INDIRIZZO_SEDE_LEGALE], P.IVA/C.F. [NUMERO].
-                            Per qualsiasi domanda relativa ai tuoi dati o per esercitare i tuoi diritti, puoi scriverci a: <a href="mailto:[EMAIL_PEC]" className="text-purple-400 hover:text-purple-300 transition-colors">[EMAIL_PEC o EMAIL SUPPORTO]</a>.
+                            Il Titolare del trattamento è <strong>Musiké SRL</strong>, con sede legale in Viale Luigi Majno, 28, 20129, Milano (MI), P.IVA/C.F. 14157980963.
+                            Per qualsiasi domanda relativa ai tuoi dati o per esercitare i tuoi diritti, puoi scriverci a: <a href="mailto:support@musike.fm" className="text-purple-400 hover:text-purple-300 transition-colors">support@musike.fm</a>.
                         </p>
                     </section>
 
@@ -35,7 +35,7 @@ export default function PrivacyPolicyPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
                                 <h3 className="text-sm font-black text-white uppercase tracking-wider mb-2">Dati forniti volontariamente</h3>
-                                <p className="text-xs text-gray-500 font-medium">Username, E-mail, password (cifrata), immagine del profilo.</p>
+                                <p className="text-xs text-gray-500 font-medium">Username, E-mail, password (cifrata).</p>
                             </div>
                             <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
                                 <h3 className="text-sm font-black text-white uppercase tracking-wider mb-2">Dati di gioco</h3>
@@ -43,11 +43,11 @@ export default function PrivacyPolicyPage() {
                             </div>
                             <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
                                 <h3 className="text-sm font-black text-white uppercase tracking-wider mb-2">Dati di navigazione</h3>
-                                <p className="text-xs text-gray-500 font-medium">Indirizzo IP, tipo di browser, orari di accesso (sicurezza e debug).</p>
+                                <p className="text-xs text-gray-500 font-medium">Indirizzo IP, tipo di browser, orari di accesso.</p>
                             </div>
                             <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
                                 <h3 className="text-sm font-black text-white uppercase tracking-wider mb-2">Dati statistici</h3>
-                                <p className="text-xs text-gray-500 font-medium">Navigazione anonimizzata raccolta tramite Google Analytics 4.</p>
+                                <p className="text-xs text-gray-500 font-medium">Navigazione anonimizzata raccolta tramite strumenti di analitica.</p>
                             </div>
                         </div>
                     </section>
@@ -59,35 +59,35 @@ export default function PrivacyPolicyPage() {
                                 <div className="text-purple-500 font-black text-xl italic">A</div>
                                 <div>
                                     <h3 className="text-white font-bold uppercase tracking-wide text-sm">Funzionamento del Gioco</h3>
-                                    <p className="text-gray-400 text-sm mt-1">Gestione iscrizione, account, MusiCoins e classifiche. (Base: Esecuzione contratto).</p>
+                                    <p className="text-gray-400 text-sm mt-1">Gestione iscrizione, account, MusiCoins e classifiche.</p>
                                 </div>
                             </div>
                             <div className="flex gap-4">
                                 <div className="text-purple-500 font-black text-xl italic">B</div>
                                 <div>
                                     <h3 className="text-white font-bold uppercase tracking-wide text-sm">Sicurezza e Antifrode</h3>
-                                    <p className="text-gray-400 text-sm mt-1">Prevenzione abusi, bot o accessi non autorizzati. (Base: Legittimo interesse).</p>
+                                    <p className="text-gray-400 text-sm mt-1">Prevenzione abusi, bot o accessi non autorizzati.</p>
                                 </div>
                             </div>
                             <div className="flex gap-4">
                                 <div className="text-purple-500 font-black text-xl italic">C</div>
                                 <div>
                                     <h3 className="text-white font-bold uppercase tracking-wide text-sm">Marketing e Newsletter (Opzionale)</h3>
-                                    <p className="text-gray-400 text-sm mt-1">Invio aggiornamenti promozionali solo con consenso esplicito. (Base: Consenso interessato).</p>
+                                    <p className="text-gray-400 text-sm mt-1">Invio aggiornamenti promozionali solo con consenso esplicito.</p>
                                 </div>
                             </div>
                             <div className="flex gap-4">
                                 <div className="text-purple-500 font-black text-xl italic">D</div>
                                 <div>
                                     <h3 className="text-white font-bold uppercase tracking-wide text-sm">Obblighi di Legge</h3>
-                                    <p className="text-gray-400 text-sm mt-1">Adempimento a norme amministrative, fiscali o richieste Autorità. (Base: Obbligo legale).</p>
+                                    <p className="text-gray-400 text-sm mt-1">Adempimento a norme amministrative, fiscali o richieste Autorità.</p>
                                 </div>
                             </div>
                             <div className="flex gap-4">
                                 <div className="text-purple-500 font-black text-xl italic">E</div>
                                 <div>
                                     <h3 className="text-white font-bold uppercase tracking-wide text-sm">Statistica</h3>
-                                    <p className="text-gray-400 text-sm mt-1">Analisi aggregate sull'uso del sito. (Base: Consenso tramite banner cookie).</p>
+                                    <p className="text-gray-400 text-sm mt-1">Analisi aggregate sull'uso del sito.</p>
                                 </div>
                             </div>
                         </div>
@@ -97,9 +97,8 @@ export default function PrivacyPolicyPage() {
                         <h2 className="text-2xl font-black uppercase italic tracking-tighter text-white border-b border-white/10 pb-4 mb-6">4. Con chi condividiamo i dati</h2>
                         <p className="text-gray-400 leading-relaxed font-medium mb-4">I tuoi dati non saranno mai venduti a terzi. Possono essere comunicati a:</p>
                         <ul className="list-disc list-inside text-gray-500 space-y-2 text-sm font-medium">
-                            <li>Provider di servizi hosting e cloud (es. Supabase, AWS, Vercel).</li>
-                            <li>Piattaforme per l'invio di newsletter (se configurate).</li>
-                            <li>Provider di servizi di analisi (Google Ireland Ltd per GA4).</li>
+                            <li>Provider di servizi hosting e cloud.</li>
+                            <li>Provider di servizi di analisi.</li>
                             <li>Consulenti fiscali/legali se previsto dalla legge.</li>
                         </ul>
                     </section>
@@ -136,7 +135,7 @@ export default function PrivacyPolicyPage() {
                         </p>
                         <div className="bg-purple-500/5 border border-purple-500/20 rounded-2xl p-6 text-center">
                             <p className="text-xs text-gray-400 font-medium mb-4">Per esercitare i tuoi diritti scrivici a:</p>
-                            <span className="text-purple-400 font-black uppercase tracking-widest">[EMAIL SUPPORTO]</span>
+                            <span className="text-purple-400 font-black uppercase tracking-widest">support@musike.fm</span>
                         </div>
                     </section>
 
