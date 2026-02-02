@@ -12,7 +12,13 @@ export default function SignupPage() {
     const [success, setSuccess] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
+    const [acceptTerms, setAcceptTerms] = useState(false);
+
     const handleSubmit = async (formData: FormData) => {
+        if (!acceptTerms) {
+            setError("Devi accettare i Termini e le Condizioni per continuare.");
+            return;
+        }
         setIsLoading(true);
         setError(null);
         const result = await signup(formData);
@@ -133,34 +139,47 @@ export default function SignupPage() {
                         />
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <div className="relative flex items-center">
-                            <input
-                                name="marketingOptIn"
-                                type="checkbox"
-                                id="marketing-opt-in"
-                                className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-white/10 bg-[#1a1a24] transition-all checked:border-[#9333ea] checked:bg-[#9333ea]"
-                            />
-                            <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 transition-opacity peer-checked:opacity-100">
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-3.5 w-3.5 text-white"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                    stroke="currentColor"
-                                    strokeWidth="1"
-                                >
-                                    <path
-                                        fillRule="evenodd"
-                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                        clipRule="evenodd"
-                                    ></path>
-                                </svg>
+                    <div className="space-y-4 pt-2">
+                        {/* Mandatory Terms Checkbox */}
+                        <div className="flex items-start gap-3 group">
+                            <div className="relative flex items-center mt-0.5">
+                                <input
+                                    type="checkbox"
+                                    id="terms-accept"
+                                    checked={acceptTerms}
+                                    onChange={(e) => setAcceptTerms(e.target.checked)}
+                                    className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-white/10 bg-[#1a1a24] transition-all checked:border-[#9333ea] checked:bg-[#9333ea]"
+                                />
+                                <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 transition-opacity peer-checked:opacity-100">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                                    </svg>
+                                </div>
                             </div>
+                            <label htmlFor="terms-accept" className="cursor-pointer select-none text-xs text-gray-400 leading-tight">
+                                Accetto i <Link href="/terms" className="text-purple-400 hover:text-purple-300 underline decoration-purple-500/20 underline-offset-4 font-bold">Termini e le Condizioni</Link> del servizio e dichiaro di aver letto la <Link href="/privacy-policy" className="text-purple-400 hover:text-purple-300 underline decoration-purple-500/20 underline-offset-4 font-bold">Privacy Policy</Link>.
+                            </label>
                         </div>
-                        <label htmlFor="marketing-opt-in" className="cursor-pointer select-none text-sm text-gray-400">
-                            Accetto di ricevere comunicazioni marketing e aggiornamenti
-                        </label>
+
+                        {/* Optional Marketing Checkbox */}
+                        <div className="flex items-start gap-3">
+                            <div className="relative flex items-center mt-0.5">
+                                <input
+                                    name="marketingOptIn"
+                                    type="checkbox"
+                                    id="marketing-opt-in"
+                                    className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-white/10 bg-[#1a1a24] transition-all checked:border-[#9333ea] checked:bg-[#9333ea]"
+                                />
+                                <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 transition-opacity peer-checked:opacity-100">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <label htmlFor="marketing-opt-in" className="cursor-pointer select-none text-xs text-gray-400 leading-tight">
+                                Desidero ricevere newsletter e aggiornamenti promozionali (Opzionale).
+                            </label>
+                        </div>
                     </div>
 
                     {error && (

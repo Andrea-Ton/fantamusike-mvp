@@ -26,13 +26,13 @@ export default function HeroSection({ seasonName = 'Season Zero', featuredArtist
                     <h1 className="text-5xl md:text-7xl xl:text-8xl font-black tracking-tighter leading-[0.85] text-white uppercase">
                         <span className="text-white whitespace-nowrap">IL FANTACALCIO</span><br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-blue-500 drop-shadow-sm">
-                            MUSICALE
+                            DELLA MUSICA
                         </span>
                     </h1>
                 </div>
 
                 <p className="text-lg md:text-xl text-gray-500 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
-                    Crea la tua label, promuovi i tuoi artisti e domina la scena musicale.
+                    Smetti di essere solo un fan. Diventa un Manager. Scova i talenti emergenti prima dei tuoi amici e vinci le Mystery Box della musica.
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-5 justify-center lg:justify-start pt-6">

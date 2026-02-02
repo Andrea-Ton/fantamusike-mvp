@@ -37,8 +37,8 @@ export default function Sidebar({ avatarUrl, displayName, seasonName, isAdmin }:
 
     return (
         <div className="hidden md:flex flex-col w-64 h-screen bg-[#050507]/80 backdrop-blur-3xl border-r border-white/5 fixed left-0 top-0 z-50">
-            <div className="p-8 flex items-center gap-3">
-                <div className="relative w-10 h-10 flex-shrink-0">
+            <Link href="/" className="p-8 flex items-center gap-3 group transition-all duration-300 hover:opacity-80">
+                <div className="relative w-10 h-10 flex-shrink-0 transition-transform duration-500 group-hover:scale-105">
                     <Image
                         src="/logo.png"
                         alt="FantaMusiké Logo"
@@ -48,10 +48,10 @@ export default function Sidebar({ avatarUrl, displayName, seasonName, isAdmin }:
                     />
                 </div>
                 <div>
-                    <h1 className="text-xl font-black text-white tracking-tighter uppercase italic leading-none">FantaMusiké</h1>
+                    <h1 className="text-xl font-black text-white tracking-tighter uppercase italic leading-none group-hover:text-purple-400 transition-colors">FantaMusiké</h1>
                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{season}</p>
                 </div>
-            </div>
+            </Link>
 
             <div className="flex-1 px-4 py-8 space-y-1.5 flex flex-col">
                 <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] px-4 mb-3">Menu</p>

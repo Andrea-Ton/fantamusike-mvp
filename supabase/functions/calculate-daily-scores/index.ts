@@ -81,12 +81,21 @@ Deno.serve(async (_req: Request) => {
             return new Response(JSON.stringify({ message: 'No active season found. Skipping scoring.' }), { status: 200 })
         }
 
-        // 2. Calculate Week Number
-        const start = new Date(season.start_date)
-        const now = new Date()
-        const diff = now.getTime() - start.getTime()
-        const oneWeek = 7 * 24 * 60 * 60 * 1000
-        const weekNumber = Math.max(1, Math.ceil(diff / oneWeek))
+        // 2. Determine Week Number from available snapshots
+        // We use the latest week_number present in weekly_snapshots to ensure we score 
+        // for the week that has a baseline, avoiding misalignment on Monday mornings.
+        const { data: latestSnapshot, error: snapshotError } = await supabaseClient
+            .from('weekly_snapshots')
+            .select('week_number')
+            .order('week_number', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+
+        if (snapshotError || !latestSnapshot) {
+            return new Response(JSON.stringify({ message: 'No snapshots found. Scoring cannot proceed.' }), { status: 200 })
+        }
+
+        const weekNumber = latestSnapshot.week_number;
 
         console.log(`Calculating Daily Scores for Week ${weekNumber}...`)
 

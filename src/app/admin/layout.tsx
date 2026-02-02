@@ -11,7 +11,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     const navItems = [
         { name: 'Season Management', href: '/admin/season', icon: <Calendar size={20} /> },
-        { name: 'Scoring System', href: '/admin/scoring', icon: <Activity size={20} /> },
+        //{ name: 'Scoring System', href: '/admin/scoring', icon: <Activity size={20} /> },
         { name: 'Curated Roster', href: '/admin/roster', icon: <Users size={20} /> },
         { name: 'Email System', href: '/admin/email', icon: <Mail size={20} /> },
     ];
