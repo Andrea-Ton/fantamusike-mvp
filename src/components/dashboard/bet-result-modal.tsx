@@ -170,19 +170,42 @@ export default function BetResultModal({ promoId, betSnapshot, onClose }: BetRes
                         <div className="w-full bg-white/[0.02] rounded-[2rem] p-5 sm:p-6 mb-8 sm:mb-10 relative border border-white/5 backdrop-blur-3xl shadow-inner group/stats">
                             <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
 
-                            <div className="flex items-center justify-between relative z-10">
-                                <div className="flex flex-col items-center flex-1 min-w-0 pr-4">
-                                    <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-2 w-full truncate">MIO: {my_artist_name || 'TU'}</p>
-                                    <div className={`text-3xl sm:text-4xl font-black italic tracking-tighter tabular-nums transition-colors duration-500 ${wager === 'my_artist' ? 'text-white' : 'text-gray-500'} ${isDraw ? 'text-amber-500' : ''}`}>
+                            <div className="flex items-center justify-between relative z-10 px-2 sm:px-4">
+                                <div className={`flex flex-col items-center flex-1 min-w-0 transition-all duration-500 relative ${wager === 'my_artist' ? 'scale-[1.15] z-10' : 'opacity-40 grayscale-[0.5]'}`}>
+                                    {wager === 'my_artist' && (
+                                        <motion.div
+                                            initial={{ y: 10, opacity: 0 }}
+                                            animate={{ y: 0, opacity: 1 }}
+                                            className="absolute -top-7 px-3 py-1 bg-gradient-to-r from-purple-500 to-blue-600 rounded-full flex items-center gap-1.5 shadow-[0_10px_20px_rgba(0,0,0,0.3),0_0_15px_rgba(168,85,247,0.4)] border border-white/20 whitespace-nowrap"
+                                        >
+                                            <TrendingUp size={10} className="text-white" />
+                                            <span className="text-[8px] font-black text-white uppercase tracking-tighter">Tua Scelta</span>
+                                        </motion.div>
+                                    )}
+                                    <p className={`text-[9px] font-black uppercase tracking-widest mb-2 w-full truncate text-center ${wager === 'my_artist' ? 'text-purple-400' : 'text-gray-600'}`}>MIO: {my_artist_name || 'TU'}</p>
+                                    <div className={`text-4xl sm:text-5xl font-black italic tracking-tighter tabular-nums transition-colors duration-500 ${wager === 'my_artist' ? 'text-white' : 'text-gray-500'} ${isDraw ? 'text-amber-500' : ''}`}>
                                         {scores?.my > 0 ? '+' : ''}{scores?.my || 0}
                                     </div>
                                 </div>
 
-                                <div className="w-px h-12 sm:h-16 bg-white/10 mx-2 shadow-[0_0_10px_rgba(255,255,255,0.1)]"></div>
+                                <div className="mx-6 sm:mx-8 flex items-center justify-center">
+                                    <div className="w-px h-12 sm:h-20 bg-gradient-to-b from-transparent via-white/10 to-transparent shadow-[0_0_10px_rgba(255,255,255,0.05)]"></div>
+                                    <div className="absolute font-black italic text-[10px] text-white/10 tracking-widest select-none">VS</div>
+                                </div>
 
-                                <div className="flex flex-col items-center flex-1 min-w-0 pl-4">
-                                    <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-2 w-full truncate">RIVALE: {rival?.name || 'RIVALE'}</p>
-                                    <div className={`text-3xl sm:text-4xl font-black italic tracking-tighter tabular-nums transition-colors duration-500 ${wager === 'rival' ? 'text-white' : 'text-gray-500'} ${isDraw ? 'text-amber-500' : ''}`}>
+                                <div className={`flex flex-col items-center flex-1 min-w-0 transition-all duration-500 relative ${wager === 'rival' ? 'scale-[1.15] z-10' : 'opacity-40 grayscale-[0.5]'}`}>
+                                    {wager === 'rival' && (
+                                        <motion.div
+                                            initial={{ y: 10, opacity: 0 }}
+                                            animate={{ y: 0, opacity: 1 }}
+                                            className="absolute -top-5 px-3 py-1 bg-gradient-to-r from-purple-500 to-blue-600 rounded-full flex items-center gap-1.5 shadow-[0_10px_20px_rgba(0,0,0,0.3),0_0_15px_rgba(168,85,247,0.4)] border border-white/20 whitespace-nowrap"
+                                        >
+                                            <TrendingUp size={10} className="text-white" />
+                                            <span className="text-[8px] font-black text-white uppercase tracking-tighter">Tua Scelta</span>
+                                        </motion.div>
+                                    )}
+                                    <p className={`text-[9px] font-black uppercase tracking-widest mb-2 w-full truncate text-center ${wager === 'rival' ? 'text-purple-400' : 'text-gray-600'}`}>RIVALE: {rival?.name || 'RIVALE'}</p>
+                                    <div className={`text-4xl sm:text-5xl font-black italic tracking-tighter tabular-nums transition-colors duration-500 ${wager === 'rival' ? 'text-white' : 'text-gray-500'} ${isDraw ? 'text-amber-500' : ''}`}>
                                         {scores?.rival > 0 ? '+' : ''}{scores?.rival || 0}
                                     </div>
                                 </div>

@@ -9,6 +9,8 @@ import { getFeaturedArtistsAction } from '@/app/actions/artist';
 
 import { createClient } from '@/utils/supabase/server';
 
+import Footer from '@/components/footer';
+
 export default async function LandingPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -57,21 +59,7 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* Footer / Simple Closing */}
-      <footer className="relative z-10 py-20 bg-black/60 border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-10">
-          <div className="flex flex-col items-center md:items-start">
-            <span className="text-2xl font-black text-white italic uppercase tracking-tighter">FantaMusiké</span>
-            <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest mt-2">© 2026 Musiké • All rights reserved</span>
-          </div>
-
-          <div className="flex gap-8">
-            <a href="#" className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-colors">Privacy</a>
-            <a href="#" className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-colors">Terms</a>
-            <a href="#" className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-widest transition-colors">Support</a>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

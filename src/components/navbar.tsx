@@ -11,7 +11,7 @@ import { User } from '@supabase/supabase-js';
 export default function Navbar({ user }: { user?: User | null }) {
     return (
         <nav className="fixed top-0 w-full z-[100] px-6 py-6 flex justify-between items-center bg-[#0b0b10]/40 backdrop-blur-2xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
-            <div className="flex items-center gap-4 group cursor-pointer">
+            <Link href="/" className="flex items-center gap-4 group cursor-pointer">
                 <div className="relative w-10 h-10 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6">
                     <div className="absolute inset-0 bg-purple-500/20 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <Image
@@ -22,10 +22,10 @@ export default function Navbar({ user }: { user?: User | null }) {
                     />
                 </div>
                 <div className="flex flex-col">
-                    <span className="text-xl font-black text-white italic uppercase tracking-tighter leading-none">FantaMusiké</span>
+                    <span className="text-xl font-black text-white italic uppercase tracking-tighter leading-none group-hover:text-purple-400 transition-colors">FantaMusiké</span>
                     <span className="text-[8px] font-black text-purple-500 uppercase tracking-[0.4em] mt-1 opacity-70">Season Zero</span>
                 </div>
-            </div>
+            </Link>
 
             <div className="flex items-center gap-4">
                 {user ? (
