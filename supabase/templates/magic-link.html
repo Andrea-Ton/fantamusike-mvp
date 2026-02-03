@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accedi a FantaMusiké</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #010103;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #ffffff;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        table {
+            border-spacing: 0;
+            border-collapse: collapse;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #0d0d12;
+            border-top: 3px solid #d946ef;
+            border-left: 1px solid #1a1c22;
+            border-right: 1px solid #1a1c22;
+            border-bottom: 1px solid #1a1c22;
+            border-bottom-left-radius: 16px;
+            border-bottom-right-radius: 16px;
+            overflow: hidden;
+        }
+
+        .content {
+            padding: 40px;
+            text-align: center;
+        }
+
+        .logo {
+            width: 70px;
+            height: 70px;
+            border-radius: 20px;
+            margin-bottom: 32px;
+        }
+
+        .heading {
+            font-size: 32px;
+            font-weight: 900;
+            font-style: italic;
+            text-transform: uppercase;
+            letter-spacing: -0.05em;
+            margin: 0 0 32px 0;
+            color: #ffffff;
+        }
+
+        .text {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #9ca3af;
+            margin: 0 0 24px 0;
+            font-weight: 500;
+        }
+
+        .highlight {
+            color: #ffffff;
+            font-weight: 700;
+        }
+
+        .otp-container {
+            background-color: #1a1c22;
+            border: 1px solid #26262e;
+            border-radius: 16px;
+            padding: 24px;
+            margin: 32px 0;
+        }
+
+        .otp-code {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: 0.2em;
+            color: #d946ef;
+            margin: 0;
+        }
+
+        .button-container {
+            margin: 48px 0 24px 0;
+        }
+
+        .button {
+            background-color: #d946ef;
+            color: #ffffff;
+            padding: 20px 40px;
+            text-decoration: none;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 900;
+            font-style: italic;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: inline-block;
+        }
+
+        .security-note {
+            font-size: 12px;
+            color: #4b5563;
+            margin-top: 32px;
+            font-style: italic;
+        }
+
+        .footer {
+            border-top: 1px solid #26262e;
+            padding: 32px 0 0 0;
+            margin-top: 48px;
+        }
+
+        .footer-text {
+            font-size: 9px;
+            font-weight: 900;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: #4b5563;
+            margin: 0;
+        }
+
+        @media only screen and (max-width: 600px) {
+            .container {
+                margin: 20px auto;
+                border-radius: 0;
+            }
+
+            .content {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#010103">
+        <tr>
+            <td align="center">
+                <div class="container">
+                    <div class="content">
+                        <!-- Logo -->
+                        <img src="https://fantamusike-mvp.vercel.app/logo.png" alt="FantaMusiké" class="logo">
+
+                        <!-- Header -->
+                        <h1 class="heading">MAGIC LINK</h1>
+
+                        <!-- Body -->
+                        <p class="text">
+                            Hai richiesto un accesso rapido o il recupero della password per il tuo account <span
+                                class="highlight">FantaMusiké</span>.
+                        </p>
+
+                        <!-- Choice between OTP and Link (Supabase supports both) -->
+                        <p class="text">
+                            Utilizza il codice qui sotto per accedere:
+                        </p>
+
+                        <div class="otp-container">
+                            <p class="otp-code">{{ .Token }}</p>
+                        </div>
+
+                        <p class="text">
+                            Oppure clicca sul pulsante per accedere direttamente:
+                        </p>
+
+                        <!-- CTA -->
+                        <div class="button-container">
+                            <a href="{{ .ConfirmationURL }}" class="button">ACCEDI AL TUO PROFILO</a>
+                        </div>
+
+                        <p class="security-note">
+                            Questo link e il codice scadranno tra pochi minuti. Se non hai richiesto tu l'accesso, metti
+                            al sicuro il tuo account ignorando questa mail.
+                        </p>
+
+                        <!-- Footer -->
+                        <div class="footer">
+                            <p class="footer-text">© 2026 MUSIKÉ. TUTTI I DIRITTI RISERVATI.</p>
+                        </div>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </table>
+</body>
+
+</html>

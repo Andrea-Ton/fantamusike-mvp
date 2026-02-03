@@ -43,12 +43,12 @@ async function fetchAll(supabase: any, table: string, select = '*', filterBuilde
     let hasMore = true;
 
     while (hasMore) {
-        let query = supabase.from(table).select(select).range(from, from + step - 1);
+        let query = supabase.from(table).select(select);
         if (filterBuilder) {
             query = filterBuilder(query);
         }
 
-        const { data, error } = await query;
+        const { data, error } = await query.range(from, from + step - 1);
         if (error) throw error;
         if (!data || data.length === 0) {
             hasMore = false;
@@ -86,7 +86,7 @@ Deno.serve(async (_req: Request) => {
         // for the week that has a baseline, avoiding misalignment on Monday mornings.
         const { data: latestSnapshot, error: snapshotError } = await supabaseClient
             .from('weekly_snapshots')
-            .select('week_number')
+            .select('week_number, created_at')
             .order('week_number', { ascending: false })
             .limit(1)
             .maybeSingle()
@@ -101,6 +101,7 @@ Deno.serve(async (_req: Request) => {
 
         // 3. Fetch snapshots for the week (with pagination)
         const snapshots = await fetchAll(supabaseClient, 'weekly_snapshots', '*', (q: any) => q.eq('week_number', weekNumber));
+        console.log(`Fetched ${snapshots.length} snapshots for Week ${weekNumber}`);
 
         if (!snapshots || snapshots.length === 0) {
             return new Response(JSON.stringify({ message: 'No snapshots found for current week. Skipping scoring.' }), { status: 200 })
@@ -223,9 +224,11 @@ Deno.serve(async (_req: Request) => {
 
                     // Rewards
                     const POINTS_REWARD = 10;
-                    const COINS_REWARD = 0;
+                    const COINS_REWARD = 4;
+                    const REFUND_AMOUNT = 2; // Stake refund on draw
+
                     const pointsAwarded = isWin ? POINTS_REWARD : 0;
-                    const coinsAwarded = isWin ? COINS_REWARD : 0;
+                    const coinsAwarded = isWin ? COINS_REWARD : (isDraw ? REFUND_AMOUNT : 0);
 
                     // Update Snapshot
                     const newSnapshot = {
@@ -248,7 +251,7 @@ Deno.serve(async (_req: Request) => {
                         .eq('id', promo.id);
 
                     // Award to Profile immediately
-                    if (isWin) {
+                    if (isWin || (isDraw && coinsAwarded > 0)) {
                         const { data: prof } = await supabaseClient.from('profiles').select('listen_score, musi_coins').eq('id', promo.user_id).single();
                         if (prof) {
                             await supabaseClient
@@ -267,90 +270,95 @@ Deno.serve(async (_req: Request) => {
             }
         }
 
-        // 5. Recalculate User Totals (Batch approach with pagination)
-        const allWeeklyScores = await fetchAll(supabaseClient, 'weekly_scores', 'week_number, artist_id, total_points', (q: any) => q.lte('week_number', weekNumber));
+        // 5. Calculate User Totals for the CURRENT WEEK ONLY
+        console.log("Processing user points for week " + weekNumber + "...");
 
-        const scoresMap: Record<number, Record<string, number>> = {};
-        (allWeeklyScores as WeeklyScore[])?.forEach((s) => {
-            if (!scoresMap[s.week_number]) scoresMap[s.week_number] = {};
-            scoresMap[s.week_number][s.artist_id] = s.total_points;
-        });
+        // Use the snapshot timestamp as the "week start" for log reconciliation
+        const weekStartDate = latestSnapshot.created_at;
 
+        // Fetch all profiles and teams efficiently
+        const profiles = await fetchAll(supabaseClient, 'profiles', 'id, total_score');
+        const activeTeams = await fetchAll(supabaseClient, 'teams', '*', (q: any) => q.eq('week_number', weekNumber));
+
+        const teamsByUser: Record<string, any> = {};
+        (activeTeams as any[])?.forEach((t: any) => teamsByUser[t.user_id] = t);
+
+        // Fetch all weekly scores for current week
+        const currentWeeklyScores = await fetchAll(supabaseClient, 'weekly_scores', 'artist_id, total_points', (q: any) => q.eq('week_number', weekNumber));
+        const scoresMap: Record<string, number> = {};
+        (currentWeeklyScores as any[])?.forEach((s) => scoresMap[s.artist_id] = s.total_points);
+
+        // Fetch Featured Artists
         const featuredArtists = await fetchAll(supabaseClient, 'featured_artists', 'spotify_id');
         const featuredIds = new Set((featuredArtists as any[])?.map((f: any) => f.spotify_id) || []);
 
-        const profiles = await fetchAll(supabaseClient, 'profiles', 'id, total_score');
-        const allTeams = await fetchAll(supabaseClient, 'teams', '*', (q: any) => q.lte('week_number', weekNumber).order('week_number', { ascending: true }));
-
-        const teamsByUser: Record<string, any[]> = {};
-        (allTeams as any[])?.forEach((t: any) => {
-            if (!teamsByUser[t.user_id]) teamsByUser[t.user_id] = [];
-            teamsByUser[t.user_id].push(t);
+        // Fetch ALL daily logs for this week to reconcile
+        const weekLogs = await fetchAll(supabaseClient, 'daily_score_logs', 'user_id, points_gained', (q: any) => q.gte('created_at', weekStartDate));
+        const logsSumByUser: Record<string, number> = {};
+        (weekLogs as any[])?.forEach((l) => {
+            logsSumByUser[l.user_id] = (logsSumByUser[l.user_id] || 0) + l.points_gained;
         });
 
-        const dailyLogs: any[] = []
-        const profileUpdates: any[] = []
-        const today = new Date().toISOString().split('T')[0]
+        const dailyLogsToInsert: any[] = [];
+        const profileUpdates: any[] = [];
+        const today = new Date().toISOString().split('T')[0];
 
         for (const profile of (profiles as any[]) || []) {
-            const userTeams = teamsByUser[profile.id] || [];
-            let newTotal = 0;
+            const team = teamsByUser[profile.id];
+            if (!team) continue;
 
-            for (let w = 1; w <= weekNumber; w++) {
-                let activeTeam = null;
-                for (const team of userTeams) {
-                    if (team.week_number <= w) activeTeam = team;
-                    else break;
+            const slots = [team.slot_1_id, team.slot_2_id, team.slot_3_id, team.slot_4_id, team.slot_5_id];
+            let currentWeekCalculatedTotal = 0;
+
+            for (const artistId of slots) {
+                if (!artistId) continue;
+                let points = scoresMap[artistId] || 0;
+
+                // Apply Captain Multipliers
+                if (team.captain_id === artistId) {
+                    points = Math.round(points * (featuredIds.has(artistId) ? 2 : 1.5));
                 }
-
-                if (activeTeam) {
-                    const slots = [activeTeam.slot_1_id, activeTeam.slot_2_id, activeTeam.slot_3_id, activeTeam.slot_4_id, activeTeam.slot_5_id];
-                    const weekScores = scoresMap[w] || {};
-
-                    for (const artistId of slots) {
-                        if (!artistId) continue;
-                        let points = weekScores[artistId] || 0;
-                        if (activeTeam.captain_id === artistId) {
-                            points = Math.round(points * (featuredIds.has(artistId) ? 2 : 1.5));
-                        }
-                        newTotal += points;
-                    }
-                }
+                currentWeekCalculatedTotal += points;
             }
 
-            const delta = newTotal - profile.total_score;
+            // Delta = What the user should have earned THIS WEEK - What we already logged THIS WEEK
+            const pointsAlreadyLoggedThisWeek = logsSumByUser[profile.id] || 0;
+            const delta = currentWeekCalculatedTotal - pointsAlreadyLoggedThisWeek;
+
             if (delta > 0) {
-                dailyLogs.push({
+                dailyLogsToInsert.push({
                     user_id: profile.id,
                     points_gained: delta,
                     date: today,
                     seen_by_user: false
-                })
+                });
+
                 profileUpdates.push({
                     id: profile.id,
-                    total_score: newTotal,
+                    total_score: (profile.total_score || 0) + delta,
                     updated_at: new Date().toISOString()
-                })
+                });
             }
         }
 
-        // 6. Bulk Upsert
-        if (dailyLogs.length > 0) {
-            console.log(`Updating ${dailyLogs.length} user profiles...`)
+        // 6. Bulk Update with Safety
+        if (dailyLogsToInsert.length > 0) {
+            console.log(`Accrediting ${dailyLogsToInsert.length} user point updates...`);
             const BATCH_SIZE = 500;
-            for (let i = 0; i < dailyLogs.length; i += BATCH_SIZE) {
-                const logsBatch = dailyLogs.slice(i, i + BATCH_SIZE);
+            for (let i = 0; i < dailyLogsToInsert.length; i += BATCH_SIZE) {
+                const logsBatch = dailyLogsToInsert.slice(i, i + BATCH_SIZE);
                 const profilesBatch = profileUpdates.slice(i, i + BATCH_SIZE);
+
                 await Promise.all([
                     supabaseClient.from('daily_score_logs').insert(logsBatch),
-                    supabaseClient.from('profiles').upsert(profilesBatch)
-                ])
+                    supabaseClient.from('profiles').upsert(profilesBatch, { onConflict: 'id' })
+                ]);
             }
         }
 
         return new Response(JSON.stringify({
             success: true,
-            message: `Scoring complete. Updated ${dailyLogs.length} users.`
+            message: `Scoring complete. Updated ${dailyLogsToInsert.length} users.`
         }), { status: 200, headers: { 'Content-Type': 'application/json' } })
 
     } catch (error: any) {

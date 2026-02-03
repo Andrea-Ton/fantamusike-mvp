@@ -10,6 +10,7 @@ import { getFeaturedArtistsAction } from '@/app/actions/artist';
 import { createClient } from '@/utils/supabase/server';
 
 import Footer from '@/components/footer';
+import RegisterForm from '@/components/auth/register-form';
 
 export default async function LandingPage() {
   const supabase = await createClient();
@@ -34,6 +35,14 @@ export default async function LandingPage() {
 
       {/* Real-time Impact Section */}
       <ArtistTicker artists={featuredArtists} />
+
+      {!user && (
+        <section id="signup-form" className="relative z-10 py-20 bg-black/20">
+          <div className="max-w-7xl mx-auto px-6 flex justify-center">
+            <RegisterForm />
+          </div>
+        </section>
+      )}
 
       {/* Core Features - Redesigned Grid */}
       <section className="relative z-10 py-32 bg-black/40 backdrop-blur-3xl border-t border-white/5">
