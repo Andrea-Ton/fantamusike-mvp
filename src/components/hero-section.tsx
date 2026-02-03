@@ -27,7 +27,7 @@ export default function HeroSection({ seasonName = 'Season Zero', featuredArtist
                         <span className="text-white whitespace-nowrap">CREA</span><br />
                         <span className="text-white whitespace-nowrap">LA TUA SQUADRA   </span><br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-blue-500 drop-shadow-sm">
-                            SBLOCCA
+                            OTTIENI
                         </span><br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-blue-500 drop-shadow-sm">
                             LE MYSTERY BOX
