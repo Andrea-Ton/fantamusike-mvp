@@ -453,12 +453,22 @@ export async function placeBetAction(artistId: string, prediction: 'my_artist' |
 
         if (profileError) throw profileError;
 
-        // Fetch current weekly scores to establish a baseline
+        // Fetch current week number to ensure baseline is from the active week
+        const { data: latestSnap } = await supabase
+            .from('weekly_snapshots')
+            .select('week_number')
+            .order('week_number', { ascending: false })
+            .limit(1)
+            .single();
+
+        const currentWeekNumber = latestSnap?.week_number || 1;
+
+        // Fetch current weekly scores to establish a baseline ONLY for the current week
         const { data: scores } = await supabase
             .from('weekly_scores')
             .select('artist_id, total_points')
             .in('artist_id', [artistId, promo.bet_snapshot.rival.id])
-            .order('week_number', { ascending: false }); // Get latest week
+            .eq('week_number', currentWeekNumber);
 
         const myStartScore = scores?.find(s => s.artist_id === artistId)?.total_points || 0;
         const rivalStartScore = scores?.find(s => s.artist_id === promo.bet_snapshot.rival.id)?.total_points || 0;

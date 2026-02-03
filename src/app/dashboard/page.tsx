@@ -15,6 +15,9 @@ import { getUnseenScoreLogsAction } from '@/app/actions/dashboard';
 import { DailyRecapModalWrapper } from '@/components/dashboard/daily-recap-modal-wrapper';
 import { getPendingBetResultAction } from '@/app/actions/promo';
 import { BetResultModalWrapper } from '@/components/dashboard/bet-result-modal-wrapper';
+import { getFeaturedArtistsAction } from '@/app/actions/artist';
+import { getCuratedRosterAction } from '@/app/actions/scout';
+import OnboardingWrapper from '@/components/dashboard/onboarding-wrapper';
 
 export default async function DashboardPage() {
     const supabase = await createClient();
@@ -44,8 +47,29 @@ export default async function DashboardPage() {
     const unseenLogs = await getUnseenScoreLogsAction();
     const pendingBetResult = await getPendingBetResultAction();
 
+    // Onboarding Data
+    const featuredArtists = await getFeaturedArtistsAction();
+    const curatedRoster = await getCuratedRosterAction();
+    // Map ScoutSuggestion to SpotifyArtist for the modal
+    const mappedCuratedRoster = curatedRoster.map(s => ({
+        id: s.spotify_id,
+        name: s.name,
+        external_urls: { spotify: '' },
+        images: [{ url: s.image_url, height: 0, width: 0 }],
+        popularity: s.popularity || 0,
+        genres: [],
+        followers: { total: s.followers || 0 }
+    }));
+
     return (
         <>
+            <OnboardingWrapper
+                hasCompletedOnboarding={!!profile?.has_completed_onboarding}
+                featuredArtists={featuredArtists}
+                curatedRoster={mappedCuratedRoster}
+                username={profile?.username || 'Gamer'}
+            />
+
             {/* Mobile Header */}
             <div className="md:hidden pt-12 px-6 flex justify-between items-center mb-4 bg-[#0a0a0e]/80 backdrop-blur-xl border-b border-white/5 pb-4 sticky top-0 z-30">
                 <div className="flex items-center gap-3">

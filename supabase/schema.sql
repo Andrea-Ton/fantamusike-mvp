@@ -2,6 +2,7 @@
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 
+-- 1. Schedule Weekly Snapshots (Mondays 04:00 UTC)
 select cron.schedule(
   'perform-weekly-snapshot-job',
   '0 4 * * 1',
@@ -12,10 +13,11 @@ select cron.schedule(
   ) as request_id;
   $$
 );
--- 2. Schedule Daily Scoring (Daily 02:00 UTC)
+
+-- 2. Schedule Daily Scoring (Daily 03:00 UTC)
 select cron.schedule(
   'calculate-daily-scores-job',
-  '03 * * *',
+  '0 3 * * *',
   $$
   select net.http_post(
     url := 'https://<your-project-ref>.supabase.co/functions/v1/calculate-daily-scores',
@@ -24,36 +26,31 @@ select cron.schedule(
   $$
 );
 
--- Create profiles table
-create table profiles (
+-- 3. PROFILES Table
+create table public.profiles (
   id uuid references auth.users not null primary key,
   username text unique,
   avatar_url text,
   total_score integer default 0,
-  listen_score integer default 0, -- New column for Spotify Listen to Win points
+  listen_score integer default 0,
   musi_coins integer default 50,
   is_admin boolean default false,
+  marketing_opt_in boolean default false,
+  referral_code text unique,
+  referred_by uuid references public.profiles(id),
+  has_completed_onboarding boolean default false,
   created_at timestamp with time zone default timezone('utc'::text, now()),
-  updated_at timestamp with time zone default timezone('utc'::text, now()),
-  marketing_opt_in boolean default false
+  updated_at timestamp with time zone default timezone('utc'::text, now())
 );
 
-alter table profiles enable row level security;
+alter table public.profiles enable row level security;
 
-create policy "Public profiles are viewable by everyone."
-  on profiles for select
-  using ( true );
+create policy "Public profiles are viewable by everyone." on public.profiles for select using ( true );
+create policy "Users can insert their own profile." on public.profiles for insert with check ( auth.uid() = id );
+create policy "Users can update own profile." on public.profiles for update using ( auth.uid() = id );
 
-create policy "Users can insert their own profile."
-  on profiles for insert
-  with check ( auth.uid() = id );
-
-create policy "Users can update own profile."
-  on profiles for update
-  using ( auth.uid() = id );
-
--- Create artists_cache table
-create table artists_cache (
+-- 4. ARTISTS CACHE Table
+create table public.artists_cache (
   spotify_id text primary key,
   name text,
   image_url text,
@@ -62,91 +59,201 @@ create table artists_cache (
   last_updated timestamp with time zone default timezone('utc'::text, now())
 );
 
-alter table artists_cache enable row level security;
+alter table public.artists_cache enable row level security;
+create policy "Artists cache is viewable by everyone." on public.artists_cache for select using ( true );
 
-create policy "Artists cache is viewable by everyone."
-  on artists_cache for select
-  using ( true );
+-- 5. SEASONS Table
+create table public.seasons (
+  id uuid default uuid_generate_v4() primary key,
+  name text not null,
+  start_date timestamp with time zone not null,
+  end_date timestamp with time zone not null,
+  is_active boolean default false,
+  status text check (status in ('upcoming', 'active', 'calculating', 'completed')) default 'upcoming',
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
 
--- Create teams table
-create table teams (
-  user_id uuid references profiles.id,
+alter table public.seasons enable row level security;
+create policy "Seasons are viewable by everyone." on public.seasons for select using ( true );
+create policy "Admins can manage seasons." on public.seasons for all 
+  using ( exists ( select 1 from public.profiles where id = auth.uid() and is_admin = true ) );
+
+-- 6. TEAMS Table
+create table public.teams (
+  user_id uuid references public.profiles.id,
   week_number integer default 1,
-  slot_1_id text references artists_cache.spotify_id,
-  slot_2_id text references artists_cache.spotify_id,
-  slot_3_id text references artists_cache.spotify_id,
-  slot_4_id text references artists_cache.spotify_id,
-  slot_5_id text references artists_cache.spotify_id,
-  captain_id text references artists_cache.spotify_id,
-  season_id uuid references seasons.id,
+  slot_1_id text references public.artists_cache.spotify_id,
+  slot_2_id text references public.artists_cache.spotify_id,
+  slot_3_id text references public.artists_cache.spotify_id,
+  slot_4_id text references public.artists_cache.spotify_id,
+  slot_5_id text references public.artists_cache.spotify_id,
+  captain_id text references public.artists_cache.spotify_id,
+  season_id uuid references public.seasons.id,
   locked_at timestamp with time zone default timezone('utc'::text, now()),
   primary key (user_id, week_number, season_id)
 );
 
-alter table teams enable row level security;
+alter table public.teams enable row level security;
+create policy "Teams are viewable by everyone." on public.teams for select using ( true );
+create policy "Users can insert their own team." on public.teams for insert with check ( auth.uid() = user_id );
+create policy "Users can update own team." on public.teams for update using ( auth.uid() = user_id );
 
-create policy "Teams are viewable by everyone."
-  on teams for select
-  using ( true );
-
-create policy "Users can insert their own team."
-  on teams for insert
-  with check ( auth.uid() = user_id );
-
-create policy "Users can update own team."
-  on teams for update
-  using ( auth.uid() = user_id );
-
--- Create weekly_scores table
-create table weekly_scores (
+-- 7. WEEKLY SCORES Table
+create table public.weekly_scores (
   id uuid default uuid_generate_v4() primary key,
   week_number integer,
-  artist_id text references artists_cache.spotify_id,
+  artist_id text references public.artists_cache.spotify_id,
   popularity_gain integer,
   follower_gain_percent float,
   release_bonus integer,
   total_points integer,
+  created_at timestamp with time zone default timezone('utc'::text, now()),
+  unique (week_number, artist_id)
+);
+
+alter table public.weekly_scores enable row level security;
+create policy "Weekly scores are viewable by everyone." on public.weekly_scores for select using ( true );
+create policy "Admins can manage weekly scores." on public.weekly_scores for all
+  using ( exists ( select 1 from public.profiles where id = auth.uid() and is_admin = true ) );
+
+-- 8. WEEKLY SNAPSHOTS Table
+create table public.weekly_snapshots (
+  id uuid default uuid_generate_v4() primary key,
+  week_number integer,
+  artist_id text references public.artists_cache.spotify_id,
+  popularity integer,
+  followers integer,
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
-ALTER TABLE public.weekly_scores 
-ADD CONSTRAINT weekly_scores_week_artist_unique UNIQUE (week_number, artist_id);
+alter table public.weekly_snapshots enable row level security;
+create policy "Weekly snapshots are viewable by everyone." on public.weekly_snapshots for select using ( true );
+create index weekly_snapshots_week_artist_idx on public.weekly_snapshots(week_number, artist_id);
 
-alter table weekly_scores enable row level security;
+-- 9. SEASON RANKINGS Table
+create table public.season_rankings (
+  id uuid default uuid_generate_v4() primary key,
+  season_id uuid references public.seasons.id not null,
+  user_id uuid references public.profiles.id not null,
+  rank integer not null,
+  total_score integer not null,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
 
-create policy "Weekly scores are viewable by everyone."
-  on weekly_scores for select
-  using ( true );
+alter table public.season_rankings enable row level security;
+create policy "Season rankings are viewable by everyone." on public.season_rankings for select using ( true );
+create policy "Admins can insert season rankings." on public.season_rankings for insert
+  with check ( exists ( select 1 from public.profiles where id = auth.uid() and is_admin = true ) );
 
-create policy "Admins can manage weekly scores."
-  on weekly_scores for all
-  using ( exists ( select 1 from profiles where id = auth.uid() and is_admin = true ) );
+-- 10. FEATURED ARTISTS Table
+create table public.featured_artists (
+  id uuid default uuid_generate_v4() primary key,
+  spotify_id text references public.artists_cache.spotify_id not null,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
 
--- Create a trigger to automatically create a profile for new users
-create or replace function public.handle_new_user()
-returns trigger as $$
-begin
-  insert into public.profiles (id, username, avatar_url)
-  values (
-    new.id,
-    coalesce(new.raw_user_meta_data->>'name', new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
-    new.raw_user_meta_data->>'avatar_url'
-  );
-  return new;
-end;
-$$ language plpgsql security definer;
+alter table public.featured_artists enable row level security;
+create policy "Featured artists are viewable by everyone." on public.featured_artists for select using ( true );
+create policy "Admins can manage featured artists." on public.featured_artists for all
+  using ( exists ( select 1 from public.profiles where id = auth.uid() and is_admin = true ) );
 
-create trigger on_auth_user_created
-  for each row execute procedure public.handle_new_user();
+-- 11. CURATED ROSTER Table
+create table public.curated_roster (
+  spotify_id text primary key,
+  name text not null,
+  image_url text,
+  genre text,
+  popularity integer default 0,
+  is_active boolean default true,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
 
--- REFERRAL SYSTEM UPDATES (Added for Invite a Friend Feature)
+alter table public.curated_roster enable row level security;
+create policy "Curated roster is viewable by everyone." on public.curated_roster for select using ( true );
+create policy "Admins can manage curated roster." on public.curated_roster for all
+  using ( exists ( select 1 from public.profiles where id = auth.uid() and is_admin = true ) );
 
--- 1. Add columns to profiles
-alter table profiles add column if not exists referral_code text unique;
-alter table profiles add column if not exists referred_by uuid references profiles(id);
+-- 12. DAILY PROMOS Table
+create table public.daily_promos (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references public.profiles(id) not null,
+  artist_id text references public.artists_cache(spotify_id) not null,
+  date date not null default current_date,
+  quiz_done boolean default false,
+  bet_done boolean default false,
+  boost_done boolean default false,
+  quiz_snapshot jsonb,
+  bet_snapshot jsonb,
+  bet_resolved boolean default false,
+  bet_result_seen boolean default false,
+  boost_snapshot jsonb,
+  total_points integer default 0,
+  total_coins integer default 0,
+  created_at timestamp with time zone default timezone('utc'::text, now()),
+  unique(user_id, date)
+);
 
--- 2. Function to generate random code
-create or replace function generate_referral_code() returns text as $$
+alter table public.daily_promos enable row level security;
+create policy "Users can manage their own daily promo." on public.daily_promos for all using ( auth.uid() = user_id );
+
+-- 13. DAILY SCORE LOGS Table
+create table public.daily_score_logs (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  date date not null default current_date,
+  points_gained integer not null,
+  breakdown jsonb,
+  seen_by_user boolean default false,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+alter table public.daily_score_logs enable row level security;
+create index daily_score_logs_user_unseen_idx on public.daily_score_logs(user_id, seen_by_user);
+create policy "Users can view their own score logs." on public.daily_score_logs for select using ( auth.uid() = user_id );
+create policy "Users can update their own score logs." on public.daily_score_logs for update using ( auth.uid() = user_id );
+
+-- 14. BADGE SYSTEM
+create table public.badges (
+  id uuid default uuid_generate_v4() primary key,
+  name text not null,
+  description text,
+  image_url text,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+alter table public.badges enable row level security;
+create policy "Badges are viewable by everyone." on public.badges for select using ( true );
+create policy "Admins can manage badges." on public.badges for all
+  using ( exists ( select 1 from public.profiles where id = auth.uid() and is_admin = true ) );
+
+create table public.user_badges (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  badge_id uuid references public.badges(id) on delete cascade not null,
+  awarded_at timestamp with time zone default timezone('utc'::text, now()),
+  unique(user_id, badge_id)
+);
+
+alter table public.user_badges enable row level security;
+create policy "User badges are viewable by everyone." on public.user_badges for select using ( true );
+create policy "Admins can award badges." on public.user_badges for insert 
+  with check ( exists ( select 1 from public.profiles where id = auth.uid() and is_admin = true ) );
+
+-- Seed Pioneer Badge
+insert into public.badges (name, description, image_url)
+select 'Pioneer', 'Membro fondatore di FantaMusiké MVP', '/badges/pioneer.png'
+where not exists (select 1 from public.badges where name = 'Pioneer');
+
+-- 15. STORAGE SETUP
+insert into storage.buckets (id, name, public) values ('avatars', 'avatars', true) on conflict (id) do nothing;
+create policy "Avatar images are publicly accessible." on storage.objects for select using ( bucket_id = 'avatars' );
+create policy "Anyone can upload an avatar." on storage.objects for insert with check ( bucket_id = 'avatars' );
+create policy "Anyone can update their own avatar." on storage.objects for update using ( auth.uid() = owner ) with check ( bucket_id = 'avatars' );
+
+-- 16. FUNCTIONS & TRIGGERS
+
+-- Function to generate random code
+create or replace function public.generate_referral_code() returns text as $$
 declare
   chars text[] := '{A,B,C,D,E,F,G,H,J,K,L,M,N,P,Q,R,S,T,U,V,W,X,Y,Z,2,3,4,5,6,7,8,9}';
   result text := '';
@@ -159,7 +266,7 @@ begin
 end;
 $$ language plpgsql;
 
--- 3. Update Trigger Function to handle referrals
+-- Final handle_new_user function (with referrals and onboarding)
 create or replace function public.handle_new_user()
 returns trigger as $$
 declare
@@ -180,7 +287,6 @@ begin
   -- Check for used referral code
   used_code := new.raw_user_meta_data->>'referral_code_used';
   referrer_id := null;
-
   if used_code is not null then
     select id into referrer_id from public.profiles where referral_code = used_code;
   end if;
@@ -193,7 +299,8 @@ begin
     musi_coins,
     referral_code,
     referred_by,
-    marketing_opt_in
+    marketing_opt_in,
+    has_completed_onboarding
   )
   values (
     new.id,
@@ -202,7 +309,8 @@ begin
     case when referrer_id is not null then default_coins + bonus_coins else default_coins end,
     new_referral_code,
     referrer_id,
-    (new.raw_user_meta_data->>'marketing_opt_in')::boolean
+    coalesce((new.raw_user_meta_data->>'marketing_opt_in')::boolean, false),
+    false
   );
 
   -- Award bonus to referrer
@@ -216,29 +324,16 @@ begin
 end;
 $$ language plpgsql security definer;
 
--- Create weekly_snapshots table (Monday Baseline)
-create table weekly_snapshots (
-  id uuid default uuid_generate_v4() primary key,
-  week_number integer,
-  artist_id text references artists_cache.spotify_id,
-  popularity integer,
-  followers integer,
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
-
-alter table weekly_snapshots enable row level security;
-
-create policy "Weekly snapshots are viewable by everyone."
-  on weekly_snapshots for select
-  using ( true );
-
-create index weekly_snapshots_week_artist_idx on weekly_snapshots(week_number, artist_id);
+-- Re-create the trigger consistently
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
 
 -- RPC to increment score safely
 create or replace function public.increment_score(user_id_param uuid, score_delta integer)
 returns void as $$
 begin
-  -- Check if the executing user is an admin
   if not exists (select 1 from public.profiles where id = auth.uid() and is_admin = true) then
     raise exception 'Unauthorized';
   end if;
@@ -248,215 +343,3 @@ begin
   where id = user_id_param;
 end;
 $$ language plpgsql security definer;
-
-
--- Create seasons table
-create table seasons (
-  id uuid default uuid_generate_v4() primary key,
-  name text not null,
-  start_date timestamp with time zone not null,
-  end_date timestamp with time zone not null,
-  is_active boolean default false,
-  status text check (status in ('upcoming', 'active', 'calculating', 'completed')) default 'upcoming',
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
-
-alter table seasons enable row level security;
-
-create policy "Seasons are viewable by everyone."
-  on seasons for select
-  using ( true );
-
-create policy "Admins can insert seasons."
-  on seasons for insert
-  with check ( exists ( select 1 from profiles where id = auth.uid() and is_admin = true ) );
-
-create policy "Admins can update seasons."
-  on seasons for update
-  using ( exists ( select 1 from profiles where id = auth.uid() and is_admin = true ) );
-
--- Create season_rankings table (Historical Data)
-create table season_rankings (
-  id uuid default uuid_generate_v4() primary key,
-  season_id uuid references seasons.id not null,
-  user_id uuid references profiles.id not null,
-  rank integer not null,
-  total_score integer not null,
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
-
-alter table season_rankings enable row level security;
-
-create policy "Season rankings are viewable by everyone."
-  on season_rankings for select
-  using ( true );
-
-create policy "Admins can insert season rankings."
-  on season_rankings for insert
-  with check ( exists ( select 1 from profiles where id = auth.uid() and is_admin = true ) );
-
--- Create featured_artists table
-create table featured_artists (
-  id uuid default uuid_generate_v4() primary key,
-  spotify_id text references artists_cache.spotify_id not null,
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
-
-alter table featured_artists enable row level security;
-
-create policy "Featured artists are viewable by everyone."
-  on featured_artists for select
-  using ( true );
-
-create policy "Admins can manage featured artists."
-  on featured_artists for all
-  using ( exists ( select 1 from profiles where id = auth.uid() and is_admin = true ) );
-
--- Curated Roster for Scout Report
-create table curated_roster (
-  spotify_id text primary key,
-  name text not null,
-  image_url text,
-  genre text,
-  popularity integer default 0,
-  is_active boolean default true,
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
-
-alter table curated_roster enable row level security;
-
-create policy "Curated roster is viewable by everyone."
-  on curated_roster for select
-  using ( true );
-
-create policy "Admins can manage curated roster."
-  on curated_roster for all
-  using ( exists ( select 1 from profiles where id = auth.uid() and is_admin = true ) );
-
--- STORAGE SETUP
--- Create the storage bucket for avatars
-insert into storage.buckets (id, name, public)
-values ('avatars', 'avatars', true)
-on conflict (id) do nothing;
-
--- Set up security policies for the avatars bucket
-create policy "Avatar images are publicly accessible."
-  on storage.objects for select
-  using ( bucket_id = 'avatars' );
-
-create policy "Anyone can upload an avatar."
-  on storage.objects for insert
-  with check ( bucket_id = 'avatars' );
-
-create policy "Anyone can update their own avatar."
-  on storage.objects for update
-  using ( auth.uid() = owner )
-  with check ( bucket_id = 'avatars' );
-
--- DAILY PROMO SYSTEM (Daily Hype)
-
-create table daily_promos (
-  id uuid default uuid_generate_v4() primary key,
-  user_id uuid references profiles(id) not null,
-  artist_id text references artists_cache(spotify_id) not null,
-  date date not null default current_date,
-  quiz_done boolean default false,
-  bet_done boolean default false,
-  boost_done boolean default false,
-  quiz_snapshot jsonb,
-  bet_snapshot jsonb, -- { rival: {id, name, image, popularity}, wager: 'my_artist'|'rival', status: 'pending'|'won'|'lost', scores: {my: 10, rival: 15} }
-  bet_resolved boolean default false,
-  bet_result_seen boolean default false,
-  boost_snapshot jsonb, -- { options: [{id, label, url}], selected_id: string, reward: {type: 'points'|'coins', amount: number} }
-  total_points integer default 0,
-  total_coins integer default 0,
-  created_at timestamp with time zone default timezone('utc'::text, now()),
-  unique(user_id, date) -- Guarantees only ONE artist row per user per day
-);
-
-alter table daily_promos enable row level security;
-
-create policy "Users can insert their own daily promo."
-  on daily_promos for insert
-  with check ( auth.uid() = user_id );
-
-create policy "Users can view their own daily promo."
-  on daily_promos for select
-  using ( auth.uid() = user_id );
-
-create policy "Users can update their own daily promo."
-  on daily_promos for update
-  using ( auth.uid() = user_id );
-
--- DAILY SCORE LOGS (Deferred Scoring UI)
-
-create table daily_score_logs (
-  id uuid default uuid_generate_v4() primary key,
-  user_id uuid references profiles(id) on delete cascade not null,
-  date date not null default current_date,
-  points_gained integer not null,
-  breakdown jsonb, -- [{ artist: "Lazza", pts: 5 }, { artist: "Anna", pts: 2 }]
-  seen_by_user boolean default false,
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
-
--- Indexes for performance
-create index daily_score_logs_user_unseen_idx on daily_score_logs(user_id, seen_by_user);
-
-alter table daily_score_logs enable row level security;
-
-create policy "Users can view their own score logs."
-    on daily_score_logs for select
-    using ( auth.uid() = user_id );
-
-create policy "Users can update their own score logs (mark as seen)."
-    on daily_score_logs for update
-    using ( auth.uid() = user_id )
-    with check ( auth.uid() = user_id );
-
--- BADGE SYSTEM
-
--- 1. Create badges table
-create table badges (
-  id uuid default uuid_generate_v4() primary key,
-  name text not null,
-  description text,
-  image_url text,
-  created_at timestamp with time zone default timezone('utc'::text, now())
-);
-
-alter table badges enable row level security;
-
-create policy "Badges are viewable by everyone."
-  on badges for select
-  using ( true );
-  
-create policy "Admins can manage badges."
-  on badges for all
-  using ( exists ( select 1 from profiles where id = auth.uid() and is_admin = true ) );
-
--- 2. Create user_badges table
-create table user_badges (
-  id uuid default uuid_generate_v4() primary key,
-  user_id uuid references profiles(id) on delete cascade not null,
-  badge_id uuid references badges(id) on delete cascade not null,
-  awarded_at timestamp with time zone default timezone('utc'::text, now()),
-  unique(user_id, badge_id)
-);
-
-alter table user_badges enable row level security;
-
-create policy "User badges are viewable by everyone."
-  on user_badges for select
-  using ( true );
-
-create policy "Admins can award badges."
-  on user_badges for insert
-  with check ( exists ( select 1 from profiles where id = auth.uid() and is_admin = true ) );
-
--- SEED DATA FOR BADGES (Pioneers)
-
--- Insert 'Pioneer' Badge if it doesn't exist
-insert into badges (name, description, image_url)
-select 'Pioneer', 'Membro fondatore di FantaMusiké MVP', '/badges/pioneer.png'
-where not exists (select 1 from badges where name = 'Pioneer');

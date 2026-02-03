@@ -154,7 +154,31 @@ body {
   animation-play-state: running;
 }
 
-/* Pause marquee when not hovered or only animate on overflow? 
-   For simplicity, let's keep it constant or hover-based. 
-   The user asked for "movimento", so constant is better for premium feel.
-*/
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0);
+  }
+  50% {
+    transform: translateY(-20px) rotate(2deg);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 4s ease-in-out infinite;
+}

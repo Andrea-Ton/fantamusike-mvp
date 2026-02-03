@@ -69,7 +69,7 @@ export default function BetResultModal({ promoId, betSnapshot, onClose }: BetRes
                 return {
                     title: 'PAREGGIO',
                     subtitle: 'EQUILIBRIO PERFETTO',
-                    desc: 'Incredibile! Entrambi gli artisti hanno performato allo stesso modo in questa sessione.',
+                    desc: 'Incredibile! Entrambi gli artisti hanno performato allo stesso modo. Ti abbiamo restituito i 2 MusiCoins della scommessa!',
                     color: 'from-amber-400 to-orange-600',
                     glow: 'bg-amber-500/30',
                     accent: 'text-amber-400',
@@ -139,7 +139,7 @@ export default function BetResultModal({ promoId, betSnapshot, onClose }: BetRes
                         </div>
 
                         {/* Rewards Grid (Glassy) */}
-                        {isWin && (
+                        {(isWin || (isDraw && won_coins > 0)) && (
                             <div className="grid grid-cols-1 gap-3 sm:gap-4 mb-6 sm:mb-8 w-full">
                                 {(won_points > 0 || won_points === undefined) && (
                                     <div className="bg-white/[0.03] border border-white/5 rounded-3xl p-5 sm:p-6 backdrop-blur-sm shadow-inner overflow-hidden group/reward relative">

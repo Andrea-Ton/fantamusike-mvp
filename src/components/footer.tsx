@@ -52,8 +52,7 @@ export default function Footer() {
                         <div className="flex flex-col gap-4 col-span-2 sm:col-span-1">
                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Social</span>
                             <div className="flex flex-col gap-3">
-                                <a href="#" className="text-xs font-bold text-gray-500 hover:text-white transition-colors">Instagram</a>
-                                <a href="#" className="text-xs font-bold text-gray-500 hover:text-white transition-colors">TikTok</a>
+                                <a href="https://instagram.com/musike.fm" className="text-xs font-bold text-gray-500 hover:text-white transition-colors">Instagram</a>
                             </div>
                         </div>
                     </div>

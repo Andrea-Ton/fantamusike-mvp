@@ -30,12 +30,28 @@ export async function signup(formData: FormData) {
     const supabase = await createClient();
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
-    const username = formData.get('username') as string;
     const referralCode = formData.get('referralCode') as string;
 
-    // Validate username
+    // Derive username from email prefix
+    // Example: john.doe@gmail.com -> john.doe
+    let username = email.split('@')[0].toLowerCase();
+
+    // Sanitize: replace any character not in [a-z0-9_.] with '_'
+    username = username.replace(/[^a-z0-9_.]/g, '_');
+
+    // Ensure length between 3 and 20
+    if (username.length < 3) {
+        username = username.padEnd(3, '_');
+    } else if (username.length > 20) {
+        username = username.substring(0, 20);
+    }
+
+    // Validate username against banned terms (re-using existing logic)
     const validation = validateUsername(username);
     if (!validation.valid) {
+        // If the derived username is invalid (e.g. banned term), we can't easily fix it 
+        // without user input, but according to requirements we just need to derive it.
+        // We'll return the error if it's truly problematic (like banned terms).
         return { error: validation.error };
     }
 
