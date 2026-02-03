@@ -15,15 +15,27 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    const [acceptTerms, setAcceptTerms] = useState(false);
 
-    const handleSubmit = async (formData: FormData) => {
+    // Controlled states to preserve values on error
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [referralCode, setReferralCode] = useState('');
+    const [acceptTerms, setAcceptTerms] = useState(false);
+    const [marketingOptIn, setMarketingOptIn] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+
         if (!acceptTerms) {
             setError("Devi accettare i Termini e le Condizioni per continuare.");
             return;
         }
         setIsLoading(true);
         setError(null);
+
+        const formData = new FormData(e.currentTarget);
+        // Ensure marketingOptIn is correctly handled as 'on' if checked
+        if (marketingOptIn) formData.set('marketingOptIn', 'on');
 
         const result = await signup(formData);
 
@@ -77,13 +89,15 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
                 <p className="text-gray-400 text-sm">Inizia la tua carriera da Manager</p>
             </div>
 
-            <form action={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                     <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Email</label>
                     <input
                         name="email"
                         type="email"
                         required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         placeholder="nome@esempio.com"
                         className="w-full h-12 bg-[#1a1a24] border border-white/10 rounded-xl px-4 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors"
                     />
@@ -95,6 +109,8 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
                             name="password"
                             type={showPassword ? "text" : "password"}
                             required
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
                             placeholder="••••••••"
                             className="w-full h-12 bg-[#1a1a24] border border-white/10 rounded-xl px-4 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors pr-10"
                         />
@@ -112,6 +128,8 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
                     <input
                         name="referralCode"
                         type="text"
+                        value={referralCode}
+                        onChange={(e) => setReferralCode(e.target.value)}
                         placeholder="Hai un codice amico?"
                         className="w-full h-12 bg-[#1a1a24] border border-white/10 rounded-xl px-4 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors"
                     />
@@ -146,6 +164,8 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
                                 name="marketingOptIn"
                                 type="checkbox"
                                 id="marketing-opt-in"
+                                checked={marketingOptIn}
+                                onChange={(e) => setMarketingOptIn(e.target.checked)}
                                 className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-white/10 bg-[#1a1a24] transition-all checked:border-[#9333ea] checked:bg-[#9333ea]"
                             />
                             <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 transition-opacity peer-checked:opacity-100">

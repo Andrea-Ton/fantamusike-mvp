@@ -24,9 +24,13 @@ export default function HeroSection({ seasonName = 'Season Zero', featuredArtist
 
                 <div className="space-y-4">
                     <h1 className="text-4xl md:text-6xl xl:text-7xl font-black tracking-tighter leading-[0.85] text-white uppercase">
-                        <span className="text-white whitespace-nowrap">CREA LA TUA LABEL</span><br />
+                        <span className="text-white whitespace-nowrap">CREA</span><br />
+                        <span className="text-white whitespace-nowrap">LA TUA SQUADRA   </span><br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-blue-500 drop-shadow-sm">
-                            SBLOCCA LE MYSTERY BOX
+                            SBLOCCA
+                        </span><br />
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-blue-500 drop-shadow-sm">
+                            LE MYSTERY BOX
                         </span>
                     </h1>
                 </div>

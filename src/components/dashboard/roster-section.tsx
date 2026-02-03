@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Trophy } from 'lucide-react';
+import { Trophy, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { Slot } from '@/components/dashboard/artist-card';
 import ArtistPromoCard from '@/components/dashboard/artist-promo-card';
@@ -192,7 +192,18 @@ export default async function RosterSection({ userTeamPromise, userId }: RosterS
                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
                         <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none">Settimana corrente</span>
                     </div>
-                    <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">La tua Label</h3>
+                    <div className="flex items-center gap-3">
+                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">La tua Label</h3>
+                        {hasTeam && (
+                            <Link
+                                href="/dashboard/draft"
+                                className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all group"
+                                title="Modifica Label"
+                            >
+                                <Pencil size={14} className="text-gray-500 group-hover:text-white" />
+                            </Link>
+                        )}
+                    </div>
                 </div>
                 {hasTeam && (
                     <div className="flex flex-col md:items-end gap-2">
