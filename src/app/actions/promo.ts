@@ -39,6 +39,7 @@ export type DailyPromoState = {
         question: string;
         options: string[];
         type: string;
+        userCorrect?: boolean | null;
     } | null;
     betSnapshot?: {
         rival: any;
@@ -87,7 +88,8 @@ export async function getDailyPromoStateAction(): Promise<DailyPromoState> {
         quizSnapshot: promo.quiz_snapshot ? {
             question: promo.quiz_snapshot.text,
             options: promo.quiz_snapshot.options,
-            type: promo.quiz_snapshot.type
+            type: promo.quiz_snapshot.type,
+            userCorrect: promo.quiz_snapshot.userCorrect
         } : null,
         betSnapshot: promo.bet_snapshot ? {
             rival: promo.bet_snapshot.rival,
@@ -272,7 +274,11 @@ export async function answerQuizAction(artistId: string, answerIndex: number): P
             .from('daily_promos')
             .update({
                 quiz_done: true,
-                total_points: (promo.total_points || 0) + points
+                total_points: (promo.total_points || 0) + points,
+                quiz_snapshot: {
+                    ...promo.quiz_snapshot,
+                    userCorrect: isCorrect
+                }
             })
             .eq('id', promo.id);
 
