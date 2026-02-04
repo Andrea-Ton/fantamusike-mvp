@@ -675,7 +675,11 @@ export default function DailyPromoModal({
                                                                 <div className="absolute inset-0 bg-yellow-500 rounded-full blur-2xl opacity-20 animate-pulse"></div>
                                                                 <div className="relative w-full h-full animate-spin-3d">
                                                                     <div className="w-full h-full rounded-full border-4 border-yellow-300 bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 flex items-center justify-center shadow-[0_0_50px_rgba(234,179,8,0.5)]">
-                                                                        <span className="text-4xl sm:text-5xl font-bold text-yellow-100 drop-shadow-md">$</span>
+                                                                        <img
+                                                                            src="/musike_logo_pict.png"
+                                                                            alt="MusiCoin"
+                                                                            className="w-1/2 h-1/2 object-contain drop-shadow-md brightness-[0.8] contrast-[1.2]"
+                                                                        />
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -741,7 +745,7 @@ export default function DailyPromoModal({
                                                                 Scegli l'azione:
                                                             </p>
 
-                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-4 sm:mb-8 overflow-y-auto max-h-[40vh]">
+                                                            <div className="grid grid-cols-1 gap-2 sm:gap-3 mb-4 sm:mb-8 w-full overflow-y-auto max-h-[40vh]">
                                                                 {boostOptions.map((opt: any) => {
                                                                     // Map icon string to component
                                                                     const IconComp = {

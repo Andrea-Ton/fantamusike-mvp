@@ -29,20 +29,11 @@ export default async function StatsSection({ userId, userTeamPromise, totalScore
             userTeam.slot_5?.id
         ].filter(Boolean) as string[];
 
-        // @ts-ignore
         const { scores, fantaScores, promoScores } = await getWeeklyScoresAction(artistIds, userTeam.captain_id, userId);
 
-        weeklyTrend = artistIds.reduce((total, artistId) => {
-            return total + (scores[artistId] || 0);
-        }, 0);
-
-        weeklyFanta = artistIds.reduce((total, artistId) => {
-            return total + (fantaScores?.[artistId] || 0);
-        }, 0);
-
-        weeklyPromo = artistIds.reduce((total, artistId) => {
-            return total + (promoScores?.[artistId] || 0);
-        }, 0);
+        weeklyTrend = artistIds.reduce((total, id) => total + (scores[id] || 0), 0);
+        weeklyFanta = artistIds.reduce((total, id) => total + (fantaScores[id] || 0), 0);
+        weeklyPromo = artistIds.reduce((total, id) => total + (promoScores[id] || 0), 0);
     }
 
     return (
