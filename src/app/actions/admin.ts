@@ -2,6 +2,8 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
+import { getCurrentSeasonAction } from './season';
+import { revalidatePath } from 'next/cache';
 
 export async function createWeeklySnapshotAction(weekNumber: number) {
     const supabase = await createClient();
@@ -14,6 +16,10 @@ export async function createWeeklySnapshotAction(weekNumber: number) {
     if (!profile?.is_admin) return { success: false, message: 'Unauthorized' };
 
     try {
+        // 0. Get current season
+        const currentSeason = await getCurrentSeasonAction();
+        if (!currentSeason) return { success: false, message: 'No active season found' };
+
         // 2. Fetch all cached artists
         const { data: artists, error: fetchError } = await supabase
             .from('artists_cache')
@@ -23,11 +29,12 @@ export async function createWeeklySnapshotAction(weekNumber: number) {
             return { success: false, message: 'Failed to fetch artists' };
         }
 
-        // 3. Check for existing snapshots (Prevent Duplicates)
+        // 3. Check for existing snapshots (Prevent Duplicates) - filtered by season
         const { data: existingSnapshots } = await supabase
             .from('weekly_snapshots')
             .select('artist_id')
-            .eq('week_number', weekNumber);
+            .eq('week_number', weekNumber)
+            .gte('created_at', currentSeason.start_date);
 
         const existingIds = new Set(existingSnapshots?.map(s => s.artist_id) || []);
 
@@ -42,7 +49,7 @@ export async function createWeeklySnapshotAction(weekNumber: number) {
             }));
 
         if (snapshots.length === 0) {
-            return { success: true, message: `No new artists to snapshot for Week ${weekNumber}.` };
+            return { success: true, message: `No new artists to snapshot for Week ${weekNumber} in ${currentSeason.name}.` };
         }
 
         const { error: insertError } = await supabase
@@ -54,7 +61,7 @@ export async function createWeeklySnapshotAction(weekNumber: number) {
             return { success: false, message: 'Failed to create snapshot' };
         }
 
-        return { success: true, message: `Snapshot created for Week ${weekNumber} (${snapshots.length} artists)` };
+        return { success: true, message: `Snapshot created for ${currentSeason.name} Week ${weekNumber} (${snapshots.length} artists)` };
 
     } catch (error) {
         console.error('Unexpected Error:', error);
@@ -73,11 +80,16 @@ export async function calculateScoresAction(weekNumber: number) {
     if (!profile?.is_admin) return { success: false, message: 'Unauthorized' };
 
     try {
+        // 0. Get current season
+        const currentSeason = await getCurrentSeasonAction();
+        if (!currentSeason) return { success: false, message: 'No active season found' };
+
         // 1. Fetch Snapshots for the week
         const { data: snapshots, error: snapError } = await supabase
             .from('weekly_snapshots')
             .select('*')
-            .eq('week_number', weekNumber);
+            .eq('week_number', weekNumber)
+            .gte('created_at', currentSeason.start_date); // Filter by season start
 
         if (snapError || !snapshots) {
             return { success: false, message: 'Failed to fetch snapshots' };
@@ -222,11 +234,12 @@ export async function calculateScoresAction(weekNumber: number) {
         // 6. Recalculate ALL User Scores from Scratch (Idempotent)
         // This ensures that any past errors or updates are corrected.
 
-        // A. Fetch ALL weekly scores up to current week
+        // A. Fetch ALL weekly scores for current season only
         const { data: allWeeklyScores } = await supabase
             .from('weekly_scores')
             .select('week_number, artist_id, total_points')
-            .lte('week_number', weekNumber);
+            .lte('week_number', weekNumber)
+            .gte('created_at', currentSeason.start_date);
 
         // Organize scores for fast lookup: scores[week][artistId] = points
         const scoresMap: Record<number, Record<string, number>> = {};
@@ -238,6 +251,7 @@ export async function calculateScoresAction(weekNumber: number) {
         const { data: allTeams } = await supabase
             .from('teams')
             .select('*')
+            .eq('season_id', currentSeason.id)
             .lte('week_number', weekNumber)
             .order('week_number', { ascending: true });
 
@@ -324,6 +338,9 @@ export async function calculateScoresAction(weekNumber: number) {
 
         await Promise.all(updates);
 
+        revalidatePath('/dashboard');
+        revalidatePath('/admin/scoring');
+
         return { success: true, message: `Scoring complete. Processed ${totalUpdates} artists and updated ${Object.keys(userTotals).length} user profiles.` };
 
     } catch (error) {
@@ -343,18 +360,23 @@ export async function getScoringStatusAction() {
     if (!profile?.is_admin) return { success: false, message: 'Unauthorized' };
 
     try {
-        // Fetch Latest Snapshot
+        const currentSeason = await getCurrentSeasonAction();
+        if (!currentSeason) return { success: false, message: 'No active season found' };
+
+        // Fetch Latest Snapshot - filtered by season
         const { data: latestSnapshot } = await supabase
             .from('weekly_snapshots')
             .select('week_number, created_at')
+            .gte('created_at', currentSeason.start_date)
             .order('week_number', { ascending: false })
             .limit(1)
             .single();
 
-        // Fetch Latest Score
+        // Fetch Latest Score - filtered by season
         const { data: latestScore } = await supabase
             .from('weekly_scores')
             .select('week_number, created_at')
+            .gte('created_at', currentSeason.start_date)
             .order('week_number', { ascending: false })
             .limit(1)
             .single();

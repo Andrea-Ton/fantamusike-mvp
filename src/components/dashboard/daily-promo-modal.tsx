@@ -501,12 +501,12 @@ export default function DailyPromoModal({
                                                                                 <div className="flex items-center gap-2">
                                                                                     {isCorrect && (
                                                                                         <div className="flex items-center gap-1 bg-green-500 text-black px-2 py-0.5 sm:py-1 rounded-lg animate-in zoom-in font-black text-[9px] sm:text-[10px] shadow-lg shadow-green-500/20 uppercase">
-                                                                                            <CheckCircle size={8} /> OK
+                                                                                            <CheckCircle size={8} /> +{QUIZ_CONFIG.POINTS_CORRECT} PTS
                                                                                         </div>
                                                                                     )}
                                                                                     {isSelected && !isCorrect && (
                                                                                         <div className="flex items-center gap-1 bg-red-500/20 text-red-500 px-2 py-0.5 sm:py-1 rounded-lg animate-in zoom-in font-black text-[9px] sm:text-[10px] uppercase border border-red-500/30">
-                                                                                            X
+                                                                                            +{QUIZ_CONFIG.POINTS_INCORRECT} PTS
                                                                                         </div>
                                                                                     )}
                                                                                 </div>

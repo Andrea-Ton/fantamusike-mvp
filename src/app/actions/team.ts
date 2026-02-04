@@ -300,10 +300,15 @@ export async function getUserTeamAction(weekNumber?: number): Promise<UserTeamRe
 
     if (!user) return null;
 
+    // Get Active Season
+    const currentSeason = await getCurrentSeasonAction();
+    if (!currentSeason) return null;
+
     let query = supabase
         .from('teams')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .eq('season_id', currentSeason.id);
 
     if (weekNumber) {
         // Fetch specific week
@@ -313,7 +318,7 @@ export async function getUserTeamAction(weekNumber?: number): Promise<UserTeamRe
         query = query.order('week_number', { ascending: false }).limit(1);
     }
 
-    const { data: teams, error } = await query;
+    const { data: teams } = await query;
 
     // Handle single result from array
     const team = teams && teams.length > 0 ? teams[0] : null;
@@ -325,6 +330,7 @@ export async function getUserTeamAction(weekNumber?: number): Promise<UserTeamRe
                 .from('teams')
                 .select('*')
                 .eq('user_id', user.id)
+                .eq('season_id', currentSeason.id)
                 .lt('week_number', weekNumber)
                 .order('week_number', { ascending: false })
                 .limit(1);

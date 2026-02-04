@@ -2,14 +2,20 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { cache } from 'react';
+import { getCurrentSeasonAction } from './season';
 
 export const getWeeklyScoresAction = cache(async (artistIds: string[], captainId?: string | null, userId?: string) => {
     const supabase = await createClient();
 
-    // 1. Get the latest snapshot week number AND timestamp (start of week)
+    // 0. Get current season for isolation
+    const currentSeason = await getCurrentSeasonAction();
+    if (!currentSeason) return { scores: {}, fantaScores: {}, promoScores: {} };
+
+    // 1. Get the latest snapshot week number AND timestamp (start of week) - filtered by season
     const { data: latestSnapshot } = await supabase
         .from('weekly_snapshots')
         .select('week_number, created_at')
+        .gte('created_at', currentSeason.start_date)
         .order('week_number', { ascending: false })
         .limit(1)
         .single();
@@ -17,10 +23,11 @@ export const getWeeklyScoresAction = cache(async (artistIds: string[], captainId
     const latestSnapshotWeek = latestSnapshot?.week_number || 0;
     const weekStartDate = latestSnapshot?.created_at;
 
-    // 2. Get the latest score week number
+    // 2. Get the latest score week number - filtered by season
     const { data: latestScore } = await supabase
         .from('weekly_scores')
         .select('week_number')
+        .gte('created_at', currentSeason.start_date)
         .order('week_number', { ascending: false })
         .limit(1)
         .single();

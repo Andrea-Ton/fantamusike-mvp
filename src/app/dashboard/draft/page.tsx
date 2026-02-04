@@ -716,7 +716,7 @@ export default function TalentScoutPage() {
                                                 {isSelected ? (
                                                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-green-500/10 text-green-400 text-[10px] font-black uppercase tracking-widest border border-green-500/10 w-full justify-center">
                                                         <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div>
-                                                        Drafted
+                                                        Selezionato
                                                     </div>
                                                 ) : (
                                                     <div className="flex flex-wrap gap-2">

@@ -30,6 +30,12 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
     const topThree = leaderboardData.podium;
     const entries = leaderboardData.entries;
 
+    // Season Countdown Calculation
+    const seasonEndDate = currentSeason ? new Date(currentSeason.end_date) : null;
+    const now = new Date();
+    const daysLeft = seasonEndDate ? Math.ceil((seasonEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+    const isSeasonEndingSoon = daysLeft > 0 && daysLeft <= 7;
+
     // Helper to get initials
     const getInitials = (name: string) => name.substring(0, 1).toUpperCase();
 
@@ -74,17 +80,34 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                         <h1 className="text-4xl md:text-5xl font-black text-white italic uppercase tracking-tighter leading-none mb-3">Classifica</h1>
                         <p className="text-gray-500 text-sm font-medium">Competi con i migliori manager d'Italia e scala la vetta.</p>
                     </div>
-                    <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 px-6 py-3 rounded-2xl backdrop-blur-xl shadow-inner">
-                        <div className="flex -space-x-2">
-                            {[1, 2, 3].map((i) => (
-                                <div key={i} className="w-6 h-6 rounded-full border-2 border-[#050507] bg-gray-800 flex items-center justify-center overflow-hidden">
-                                    <div className="w-full h-full bg-purple-500/20" />
+                    <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
+                        {/* Season Countdown - Mobile/Tablet visible but desktop integrated */}
+                        {currentSeason && (
+                            <div className={`flex items-center justify-between px-6 py-3 rounded-2xl border ${isSeasonEndingSoon ? 'bg-red-500/10 border-red-500/20' : 'bg-purple-500/10 border-purple-500/20'} backdrop-blur-xl shadow-inner group transition-all hover:bg-white/10`}>
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Fine Stagione</span>
+                                    <span className={`text-lg font-black italic uppercase tracking-tighter leading-none ${isSeasonEndingSoon ? 'text-red-400 animate-pulse' : 'text-purple-400'}`}>
+                                        {daysLeft > 0 ? `${daysLeft} giorni` : 'Oggi'}
+                                    </span>
                                 </div>
-                            ))}
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Total Active</span>
-                            <span className="text-lg font-black text-white italic uppercase tracking-tighter leading-none">{leaderboardData.totalCount} <span className="text-[10px] not-italic text-purple-400 ml-1">Managers</span></span>
+                                <div className={`ml-4 p-2 rounded-lg ${isSeasonEndingSoon ? 'bg-red-500/20 text-red-500' : 'bg-purple-500/20 text-purple-400'} hidden sm:block`}>
+                                    <Zap size={16} className={isSeasonEndingSoon ? 'animate-pulse' : ''} />
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 px-6 py-3 rounded-2xl backdrop-blur-xl shadow-inner">
+                            <div className="flex -space-x-2">
+                                {[1, 2, 3].map((i) => (
+                                    <div key={i} className="w-6 h-6 rounded-full border-2 border-[#050507] bg-gray-800 flex items-center justify-center overflow-hidden">
+                                        <div className="w-full h-full bg-purple-500/20" />
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Managers attivi</span>
+                                <span className="text-lg font-black text-white italic uppercase tracking-tighter leading-none">{leaderboardData.totalCount} <span className="text-[10px] not-italic text-purple-400 ml-1">Managers</span></span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -101,9 +124,9 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                                 <div className="text-center">
                                     <div className="inline-flex items-center gap-2 mb-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20">
                                         <Crown size={12} className="text-yellow-500 fill-yellow-500" />
-                                        <span className="text-[10px] font-black text-yellow-500 uppercase tracking-widest">Podium Showcase</span>
+                                        <span className="text-[10px] font-black text-yellow-500 uppercase tracking-widest">Podio</span>
                                     </div>
-                                    <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">I Top Manager</h2>
+                                    <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Top Managers</h2>
                                 </div>
 
                                 <div className="flex items-end justify-center gap-1 sm:gap-4 relative pt-12 pb-2">
@@ -199,10 +222,9 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                             <div className="p-8 border-b border-white/5 flex justify-between items-center">
                                 <div>
                                     <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Classifica Globale</h3>
-                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Full Ranking Details</p>
                                 </div>
-                                <div className="text-[10px] font-black text-purple-400 uppercase tracking-widest bg-purple-500/10 px-3 py-1.5 rounded-lg border border-purple-500/20">
-                                    Pagina {leaderboardData.currentPage} di {leaderboardData.totalPages}
+                                <div className="text-[9px] font-black text-purple-400 uppercase tracking-widest bg-purple-500/10 px-2 py-1 rounded-lg border border-purple-500/20">
+                                    {leaderboardData.currentPage} / {leaderboardData.totalPages}
                                 </div>
                             </div>
 

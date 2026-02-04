@@ -87,6 +87,7 @@ Deno.serve(async (_req: Request) => {
         const { data: latestSnapshot, error: snapshotError } = await supabaseClient
             .from('weekly_snapshots')
             .select('week_number, created_at')
+            .gte('created_at', season.start_date) // Filter by season
             .order('week_number', { ascending: false })
             .limit(1)
             .maybeSingle()
@@ -99,8 +100,10 @@ Deno.serve(async (_req: Request) => {
 
         console.log(`Calculating Daily Scores for Week ${weekNumber}...`)
 
-        // 3. Fetch snapshots for the week (with pagination)
-        const snapshots = await fetchAll(supabaseClient, 'weekly_snapshots', '*', (q: any) => q.eq('week_number', weekNumber));
+        // 3. Fetch snapshots for the week (with pagination) - filtered by season
+        const snapshots = await fetchAll(supabaseClient, 'weekly_snapshots', '*', (q: any) =>
+            q.eq('week_number', weekNumber).gte('created_at', season.start_date)
+        );
         console.log(`Fetched ${snapshots.length} snapshots for Week ${weekNumber}`);
 
         if (!snapshots || snapshots.length === 0) {
@@ -190,6 +193,7 @@ Deno.serve(async (_req: Request) => {
                 .from('weekly_scores')
                 .select('artist_id, total_points')
                 .eq('week_number', weekNumber)
+                .gte('created_at', season.start_date) // Filter by season
                 .in('artist_id', Array.from(artistIds));
 
             const scoreMap = new Map<string, number>();
@@ -278,13 +282,17 @@ Deno.serve(async (_req: Request) => {
 
         // Fetch all profiles and teams efficiently
         const profiles = await fetchAll(supabaseClient, 'profiles', 'id, total_score');
-        const activeTeams = await fetchAll(supabaseClient, 'teams', '*', (q: any) => q.eq('week_number', weekNumber));
+        const activeTeams = await fetchAll(supabaseClient, 'teams', '*', (q: any) =>
+            q.eq('week_number', weekNumber).eq('season_id', season.id)
+        );
 
         const teamsByUser: Record<string, any> = {};
         (activeTeams as any[])?.forEach((t: any) => teamsByUser[t.user_id] = t);
 
-        // Fetch all weekly scores for current week
-        const currentWeeklyScores = await fetchAll(supabaseClient, 'weekly_scores', 'artist_id, total_points', (q: any) => q.eq('week_number', weekNumber));
+        // Fetch all weekly scores for current week - filtered by season
+        const currentWeeklyScores = await fetchAll(supabaseClient, 'weekly_scores', 'artist_id, total_points', (q: any) =>
+            q.eq('week_number', weekNumber).gte('created_at', season.start_date)
+        );
         const scoresMap: Record<string, number> = {};
         (currentWeeklyScores as any[])?.forEach((s) => scoresMap[s.artist_id] = s.total_points);
 
