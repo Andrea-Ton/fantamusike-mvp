@@ -1,8 +1,9 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { cache } from 'react';
 
-export async function getWeeklyScoresAction(artistIds: string[], captainId?: string | null, userId?: string) {
+export const getWeeklyScoresAction = cache(async (artistIds: string[], captainId?: string | null, userId?: string) => {
     const supabase = await createClient();
 
     // 1. Get the latest snapshot week number AND timestamp (start of week)
@@ -111,7 +112,7 @@ export async function getWeeklyScoresAction(artistIds: string[], captainId?: str
         fantaScores: fantaScoreMap,
         promoScores: promoScoreMap
     };
-}
+});
 export async function getUnseenScoreLogsAction() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();

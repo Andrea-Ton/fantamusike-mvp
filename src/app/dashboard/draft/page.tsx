@@ -12,6 +12,7 @@ import { getCurrentWeekAction } from '@/app/actions/game';
 import { SpotifyArtist } from '@/lib/spotify';
 import { useRouter } from 'next/navigation';
 import LogoutButton from '@/components/logout-button';
+import { getDraftInitialDataAction } from '@/app/actions/draft-init';
 import { createClient } from '@/utils/supabase/client';
 import InviteButton from '@/components/dashboard/invite-button';
 import { ARTIST_TIERS } from '@/config/game';
@@ -48,7 +49,7 @@ const INITIAL_SLOTS: TeamSlots = {
 export default function TalentScoutPage() {
     const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
-    const debouncedSearchTerm = useDebounce(searchTerm, 500);
+    const debouncedSearchTerm = useDebounce(searchTerm, 300);
     const [activeFilter, setActiveFilter] = useState('All');
     const [artists, setArtists] = useState<SpotifyArtist[]>([]);
     const [featuredArtists, setFeaturedArtists] = useState<Set<string>>(new Set());
@@ -74,58 +75,66 @@ export default function TalentScoutPage() {
 
     const [currentWeek, setCurrentWeek] = useState<number>(1);
 
-    // Load Team (DB or LocalStorage)
+    // Load Data (Consolidated)
     useEffect(() => {
-        const loadData = async () => {
-            // 0. Get Current Season & Profile
-            const season = await getCurrentSeasonAction();
-            if (season) {
-                setCurrentSeasonId(season.id);
-                setSeasonName(season.name);
+        const initialize = async () => {
+            setIsLoading(true);
+            const data = await getDraftInitialDataAction();
+
+            // 1. Set Season & Week
+            if (data.season) {
+                setCurrentSeasonId(data.season.id);
+                setSeasonName(data.season.name);
+            }
+            setCurrentWeek(data.week);
+
+            // 2. Set Profile
+            if (data.profile) {
+                setMusiCoins(data.profile.musi_coins);
+                setReferralCode(data.profile.referral_code);
             }
 
-            const week = await getCurrentWeekAction();
-            setCurrentWeek(week);
+            // 3. Set Featured Artists (Set for quick lookup)
+            setFeaturedArtists(new Set(data.featured.map(a => a.id)));
 
-            const supabase = createClient();
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                const { data: profile } = await supabase.from('profiles').select('musi_coins, referral_code').eq('id', user.id).single();
-                if (profile) {
-                    setMusiCoins(profile.musi_coins);
-                    setReferralCode(profile.referral_code);
-                }
-            }
+            // 4. Set Suggested Artists
+            const mappedSuggested: SpotifyArtist[] = data.suggested.map(s => ({
+                id: s.spotify_id,
+                name: s.name,
+                external_urls: { spotify: '' },
+                images: [{ url: s.image_url, height: 0, width: 0 }],
+                popularity: s.popularity,
+                genres: s.genre ? [s.genre] : [],
+                followers: { total: s.followers || 0 }
+            }));
+            setArtists(mappedSuggested);
 
-            // 1. Try fetching from DB
-            const dbTeam = await getUserTeamAction();
-
-            if (dbTeam) {
+            // 5. Load Team (DB priority, then LocalStorage)
+            if (data.dbTeam) {
                 const loadedTeam = {
-                    slot_1: dbTeam.slot_1,
-                    slot_2: dbTeam.slot_2,
-                    slot_3: dbTeam.slot_3,
-                    slot_4: dbTeam.slot_4,
-                    slot_5: dbTeam.slot_5,
+                    slot_1: data.dbTeam.slot_1,
+                    slot_2: data.dbTeam.slot_2,
+                    slot_3: data.dbTeam.slot_3,
+                    slot_4: data.dbTeam.slot_4,
+                    slot_5: data.dbTeam.slot_5,
                 };
                 setDraftTeam(loadedTeam);
                 setInitialTeam(loadedTeam);
 
-                if (dbTeam.captain_id) {
-                    setCaptainId(dbTeam.captain_id);
-                    setInitialCaptainId(dbTeam.captain_id);
+                if (data.dbTeam.captain_id) {
+                    setCaptainId(data.dbTeam.captain_id);
+                    setInitialCaptainId(data.dbTeam.captain_id);
                 } else {
                     setInitialCaptainId(null);
                 }
 
-                // Check if new season entry
-                if (season && (!dbTeam.season_id || dbTeam.season_id !== season.id)) {
+                // New season check
+                if (data.season && (!data.dbTeam.season_id || data.dbTeam.season_id !== data.season.id)) {
                     setIsNewSeasonEntry(true);
                 } else {
                     setIsNewSeasonEntry(false);
                 }
             } else {
-                // 2. If no DB team, try LocalStorage
                 const savedDraft = localStorage.getItem('draftTeam');
                 const savedCaptain = localStorage.getItem('captainId');
 
@@ -135,7 +144,6 @@ export default function TalentScoutPage() {
                         setDraftTeam(parsedDraft);
                         setInitialTeam(parsedDraft);
                     } catch (e) {
-                        console.error('Failed to parse draft team', e);
                         setInitialTeam(INITIAL_SLOTS);
                     }
                 } else {
@@ -148,20 +156,14 @@ export default function TalentScoutPage() {
                 } else {
                     setInitialCaptainId(null);
                 }
-
-                // No DB team means it's a new entry (free)
                 setIsNewSeasonEntry(true);
             }
+
             setIsTeamLoaded(true);
+            setIsLoading(false);
         };
 
-        const fetchFeatured = async () => {
-            const featured = await getFeaturedArtistsAction();
-            setFeaturedArtists(new Set(featured.map(a => a.id)));
-        };
-
-        loadData();
-        fetchFeatured();
+        initialize();
     }, []);
 
     // Calculate Cost
@@ -232,12 +234,7 @@ export default function TalentScoutPage() {
         fetchArtists();
     }, [debouncedSearchTerm, viewMode]);
 
-    // Load Suggested artists on mount if viewMode is 'suggested'
-    useEffect(() => {
-        if (viewMode === 'suggested') {
-            handleLoadSuggested();
-        }
-    }, []); // Run once on mount
+    // Removed redundant suggested load useEffect (now in consolidated initialize)
 
     const handleLoadFeatured = async () => {
         setIsLoading(true);
@@ -364,13 +361,13 @@ export default function TalentScoutPage() {
         const slots: { key: keyof TeamSlots; label: string }[] = [];
 
         if (category === 'Big') {
-            if (!draftTeam.slot_1) slots.push({ key: 'slot_1', label: 'Headliner' });
+            if (!draftTeam.slot_1) slots.push({ key: 'slot_1', label: ARTIST_TIERS.BIG.label });
         } else if (category === 'Mid Tier') {
-            if (!draftTeam.slot_2) slots.push({ key: 'slot_2', label: 'Mid Tier 1' });
-            if (!draftTeam.slot_3) slots.push({ key: 'slot_3', label: 'Mid Tier 2' });
+            if (!draftTeam.slot_2) slots.push({ key: 'slot_2', label: ARTIST_TIERS.MID.label });
+            if (!draftTeam.slot_3) slots.push({ key: 'slot_3', label: ARTIST_TIERS.MID.label });
         } else if (category === 'New Gen') {
-            if (!draftTeam.slot_4) slots.push({ key: 'slot_4', label: 'New Gen 1' });
-            if (!draftTeam.slot_5) slots.push({ key: 'slot_5', label: 'New Gen 2' });
+            if (!draftTeam.slot_4) slots.push({ key: 'slot_4', label: ARTIST_TIERS.NEW_GEN.label });
+            if (!draftTeam.slot_5) slots.push({ key: 'slot_5', label: ARTIST_TIERS.NEW_GEN.label });
         }
         return slots;
     };
@@ -655,8 +652,10 @@ export default function TalentScoutPage() {
 
                         {/* Artist Grid */}
                         {isLoading ? (
-                            <div className="flex justify-center py-20">
-                                <Loader2 className="animate-spin text-purple-500" size={40} />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {[1, 2, 3, 4, 5, 6].map(i => (
+                                    <ArtistSkeleton key={i} />
+                                ))}
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -816,15 +815,15 @@ export default function TalentScoutPage() {
                             className="bg-[#050507] w-full max-w-lg rounded-t-[2.5rem] border-t border-x border-white/10 px-8 pb-8 pt-0 shadow-[0_-20px_50px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-full duration-500 max-h-[90vh] overflow-y-auto relative"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <div className="sticky top-0 bg-[#050507] z-30 pt-4 pb-2">
+                            <div className="sticky top-0 bg-[#050507] z-30 pt-1 pb-2">
                                 <div className="mx-auto w-12 h-1.5 bg-white/10 rounded-full mb-6" />
                                 <div className="flex justify-between items-center bg-[#050507]">
                                     <div>
                                         <div className="flex items-center gap-2 mb-1">
                                             <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></div>
-                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Roster Management</p>
+                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Gestione roster</p>
                                         </div>
-                                        <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Draft Review</h2>
+                                        <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">La mia Label</h2>
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <button
@@ -949,6 +948,22 @@ function SlotPreview({
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+function ArtistSkeleton() {
+    return (
+        <div className="bg-white/[0.03] border border-white/5 rounded-[2rem] p-5 flex flex-col gap-5 animate-pulse overflow-hidden relative">
+            <div className="flex gap-5 items-start">
+                <div className="w-20 h-20 rounded-2xl bg-white/5 flex-shrink-0"></div>
+                <div className="flex-1 py-1 space-y-3">
+                    <div className="h-4 bg-white/10 rounded w-3/4"></div>
+                    <div className="h-3 bg-white/5 rounded w-1/2"></div>
+                    <div className="h-3 bg-white/5 rounded w-2/3"></div>
+                </div>
+            </div>
+            <div className="mt-auto h-10 bg-white/5 rounded-xl"></div>
         </div>
     );
 }

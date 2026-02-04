@@ -11,24 +11,34 @@ import { getDailyPromoStateAction, DailyPromoState } from '@/app/actions/promo';
 import { getArtistReleases } from '@/lib/spotify';
 import { ARTIST_TIERS } from '@/config/game';
 import DailyPromoFeature from './daily-promo-feature';
+import { SpotifyArtist } from '@/lib/spotify';
 
 interface RosterSectionProps {
     userTeamPromise: Promise<UserTeamResponse>;
     userId?: string;
+    featuredArtists?: SpotifyArtist[];
+    dailyPromoState?: DailyPromoState;
 }
 
-export default async function RosterSection({ userTeamPromise, userId }: RosterSectionProps) {
+export default async function RosterSection({
+    userTeamPromise,
+    userId,
+    featuredArtists: initialFeatured,
+    dailyPromoState: initialPromoState
+}: RosterSectionProps) {
     const userTeam = await userTeamPromise;
     const hasTeam = userTeam !== null;
 
     let weeklyScores: Record<string, number> = {};
     let fantaScores: Record<string, number> = {};
     let promoScores: Record<string, number> = {};
-    const featuredArtists = await getFeaturedArtistsAction();
+
+    // Use provided featuredArtists or fetch if missing
+    const featuredArtists = initialFeatured || await getFeaturedArtistsAction();
     const featuredIds = new Set(featuredArtists.map(a => a.id));
 
-    // New State Fetching
-    const dailyPromoState = await getDailyPromoStateAction();
+    // Use provided dailyPromoState or fetch if missing
+    const dailyPromoState = initialPromoState || await getDailyPromoStateAction();
 
     // Maps for URLs to pass to client feature
     let spotifyUrls: Record<string, string | undefined> = {};

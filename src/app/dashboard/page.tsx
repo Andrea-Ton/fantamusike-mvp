@@ -11,7 +11,8 @@ import StatsSection from '@/components/dashboard/stats-section';
 import RosterSection from '@/components/dashboard/roster-section';
 import LeaderboardSection from '@/components/dashboard/leaderboard-section';
 import { StatsSkeleton, RosterSkeleton, LeaderboardSkeleton } from '@/components/dashboard/skeletons';
-import { getUnseenScoreLogsAction } from '@/app/actions/dashboard';
+import { getDashboardMetadataAction } from '@/app/actions/dashboard-init';
+import { getLeaderboardAction } from '@/app/actions/leaderboard';
 import { DailyRecapModalWrapper } from '@/components/dashboard/daily-recap-modal-wrapper';
 import { getPendingBetResultAction } from '@/app/actions/promo';
 import { BetResultModalWrapper } from '@/components/dashboard/bet-result-modal-wrapper';
@@ -20,46 +21,46 @@ import { getCuratedRosterAction } from '@/app/actions/scout';
 import OnboardingWrapper from '@/components/dashboard/onboarding-wrapper';
 
 export default async function DashboardPage() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const metadata = await getDashboardMetadataAction();
 
-    if (!user) {
+    if (!metadata) {
         redirect('/');
     }
 
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+    const {
+        user,
+        profile,
+        season,
+        week: currentWeek,
+        unseenLogs,
+        pendingBet,
+        dailyPromoState,
+        featured: featuredArtists
+    } = metadata;
 
+    const seasonName = season?.name || 'Season Zero';
     const musiCoins = profile?.musi_coins || 0;
 
-    // --- Fast Data Fetching (Blocking) ---
-    // Fetch Current Season & Week (Fast)
-    const currentSeason = await getCurrentSeasonAction();
-    const seasonName = currentSeason?.name || 'Season Zero';
-    const currentWeek = await getCurrentWeekAction();
-
-    // --- Slow Data Fetching (Non-Blocking / Streaming) ---
-    // Start fetching team data but don't await yet
+    // Background Promises (Non-Blocking)
     const userTeamPromise = getUserTeamAction(currentWeek);
-    const unseenLogs = await getUnseenScoreLogsAction();
-    const pendingBetResult = await getPendingBetResultAction();
+    const leaderboardPromise = getLeaderboardAction(user.id);
 
-    // Onboarding Data
-    const featuredArtists = await getFeaturedArtistsAction();
-    const curatedRoster = await getCuratedRosterAction();
-    // Map ScoutSuggestion to SpotifyArtist for the modal
-    const mappedCuratedRoster = curatedRoster.map(s => ({
-        id: s.spotify_id,
-        name: s.name,
-        external_urls: { spotify: '' },
-        images: [{ url: s.image_url, height: 0, width: 0 }],
-        popularity: s.popularity || 0,
-        genres: [],
-        followers: { total: s.followers || 0 }
-    }));
+    // Dynamic Curated Roster mapping (only for onboarding)
+    const getMappedCuratedRoster = async () => {
+        if (profile?.has_completed_onboarding) return [];
+        const curatedRoster = await getCuratedRosterAction();
+        return curatedRoster.map(s => ({
+            id: s.spotify_id,
+            name: s.name,
+            external_urls: { spotify: '' },
+            images: [{ url: s.image_url, height: 0, width: 0 }],
+            popularity: s.popularity || 0,
+            genres: [],
+            followers: { total: s.followers || 0 }
+        }));
+    };
+
+    const mappedCuratedRoster = await getMappedCuratedRoster();
 
     return (
         <>
@@ -108,8 +109,8 @@ export default async function DashboardPage() {
             )}
 
             {/* MusiBet Result Modal */}
-            {pendingBetResult && (
-                <BetResultModalWrapper result={pendingBetResult} />
+            {pendingBet && (
+                <BetResultModalWrapper result={pendingBet} />
             )}
 
             {/* Content Area */}
@@ -151,18 +152,23 @@ export default async function DashboardPage() {
 
                         {/* Leaderboard Card - Hidden on Mobile, Visible on Desktop */}
                         <Suspense fallback={<LeaderboardSkeleton />}>
-                            <LeaderboardSection userId={user.id} />
+                            <LeaderboardSection userId={user.id} leaderboardPromise={leaderboardPromise} />
                         </Suspense>
                     </div>
 
                     {/* Right Column: Roster */}
                     <Suspense fallback={<RosterSkeleton />}>
-                        <RosterSection userTeamPromise={userTeamPromise} userId={user.id} />
+                        <RosterSection
+                            userTeamPromise={userTeamPromise}
+                            userId={user.id}
+                            featuredArtists={featuredArtists}
+                            dailyPromoState={dailyPromoState}
+                        />
                     </Suspense>
 
                     {/* Leaderboard Card - Visible on Mobile (After Roster), Hidden on Desktop */}
                     <Suspense fallback={<LeaderboardSkeleton />}>
-                        <LeaderboardSection userId={user.id} isMobile={true} />
+                        <LeaderboardSection userId={user.id} isMobile={true} leaderboardPromise={leaderboardPromise} />
                     </Suspense>
                 </div>
             </main>

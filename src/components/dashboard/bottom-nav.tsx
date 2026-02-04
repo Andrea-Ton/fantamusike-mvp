@@ -40,9 +40,6 @@ export default function BottomNav({ isAdmin }: { isAdmin?: boolean }) {
                             <span className={`text-[9px] font-black uppercase tracking-tighter italic ${isActive ? 'opacity-100' : 'opacity-60'}`}>
                                 {item.label.split(' ')[0]}
                             </span>
-                            {isActive && (
-                                <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-purple-500 rounded-full shadow-[0_0_10px_rgba(168,85,247,0.5)]" />
-                            )}
                         </button>
                     );
                 })}
