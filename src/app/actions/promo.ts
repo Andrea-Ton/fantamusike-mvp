@@ -42,8 +42,8 @@ export type DailyPromoState = {
     } | null;
     betSnapshot?: {
         rival: any;
-        wager: 'my_artist' | 'rival' | null;
-        status: 'pending' | 'won' | 'lost';
+        wager: 'my_artist' | 'rival' | 'draw' | null;
+        status: 'pending' | 'won' | 'lost' | 'draw';
     } | null;
     boostSnapshot?: {
         options: any[]; // {id, label, url, icon, type}
@@ -412,7 +412,7 @@ export async function startBetAction(artistId: string): Promise<{ success: boole
 
 import { BOOST_CONFIG, BET_CONFIG } from '@/config/promo';
 
-export async function placeBetAction(artistId: string, prediction: 'my_artist' | 'rival'): Promise<ClaimPromoResult> {
+export async function placeBetAction(artistId: string, prediction: 'my_artist' | 'rival' | 'draw'): Promise<ClaimPromoResult> {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, message: 'Unauthorized' };

@@ -1,15 +1,22 @@
 
 import React from 'react';
 import LeaderboardCard from '@/components/dashboard/leaderboard-card';
-import { getLeaderboardAction } from '@/app/actions/leaderboard';
+import { getLeaderboardAction, LeaderboardResponse } from '@/app/actions/leaderboard';
 
 interface LeaderboardSectionProps {
     userId: string;
     isMobile?: boolean;
+    leaderboardPromise?: Promise<LeaderboardResponse>;
 }
 
-export default async function LeaderboardSection({ userId, isMobile = false }: LeaderboardSectionProps) {
-    const { podium, entries } = await getLeaderboardAction(userId);
+export default async function LeaderboardSection({
+    userId,
+    isMobile = false,
+    leaderboardPromise
+}: LeaderboardSectionProps) {
+    const { podium, entries } = leaderboardPromise
+        ? await leaderboardPromise
+        : await getLeaderboardAction(userId);
 
     // Filter out podium members from entries to avoid duplicates (especially on Page 1)
     const filteredEntries = entries.filter(entry => !podium.some(p => p.id === entry.id));

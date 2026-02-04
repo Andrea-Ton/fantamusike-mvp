@@ -188,9 +188,19 @@ export default function BetResultModal({ promoId, betSnapshot, onClose }: BetRes
                                     </div>
                                 </div>
 
-                                <div className="mx-6 sm:mx-8 flex items-center justify-center">
+                                <div className={`mx-6 sm:mx-8 flex items-center justify-center relative transition-all duration-500 ${wager === 'draw' ? 'scale-[1.15] z-10' : ''}`}>
+                                    {wager === 'draw' && (
+                                        <motion.div
+                                            initial={{ y: 10, opacity: 0 }}
+                                            animate={{ y: 0, opacity: 1 }}
+                                            className="absolute -top-7 px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-600 rounded-full flex items-center gap-1.5 shadow-[0_10px_20px_rgba(0,0,0,0.3),0_0_15px_rgba(245,158,11,0.4)] border border-white/20 whitespace-nowrap"
+                                        >
+                                            <TrendingUp size={10} className="text-white" />
+                                            <span className="text-[8px] font-black text-white uppercase tracking-tighter">Tua Scelta</span>
+                                        </motion.div>
+                                    )}
                                     <div className="w-px h-12 sm:h-20 bg-gradient-to-b from-transparent via-white/10 to-transparent shadow-[0_0_10px_rgba(255,255,255,0.05)]"></div>
-                                    <div className="absolute font-black italic text-[10px] text-white/10 tracking-widest select-none">VS</div>
+                                    <div className={`absolute font-black italic text-[10px] sm:text-xl tracking-widest select-none transition-colors ${wager === 'draw' ? 'text-amber-500' : 'text-white/10'}`}>=</div>
                                 </div>
 
                                 <div className={`flex flex-col items-center flex-1 min-w-0 transition-all duration-500 relative ${wager === 'rival' ? 'scale-[1.15] z-10' : 'opacity-40 grayscale-[0.5]'}`}>
@@ -198,7 +208,7 @@ export default function BetResultModal({ promoId, betSnapshot, onClose }: BetRes
                                         <motion.div
                                             initial={{ y: 10, opacity: 0 }}
                                             animate={{ y: 0, opacity: 1 }}
-                                            className="absolute -top-5 px-3 py-1 bg-gradient-to-r from-purple-500 to-blue-600 rounded-full flex items-center gap-1.5 shadow-[0_10px_20px_rgba(0,0,0,0.3),0_0_15px_rgba(168,85,247,0.4)] border border-white/20 whitespace-nowrap"
+                                            className="absolute -top-7 px-3 py-1 bg-gradient-to-r from-purple-500 to-blue-600 rounded-full flex items-center gap-1.5 shadow-[0_10px_20px_rgba(0,0,0,0.3),0_0_15px_rgba(168,85,247,0.4)] border border-white/20 whitespace-nowrap"
                                         >
                                             <TrendingUp size={10} className="text-white" />
                                             <span className="text-[8px] font-black text-white uppercase tracking-tighter">Tua Scelta</span>

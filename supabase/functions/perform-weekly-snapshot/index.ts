@@ -68,8 +68,10 @@ Deno.serve(async (_req: Request) => {
       return new Response(JSON.stringify({ message: 'No artists found in cache. Skipping snapshot.' }), { status: 200 })
     }
 
-    // 4. Fetch existing snapshots for THIS week only to prevent duplicates (with pagination)
-    const existingSnapshots = await fetchAll(supabaseClient, 'weekly_snapshots', 'artist_id', (q: any) => q.eq('week_number', weekNumber));
+    // 4. Fetch existing snapshots for THIS week only to prevent duplicates (with pagination) - filtered by season
+    const existingSnapshots = await fetchAll(supabaseClient, 'weekly_snapshots', 'artist_id', (q: any) =>
+      q.eq('week_number', weekNumber).gte('created_at', season.start_date)
+    );
     const existingIds = new Set(existingSnapshots.map((s: any) => s.artist_id));
 
     // 5. Create Snapshots for MISSING artists only
