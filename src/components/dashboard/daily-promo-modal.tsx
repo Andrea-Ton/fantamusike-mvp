@@ -369,8 +369,8 @@ export default function DailyPromoModal({
                                             </div>
                                         )}
                                     </div>
-                                    <div className="flex-1">
-                                        <div className="font-black text-white uppercase tracking-tight group-hover:text-purple-400 transition-colors">{slot.artist.name}</div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="font-black text-white uppercase tracking-tight group-hover:text-purple-400 transition-colors truncate">{slot.artist.name}</div>
                                         <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{slot.type} Artist</div>
                                     </div>
                                     <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-purple-500 group-hover:text-black transition-all">
@@ -453,7 +453,19 @@ export default function DailyPromoModal({
                                                         </div>
                                                     </div>
                                                     <h4 className="text-xl sm:text-2xl font-black text-white uppercase italic tracking-tighter">Quiz Completato!</h4>
-                                                    <p className="text-gray-500 mt-1 sm:mt-2 text-xs sm:text-sm font-medium uppercase tracking-widest">Ottimo lavoro!</p>
+                                                    <p className="text-gray-400 mt-1 sm:mt-2 text-center text-xs sm:text-sm font-medium uppercase tracking-widest max-w-[200px]">
+                                                        {((quizResult || promoResult)?.success || quizQuestion?.userCorrect) ? (
+                                                            <>
+                                                                Ottimo lavoro! <br />
+                                                                <span className="text-white whitespace-nowrap">Hai risposto correttamente.</span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                Peccato! <br />
+                                                                <span className="text-white whitespace-nowrap">Hai risposto sbagliato.</span>
+                                                            </>
+                                                        )}
+                                                    </p>
                                                     <div className="mt-4 sm:mt-8 px-4 py-2 bg-white/5 rounded-full border border-white/10 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
                                                         Torna domani per una nuova sfida
                                                     </div>
@@ -562,8 +574,9 @@ export default function DailyPromoModal({
                                                         </div>
                                                     </div>
                                                     <h4 className="text-xl sm:text-2xl font-black text-white uppercase italic tracking-tighter">Scommessa Piazzata!</h4>
-                                                    <p className="text-gray-400 mt-1 sm:mt-2 text-center text-[10px] sm:text-sm font-medium uppercase tracking-widest max-w-[200px]">
-                                                        Hai puntato su <span className="text-white">{betPrediction === 'my_artist' ? selectedSlot.artist.name : (betPrediction === 'draw' ? 'Pareggio' : rivalData?.name)}</span>
+                                                    <p className="text-gray-400 mt-1 sm:mt-2 text-center text-xs sm:text-sm font-medium uppercase tracking-widest max-w-[200px]">
+                                                        Hai puntato su <br />
+                                                        <span className="text-white whitespace-nowrap">{betPrediction === 'my_artist' ? selectedSlot.artist.name : (betPrediction === 'draw' ? 'Pareggio' : rivalData?.name)}</span>
                                                     </p>
                                                     <div className="mt-4 sm:mt-8 px-4 py-2 bg-white/5 rounded-full border border-white/10 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
                                                         Risultati disponibili domani
@@ -664,7 +677,8 @@ export default function DailyPromoModal({
                                                     </div>
                                                     <h4 className="text-xl sm:text-2xl font-black text-white uppercase italic tracking-tighter">Boost Completato!</h4>
                                                     <p className="text-gray-400 mt-1 sm:mt-2 text-center text-xs sm:text-sm font-medium uppercase tracking-widest max-w-[200px]">
-                                                        Hai supportato <span className="text-white">{selectedSlot.artist.name}</span>
+                                                        Hai supportato <br />
+                                                        <span className="text-white whitespace-nowrap">{selectedSlot.artist.name}</span>
                                                     </p>
                                                     <div className="mt-4 sm:mt-8 px-4 py-2 bg-white/5 rounded-full border border-white/10 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
                                                         Torna domani per un nuovo boost
