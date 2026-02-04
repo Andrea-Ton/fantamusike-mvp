@@ -13,9 +13,7 @@ import LeaderboardSection from '@/components/dashboard/leaderboard-section';
 import { StatsSkeleton, RosterSkeleton, LeaderboardSkeleton } from '@/components/dashboard/skeletons';
 import { getDashboardMetadataAction } from '@/app/actions/dashboard-init';
 import { getLeaderboardAction } from '@/app/actions/leaderboard';
-import { DailyRecapModalWrapper } from '@/components/dashboard/daily-recap-modal-wrapper';
-import { getPendingBetResultAction } from '@/app/actions/promo';
-import { BetResultModalWrapper } from '@/components/dashboard/bet-result-modal-wrapper';
+import DashboardModals from '@/components/dashboard/dashboard-modals';
 import { getFeaturedArtistsAction } from '@/app/actions/artist';
 import { getCuratedRosterAction } from '@/app/actions/scout';
 import OnboardingWrapper from '@/components/dashboard/onboarding-wrapper';
@@ -104,14 +102,11 @@ export default async function DashboardPage() {
                 </div>
             </div>
 
-            {unseenLogs && unseenLogs.length > 0 && (
-                <DailyRecapModalWrapper logs={unseenLogs} />
-            )}
-
-            {/* MusiBet Result Modal */}
-            {pendingBet && (
-                <BetResultModalWrapper result={pendingBet} />
-            )}
+            {/* Sequential Modals: Daily Recap -> MusiBet Results */}
+            <DashboardModals
+                unseenLogs={unseenLogs}
+                pendingBet={pendingBet}
+            />
 
             {/* Content Area */}
             <main className="flex-1 p-6 mb-4 md:p-10 max-w-7xl mx-auto w-full animate-fade-in">

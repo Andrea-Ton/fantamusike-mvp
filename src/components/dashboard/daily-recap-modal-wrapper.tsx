@@ -11,9 +11,10 @@ interface ScoreLog {
 
 interface DailyRecapModalWrapperProps {
     logs: ScoreLog[];
+    onClose?: () => void;
 }
 
-export function DailyRecapModalWrapper({ logs }: DailyRecapModalWrapperProps) {
+export function DailyRecapModalWrapper({ logs, onClose }: DailyRecapModalWrapperProps) {
     const [isOpen, setIsOpen] = useState(true);
 
     if (!isOpen) return null;
@@ -23,6 +24,7 @@ export function DailyRecapModalWrapper({ logs }: DailyRecapModalWrapperProps) {
             logs={logs}
             onClose={() => {
                 setIsOpen(false);
+                onClose?.();
             }}
         />
     );
