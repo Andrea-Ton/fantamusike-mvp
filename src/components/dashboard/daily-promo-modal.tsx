@@ -53,7 +53,7 @@ export default function DailyPromoModal({
     // Bet State
     const [rivalData, setRivalData] = useState<any>(initialState.betSnapshot?.rival || null);
     const [betPlaced, setBetPlaced] = useState(initialState.status.bet || false);
-    const [betPrediction, setBetPrediction] = useState<'my_artist' | 'rival' | null>(initialState.betSnapshot?.wager || null);
+    const [betPrediction, setBetPrediction] = useState<'my_artist' | 'rival' | 'draw' | null>(initialState.betSnapshot?.wager || null);
 
     // Boost State
     const [boostOptions, setBoostOptions] = useState<any[] | null>(initialState.boostSnapshot?.options || null);
@@ -227,7 +227,7 @@ export default function DailyPromoModal({
         }
     };
 
-    const handlePlaceBet = (prediction: 'my_artist' | 'rival') => {
+    const handlePlaceBet = (prediction: 'my_artist' | 'rival' | 'draw') => {
         setBetPrediction(prediction);
     };
 
@@ -563,7 +563,7 @@ export default function DailyPromoModal({
                                                     </div>
                                                     <h4 className="text-xl sm:text-2xl font-black text-white uppercase italic tracking-tighter">Scommessa Piazzata!</h4>
                                                     <p className="text-gray-400 mt-1 sm:mt-2 text-center text-[10px] sm:text-sm font-medium uppercase tracking-widest max-w-[200px]">
-                                                        Hai puntato su <span className="text-white">{betPrediction === 'my_artist' ? selectedSlot.artist.name : rivalData?.name}</span>
+                                                        Hai puntato su <span className="text-white">{betPrediction === 'my_artist' ? selectedSlot.artist.name : (betPrediction === 'draw' ? 'Pareggio' : rivalData?.name)}</span>
                                                     </p>
                                                     <div className="mt-4 sm:mt-8 px-4 py-2 bg-white/5 rounded-full border border-white/10 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
                                                         Risultati disponibili domani
@@ -591,10 +591,14 @@ export default function DailyPromoModal({
                                                                     </div>
                                                                 </div>
 
-                                                                <div className="flex items-center gap-4 w-full">
-                                                                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-                                                                    <div className="text-sm sm:text-2xl font-black text-orange-500 italic shrink-0 tracking-tighter">VS</div>
-                                                                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+                                                                {/* Draw Option */}
+                                                                <div className={`w-full flex flex-row items-center justify-center p-2 sm:p-3 rounded-xl sm:rounded-2xl border transition-all cursor-pointer hover:bg-white/5 gap-3 h-12 sm:h-14 ${betPrediction === 'draw' ? 'border-amber-500 bg-amber-500/10' : 'border-white/5 bg-white/[0.02]'}`}
+                                                                    onClick={() => handlePlaceBet('draw')}>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="h-px w-8 sm:w-12 bg-gradient-to-r from-transparent to-white/10"></div>
+                                                                        <span className={`font-black text-[10px] sm:text-sm italic uppercase tracking-widest transition-colors ${betPrediction === 'draw' ? 'text-amber-500' : 'text-gray-500'}`}>Pareggio (X)</span>
+                                                                        <div className="h-px w-8 sm:w-12 bg-gradient-to-l from-transparent to-white/10"></div>
+                                                                    </div>
                                                                 </div>
 
                                                                 {/* Right: Rival */}

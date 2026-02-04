@@ -212,15 +212,17 @@ Deno.serve(async (_req: Request) => {
                     const myDelta = currMy - startMy;
                     const rivalDelta = currRival - startRival;
 
-                    const wager = promo.bet_snapshot.wager; // 'my_artist' | 'rival'
-                    let status = 'lost';
+                    const wager = promo.bet_snapshot.wager; // 'my_artist' | 'rival' | 'draw'
+                    let outcome = 'lost';
+                    if (myDelta > rivalDelta) outcome = 'my_artist';
+                    else if (rivalDelta > myDelta) outcome = 'rival';
+                    else outcome = 'draw';
 
-                    if (myDelta === rivalDelta) {
-                        status = 'draw';
-                    } else if (wager === 'my_artist' && myDelta > rivalDelta) {
+                    let status = 'lost';
+                    if (wager === outcome) {
                         status = 'won';
-                    } else if (wager === 'rival' && rivalDelta > myDelta) {
-                        status = 'won';
+                    } else if (outcome === 'draw') {
+                        status = 'draw'; // Refund case
                     }
 
                     const isWin = status === 'won';
