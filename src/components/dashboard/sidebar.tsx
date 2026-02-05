@@ -49,7 +49,7 @@ export default function Sidebar({ avatarUrl, displayName, seasonName, isAdmin }:
                 </div>
                 <div>
                     <h1 className="text-xl font-black text-white tracking-tighter uppercase italic leading-none group-hover:text-purple-400 transition-colors">FantaMusiké</h1>
-                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{season}</p>
+                    <p className="hidden text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{season}</p>
                 </div>
             </Link>
 

@@ -94,10 +94,6 @@ export function DailyRecapModal({ logs, onClose }: DailyRecapModalProps) {
                             </div>
 
                             <div className="mb-2">
-                                <div className="flex items-center justify-center gap-2 mb-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
-                                    <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.3em]">Season Zero Recap</p>
-                                </div>
                                 <h2 className="text-3xl md:text-4xl font-black text-white italic uppercase tracking-tighter leading-none">
                                     Recap Punti
                                 </h2>

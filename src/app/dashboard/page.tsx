@@ -86,7 +86,7 @@ export default async function DashboardPage() {
                     </div>
                     <div>
                         <h1 className="text-xl font-black text-white tracking-tighter uppercase italic leading-none">FantaMusiké</h1>
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{seasonName}</p>
+                        <p className="hiddentext-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{seasonName}</p>
                     </div>
                 </div>
                 <LogoutButton />
