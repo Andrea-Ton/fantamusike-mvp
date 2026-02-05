@@ -14,6 +14,7 @@ interface ShareButtonProps {
     captain: SpotifyArtist | null;
     roster: (SpotifyArtist | null)[];
     seasonName: string;
+    percentile?: string;
 }
 
 export default function ShareButton({
@@ -22,7 +23,8 @@ export default function ShareButton({
     rank,
     captain,
     roster,
-    seasonName
+    seasonName,
+    percentile
 }: ShareButtonProps) {
     const [showModal, setShowModal] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -201,8 +203,8 @@ export default function ShareButton({
                             {/* Modal Header */}
                             <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                                 <div>
-                                    <h3 className="text-xl font-black italic uppercase tracking-tighter text-white">Anteprima Card</h3>
-                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Share Your Label</p>
+                                    <h3 className="text-xl font-black italic uppercase tracking-tighter text-white">Share Card</h3>
+                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Condividi la tua Label per ottenere MusiCoins!</p>
                                 </div>
                                 <button
                                     onClick={() => setShowModal(false)}
@@ -245,10 +247,6 @@ export default function ShareButton({
                                         />
                                     ) : null}
                                 </div>
-
-                                <p className="mt-8 text-center text-xs text-gray-500 font-medium px-4 leading-relaxed">
-                                    Ottimizzata per <span className="text-purple-400 font-bold">Storie IG</span>, TikTok e WhatsApp.
-                                </p>
                             </div>
 
                             {/* Modal Footer */}
@@ -301,6 +299,7 @@ export default function ShareButton({
                         captain={captain}
                         roster={roster}
                         seasonName={seasonName}
+                        percentile={percentile}
                     />
                 </div>
             </div>

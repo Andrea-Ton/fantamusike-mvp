@@ -234,6 +234,17 @@ async function ShareButtonWrapper({
         userTeam.slot_5
     ];
 
+    // Calculate percentile: "Better than X% of managers"
+    let percentile: string | undefined;
+    if (leaderboard.userRank && leaderboard.totalCount > 1) {
+        const betterThanCount = leaderboard.totalCount - leaderboard.userRank;
+        const percentage = Math.floor((betterThanCount / leaderboard.totalCount) * 100);
+        // Only show if it's significant (e.g., > 10%) or if it's top tier
+        if (percentage >= 1) {
+            percentile = `${percentage}%`;
+        }
+    }
+
     return (
         <ShareButton
             username={username}
@@ -242,6 +253,7 @@ async function ShareButtonWrapper({
             captain={captain}
             roster={roster}
             seasonName={seasonName}
+            percentile={percentile}
         />
     );
 }
