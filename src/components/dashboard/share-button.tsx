@@ -67,12 +67,20 @@ export default function ShareButton({
 
             await Promise.all(images.map(async (img) => {
                 try {
-                    // Skip if already base64 or internal
+                    // Skip if already base64
                     if (img.src.startsWith('data:') || img.src.startsWith('blob:')) return;
 
-                    // Fetch the image as a blob
-                    const response = await fetch(img.src, {
-                        mode: 'cors',
+                    const originalSrc = img.src;
+                    let fetchUrl = originalSrc;
+
+                    // If it's a remote URL, route through our proxy to guarantee CORS headers
+                    if (originalSrc.startsWith('http')) {
+                        // We use our local proxy to fetch the image server-side
+                        fetchUrl = `/api/proxy-image?url=${encodeURIComponent(originalSrc)}`;
+                    }
+
+                    // Fetch the image as a blob via proxy or direct (for local assets)
+                    const response = await fetch(fetchUrl, {
                         cache: 'force-cache'
                     });
 
@@ -88,10 +96,11 @@ export default function ShareButton({
                         reader.readAsDataURL(blob);
                     });
 
-                    // Store original src just in case and swap
-                    img.dataset.originalSrc = img.src;
+                    // Swap src with Base64
+                    img.dataset.originalSrc = originalSrc;
                     img.src = base64;
-                    // Ensure it uses the new source
+
+                    // Ensure it loads
                     await new Promise(resolve => {
                         if (img.complete) resolve(true);
                         img.onload = () => resolve(true);
@@ -100,7 +109,7 @@ export default function ShareButton({
 
                 } catch (e) {
                     console.warn('Failed to preprocess image:', img.src, e);
-                    // We continue with original src, hoping best effort
+                    // Continue with original src
                 }
             }));
 
@@ -109,7 +118,10 @@ export default function ShareButton({
             // 4. Capture using toBlob
             const blob = await toBlob(cardElement, {
                 quality: 0.9,
-                pixelRatio: 2,
+                // Reduce pixel ratio to 1 for mobile stability/memory
+                // On high-DPI screens (3x), forcing 2x (total 6x internal?) crashes.
+                // 1x is 1080x1920 logical pixels, which is already HD.
+                pixelRatio: 1,
                 cacheBust: true,
                 backgroundColor: '#050507',
                 width: 1080,
