@@ -33,26 +33,26 @@ export default function ShareButton({
 
     const captureRef = useRef<HTMLDivElement>(null);
 
-    const generateImage = async () => {
+    const generateImage = async (): Promise<string | null> => {
         setIsGenerating(true);
         setError(null);
         try {
             console.log("Starting image generation...");
 
-            // 1. Wait for DOM stability
-            await new Promise(resolve => setTimeout(resolve, 800));
+            // 1. Wait for DOM stability and rendering
+            // We give it a bit more time now since it's on-demand
+            await new Promise(resolve => setTimeout(resolve, 1500));
 
             const cardElement = captureRef.current;
             if (!cardElement) {
                 throw new Error('Elemento di cattura non trovato (Ref null)');
             }
 
-            console.log(`Element found via Ref. Dimensions: ${cardElement.offsetWidth}x${cardElement.offsetHeight}`);
+            console.log(`Element found. Dimensions: ${cardElement.offsetWidth}x${cardElement.offsetHeight}`);
 
-            // Allow a small tolerance for layout shifts, but strict 0 is bad.
             if (cardElement.offsetWidth === 0 || cardElement.offsetHeight === 0) {
                 // Try one more desperate wait/force layout
-                await new Promise(r => setTimeout(r, 200));
+                await new Promise(r => setTimeout(r, 500));
                 if (cardElement.offsetWidth === 0 || cardElement.offsetHeight === 0) {
                     throw new Error(`Dimensioni element invalide: ${cardElement.offsetWidth}x${cardElement.offsetHeight}`);
                 }
@@ -81,11 +81,10 @@ export default function ShareButton({
 
             // 4. Capture using toBlob
             const blob = await toBlob(cardElement, {
-                quality: 0.95,
+                quality: 0.9,
                 pixelRatio: 2,
                 cacheBust: true,
                 backgroundColor: '#050507',
-                // Explicitly set dimensions to match the card to avoid clipping if container is weird
                 width: 1080,
                 height: 1920,
                 style: {
@@ -93,12 +92,6 @@ export default function ShareButton({
                     transformOrigin: 'top left',
                     opacity: '1',
                     visibility: 'visible',
-                },
-                filter: (node) => {
-                    if (node instanceof HTMLElement && node.classList.contains('exclude-from-capture')) {
-                        return false;
-                    }
-                    return true;
                 }
             });
 
@@ -115,10 +108,12 @@ export default function ShareButton({
             console.log("Capture success. Blob size:", blob.size);
             const url = URL.createObjectURL(blob);
             setDataUrl(url);
+            return url;
 
         } catch (err: any) {
             console.error('Capture Error:', err);
             setError(err.message || 'Errore di generazione');
+            return null;
         } finally {
             setIsGenerating(false);
         }
@@ -131,27 +126,30 @@ export default function ShareButton({
         };
     }, [dataUrl]);
 
-    useEffect(() => {
-        if (showModal && !dataUrl) {
-            generateImage();
+    const handleDownload = async () => {
+        let currentUrl = dataUrl;
+        if (!currentUrl) {
+            currentUrl = await generateImage();
         }
-    }, [showModal, dataUrl]);
+        if (!currentUrl) return;
 
-    const handleDownload = () => {
-        if (!dataUrl) return;
         const link = document.createElement('a');
         link.download = `fantamusike-${username}.png`;
-        link.href = dataUrl;
+        link.href = currentUrl;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     };
 
     const handleShare = async () => {
-        if (!dataUrl) return;
+        let currentUrl = dataUrl;
+        if (!currentUrl) {
+            currentUrl = await generateImage();
+        }
+        if (!currentUrl) return;
 
         try {
-            const response = await fetch(dataUrl);
+            const response = await fetch(currentUrl);
             const blob = await response.blob();
             const file = new File([blob], `fantamusike-${username}.png`, { type: 'image/png' });
 
@@ -214,38 +212,67 @@ export default function ShareButton({
                                 </button>
                             </div>
 
-                            {/* Modal Content */}
-                            <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center">
-                                <div className="relative aspect-[9/16] w-full max-w-[280px] rounded-3xl overflow-hidden shadow-2xl bg-[#050507] border border-white/10 group">
-                                    {isGenerating ? (
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                                            <div className="relative">
-                                                <Loader2 size={32} className="text-purple-500 animate-spin" />
-                                                <div className="absolute inset-0 blur-lg bg-purple-500/20 animate-pulse"></div>
-                                            </div>
-                                            <div className="flex flex-col items-center">
-                                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 animate-pulse">Generazione...</span>
-                                                <span className="text-[8px] text-gray-600 mt-1">Attendi qualche secondo</span>
-                                            </div>
-                                        </div>
-                                    ) : error ? (
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
+                            {/* Modal Content - LIVE PREVIEW */}
+                            <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center bg-[#050507]">
+                                <div className="relative aspect-[9/16] w-full max-w-[280px] rounded-3xl overflow-hidden shadow-2xl border border-white/10">
+                                    {/* Live React Component Scaled */}
+                                    <div
+                                        className="absolute top-0 left-0 origin-top-left"
+                                        style={{
+                                            width: '1080px',
+                                            height: '1920px',
+                                            transform: `scale(${280 / 1080})`,
+                                            pointerEvents: 'none',
+                                            userSelect: 'none'
+                                        }}
+                                    >
+                                        <ShareCard
+                                            username={username}
+                                            totalScore={totalScore}
+                                            rank={rank}
+                                            captain={captain}
+                                            roster={roster}
+                                            seasonName={seasonName}
+                                            percentile={percentile}
+                                        />
+                                    </div>
+
+                                    {/* Generation Overlay */}
+                                    <AnimatePresence>
+                                        {isGenerating && (
+                                            <motion.div
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                className="absolute inset-0 z-10 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center gap-4"
+                                            >
+                                                <div className="relative">
+                                                    <Loader2 size={32} className="text-purple-500 animate-spin" />
+                                                    <div className="absolute inset-0 blur-lg bg-purple-500/20 animate-pulse"></div>
+                                                </div>
+                                                <div className="flex flex-col items-center">
+                                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white animate-pulse">Generazione immagine in corso...</span>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+
+                                    {/* Error Overlay */}
+                                    {error && !isGenerating && (
+                                        <div className="absolute inset-0 z-20 bg-black/80 flex flex-col items-center justify-center gap-3 p-6 text-center">
                                             <AlertCircle size={32} className="text-red-500" />
                                             <span className="text-xs font-bold text-red-500/80 uppercase italic">{error}</span>
                                             <button
-                                                onClick={generateImage}
+                                                onClick={() => {
+                                                    setError(null);
+                                                    setDataUrl(null);
+                                                }}
                                                 className="mt-4 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-bold uppercase tracking-widest text-white transition-all"
                                             >
-                                                Riprova
+                                                Chiudi Errore
                                             </button>
                                         </div>
-                                    ) : dataUrl ? (
-                                        <img
-                                            src={dataUrl}
-                                            alt="La tua FantaLabel"
-                                            className="w-full h-full object-contain"
-                                        />
-                                    ) : null}
+                                    )}
                                 </div>
                             </div>
 
@@ -253,7 +280,7 @@ export default function ShareButton({
                             <div className="p-6 border-t border-white/5 bg-white/[0.03] flex gap-3">
                                 <button
                                     onClick={handleDownload}
-                                    disabled={!dataUrl || isGenerating}
+                                    disabled={isGenerating}
                                     className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl text-white text-xs font-black uppercase tracking-tighter italic hover:bg-white/10 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <Download size={16} />
@@ -261,7 +288,7 @@ export default function ShareButton({
                                 </button>
                                 <button
                                     onClick={handleShare}
-                                    disabled={!dataUrl || isGenerating}
+                                    disabled={isGenerating}
                                     className="flex-[1.5] py-4 bg-white text-black rounded-2xl text-xs font-black uppercase tracking-tighter italic hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_20px_rgba(255,255,255,0.1)]"
                                 >
                                     <Share2 size={16} />
@@ -273,18 +300,20 @@ export default function ShareButton({
                 )}
             </AnimatePresence>
 
-            {/* Hidden capture area */}
             <div
                 ref={captureRef}
-                className="fixed z-[-1] overflow-hidden"
+                className="fixed overflow-hidden"
                 aria-hidden="true"
                 style={{
-                    top: 0,
-                    left: 0,
+                    position: 'fixed',
+                    top: '0px',
+                    left: '0px',
                     width: '1080px',
                     height: '1920px',
-                    opacity: 0.01,
+                    opacity: 1,
                     pointerEvents: 'none',
+                    visibility: 'visible',
+                    zIndex: -100,
                     // Force a consistent layout context
                     display: 'flex',
                     alignItems: 'flex-start',
