@@ -61,23 +61,50 @@ export default function ShareButton({
             // 2. Wait for Fonts
             await document.fonts.ready;
 
-            // 3. Wait for Images
+            // 3. Pre-process Images (Convert to Base64 to bypass CORS/Tainting on Mobile)
+            console.log("Pre-processing images to Base64...");
             const images = Array.from(cardElement.querySelectorAll('img'));
-            console.log(`Checking ${images.length} images...`);
 
-            await Promise.all(images.map(img => {
-                if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
-                return new Promise((resolve) => {
-                    img.onload = () => resolve(true);
-                    img.onerror = () => {
-                        console.warn('Image failed to load:', img.src);
-                        resolve(false);
-                    };
-                    setTimeout(() => resolve(false), 8000);
-                });
+            await Promise.all(images.map(async (img) => {
+                try {
+                    // Skip if already base64 or internal
+                    if (img.src.startsWith('data:') || img.src.startsWith('blob:')) return;
+
+                    // Fetch the image as a blob
+                    const response = await fetch(img.src, {
+                        mode: 'cors',
+                        cache: 'force-cache'
+                    });
+
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+                    const blob = await response.blob();
+
+                    // Convert to Base64
+                    const base64 = await new Promise<string>((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result as string);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    });
+
+                    // Store original src just in case and swap
+                    img.dataset.originalSrc = img.src;
+                    img.src = base64;
+                    // Ensure it uses the new source
+                    await new Promise(resolve => {
+                        if (img.complete) resolve(true);
+                        img.onload = () => resolve(true);
+                        img.onerror = () => resolve(false);
+                    });
+
+                } catch (e) {
+                    console.warn('Failed to preprocess image:', img.src, e);
+                    // We continue with original src, hoping best effort
+                }
             }));
 
-            console.log("Assets loaded. Capturing...");
+            console.log("Assets processed. Capturing...");
 
             // 4. Capture using toBlob
             const blob = await toBlob(cardElement, {
