@@ -406,21 +406,21 @@ export default function DailyPromoModal({
                             <TabButton
                                 active={activeTab === 'quiz'}
                                 done={promoStatus.quiz}
-                                onClick={() => { setActiveTab('quiz'); setPromoResult(null); }}
+                                onClick={() => { setActiveTab('quiz'); }}
                                 icon={HelpCircle}
                                 label="MusiQuiz"
                             />
                             <TabButton
                                 active={activeTab === 'bet'}
                                 done={promoStatus.bet}
-                                onClick={() => { setActiveTab('bet'); setPromoResult(null); }}
+                                onClick={() => { setActiveTab('bet'); }}
                                 icon={Target}
                                 label="MusiBet"
                             />
                             <TabButton
                                 active={activeTab === 'boost'}
                                 done={promoStatus.boost}
-                                onClick={() => { setActiveTab('boost'); setPromoResult(null); }}
+                                onClick={() => { setActiveTab('boost'); }}
                                 icon={TrendingUp}
                                 label="MusiBoost"
                             />
@@ -454,7 +454,7 @@ export default function DailyPromoModal({
                                                     </div>
                                                     <h4 className="text-xl sm:text-2xl font-black text-white uppercase italic tracking-tighter">Quiz Completato!</h4>
                                                     <p className="text-gray-400 mt-1 sm:mt-2 text-center text-xs sm:text-sm font-medium uppercase tracking-widest max-w-[200px]">
-                                                        {((quizResult || promoResult)?.success || quizQuestion?.userCorrect) ? (
+                                                        {(quizResult?.success || quizQuestion?.userCorrect) ? (
                                                             <>
                                                                 Ottimo lavoro! <br />
                                                                 <span className="text-white whitespace-nowrap">Hai risposto correttamente.</span>

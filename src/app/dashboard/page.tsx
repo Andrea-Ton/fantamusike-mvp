@@ -17,6 +17,9 @@ import DashboardModals from '@/components/dashboard/dashboard-modals';
 import { getFeaturedArtistsAction } from '@/app/actions/artist';
 import { getCuratedRosterAction } from '@/app/actions/scout';
 import OnboardingWrapper from '@/components/dashboard/onboarding-wrapper';
+import ShareButton from '@/components/dashboard/share-button';
+import { UserTeamResponse } from '@/app/actions/team';
+import { LeaderboardResponse } from '@/app/actions/leaderboard';
 
 export default async function DashboardPage() {
     const metadata = await getDashboardMetadataAction();
@@ -83,22 +86,35 @@ export default async function DashboardPage() {
                     </div>
                     <div>
                         <h1 className="text-xl font-black text-white tracking-tighter uppercase italic leading-none">FantaMusiké</h1>
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{seasonName}</p>
+                        <p className="hiddentext-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{seasonName}</p>
                     </div>
                 </div>
                 <LogoutButton />
             </div>
 
-            {/* Mobile Stats Row */}
-            <div className="md:hidden px-6 mb-6 flex gap-3">
-                <div className="px-4 py-2.5 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md text-sm font-black text-yellow-400 flex items-center gap-2 flex-1 justify-between shadow-inner">
-                    <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">MusiCoins</span>
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-base">{musiCoins}</span>
+            {/* Mobile Action Bar */}
+            <div className="md:hidden px-6 mb-6 flex flex-col gap-3">
+                <div className="flex gap-3">
+                    <div className="px-4 py-2.5 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md text-sm font-black text-yellow-400 flex items-center gap-2 flex-1 justify-between shadow-inner">
+                        <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">MusiCoins</span>
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-base">{musiCoins}</span>
+                        </div>
+                    </div>
+                    <div className="flex-1">
+                        <InviteButton referralCode={profile?.referral_code} />
                     </div>
                 </div>
-                <div className="flex-1">
-                    <InviteButton referralCode={profile?.referral_code} />
+                <div className="w-full">
+                    <Suspense fallback={<div className="h-12 w-full bg-white/5 animate-pulse rounded-2xl" />}>
+                        <ShareButtonWrapper
+                            username={profile?.username || 'Manager'}
+                            totalScore={(profile?.total_score || 0) + (profile?.listen_score || 0)}
+                            userTeamPromise={userTeamPromise}
+                            leaderboardPromise={leaderboardPromise}
+                            seasonName={seasonName}
+                        />
+                    </Suspense>
                 </div>
             </div>
 
@@ -119,15 +135,28 @@ export default async function DashboardPage() {
                         <h1 className="text-5xl font-black text-white italic tracking-tighter uppercase leading-none">Bentornato {profile?.username},</h1>
                         <p className="text-gray-500 mt-3 font-medium text-lg">Controlla la tua Label e scala le classifiche mondiali.</p>
                     </div>
-                    <div className="flex gap-4">
+                    <div className="flex gap-4 items-center h-12">
                         {/* Status indicators */}
-                        <div className="px-6 py-3 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md text-sm font-black text-yellow-400 flex items-center gap-4 shadow-inner group transition-all hover:bg-white/10">
-                            <div className="flex flex-col">
-                                <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold leading-none mb-1">MUSICOINS</span>
-                                <div className='flex justify-center items-center'><span className="text-xl tracking-tighter ">{musiCoins}</span></div>
+                        <div className="px-6 py-3 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md text-sm font-black text-yellow-400 flex items-center gap-4 shadow-inner group transition-all hover:bg-white/10 h-full">
+                            <div className="flex flex-col justify-center">
+                                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold leading-none mb-1">MUSICOINS</span>
+                                <div className='flex justify-center items-center'><span className="text-xl tracking-tighter leading-none">{musiCoins}</span></div>
                             </div>
                         </div>
-                        <InviteButton referralCode={profile?.referral_code} />
+                        <div className="h-full">
+                            <Suspense fallback={<div className="h-full w-32 bg-white/5 animate-pulse rounded-2xl" />}>
+                                <ShareButtonWrapper
+                                    username={profile?.username || 'Manager'}
+                                    totalScore={(profile?.total_score || 0) + (profile?.listen_score || 0)}
+                                    userTeamPromise={userTeamPromise}
+                                    leaderboardPromise={leaderboardPromise}
+                                    seasonName={seasonName}
+                                />
+                            </Suspense>
+                        </div>
+                        <div className="h-full">
+                            <InviteButton referralCode={profile?.referral_code} />
+                        </div>
                     </div>
                 </header>
 
@@ -168,5 +197,63 @@ export default async function DashboardPage() {
                 </div>
             </main>
         </>
+    );
+}
+
+async function ShareButtonWrapper({
+    username,
+    totalScore,
+    userTeamPromise,
+    leaderboardPromise,
+    seasonName
+}: {
+    username: string;
+    totalScore: number;
+    userTeamPromise: Promise<UserTeamResponse>;
+    leaderboardPromise: Promise<LeaderboardResponse>;
+    seasonName: string;
+}) {
+    const userTeam = await userTeamPromise;
+    const leaderboard = await leaderboardPromise;
+
+    if (!userTeam) return null;
+
+    const captain = [
+        userTeam.slot_1,
+        userTeam.slot_2,
+        userTeam.slot_3,
+        userTeam.slot_4,
+        userTeam.slot_5
+    ].find(a => a?.id === userTeam.captain_id) || null;
+
+    const roster = [
+        userTeam.slot_1,
+        userTeam.slot_2,
+        userTeam.slot_3,
+        userTeam.slot_4,
+        userTeam.slot_5
+    ];
+
+    // Calculate percentile: "Better than X% of managers"
+    let percentile: string | undefined;
+    if (leaderboard.userRank && leaderboard.totalCount > 1) {
+        const betterThanCount = leaderboard.totalCount - leaderboard.userRank;
+        const percentage = Math.floor((betterThanCount / leaderboard.totalCount) * 100);
+        // Only show if it's significant (e.g., > 10%) or if it's top tier
+        if (percentage >= 1) {
+            percentile = `${percentage}%`;
+        }
+    }
+
+    return (
+        <ShareButton
+            username={username}
+            totalScore={totalScore}
+            rank={leaderboard.userRank || 0}
+            captain={captain}
+            roster={roster}
+            seasonName={seasonName}
+            percentile={percentile}
+        />
     );
 }

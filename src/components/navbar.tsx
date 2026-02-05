@@ -23,7 +23,6 @@ export default function Navbar({ user }: { user?: User | null }) {
                 </div>
                 <div className="flex flex-col">
                     <span className="text-xl font-black text-white italic uppercase tracking-tighter leading-none group-hover:text-purple-400 transition-colors">FantaMusiké</span>
-                    <span className="text-[8px] font-black text-purple-500 uppercase tracking-[0.4em] mt-1 opacity-70">Season Zero</span>
                 </div>
             </Link>
 
