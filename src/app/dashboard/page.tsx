@@ -105,17 +105,6 @@ export default async function DashboardPage() {
                         <InviteButton referralCode={profile?.referral_code} />
                     </div>
                 </div>
-                <div className="w-full">
-                    <Suspense fallback={<div className="h-12 w-full bg-white/5 animate-pulse rounded-2xl" />}>
-                        <ShareButtonWrapper
-                            username={profile?.username || 'Manager'}
-                            totalScore={(profile?.total_score || 0) + (profile?.listen_score || 0)}
-                            userTeamPromise={userTeamPromise}
-                            leaderboardPromise={leaderboardPromise}
-                            seasonName={seasonName}
-                        />
-                    </Suspense>
-                </div>
             </div>
 
             {/* Sequential Modals: Daily Recap -> MusiBet Results */}
@@ -142,17 +131,6 @@ export default async function DashboardPage() {
                                 <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold leading-none mb-1">MUSICOINS</span>
                                 <div className='flex justify-center items-center'><span className="text-xl tracking-tighter leading-none">{musiCoins}</span></div>
                             </div>
-                        </div>
-                        <div className="h-full">
-                            <Suspense fallback={<div className="h-full w-32 bg-white/5 animate-pulse rounded-2xl" />}>
-                                <ShareButtonWrapper
-                                    username={profile?.username || 'Manager'}
-                                    totalScore={(profile?.total_score || 0) + (profile?.listen_score || 0)}
-                                    userTeamPromise={userTeamPromise}
-                                    leaderboardPromise={leaderboardPromise}
-                                    seasonName={seasonName}
-                                />
-                            </Suspense>
                         </div>
                         <div className="h-full">
                             <InviteButton referralCode={profile?.referral_code} />
@@ -187,6 +165,10 @@ export default async function DashboardPage() {
                             userId={user.id}
                             featuredArtists={featuredArtists}
                             dailyPromoState={dailyPromoState}
+                            username={profile?.username || 'Manager'}
+                            totalScore={(profile?.total_score || 0) + (profile?.listen_score || 0)}
+                            leaderboardPromise={leaderboardPromise}
+                            seasonName={seasonName}
                         />
                     </Suspense>
 
@@ -197,63 +179,5 @@ export default async function DashboardPage() {
                 </div>
             </main>
         </>
-    );
-}
-
-async function ShareButtonWrapper({
-    username,
-    totalScore,
-    userTeamPromise,
-    leaderboardPromise,
-    seasonName
-}: {
-    username: string;
-    totalScore: number;
-    userTeamPromise: Promise<UserTeamResponse>;
-    leaderboardPromise: Promise<LeaderboardResponse>;
-    seasonName: string;
-}) {
-    const userTeam = await userTeamPromise;
-    const leaderboard = await leaderboardPromise;
-
-    if (!userTeam) return null;
-
-    const captain = [
-        userTeam.slot_1,
-        userTeam.slot_2,
-        userTeam.slot_3,
-        userTeam.slot_4,
-        userTeam.slot_5
-    ].find(a => a?.id === userTeam.captain_id) || null;
-
-    const roster = [
-        userTeam.slot_1,
-        userTeam.slot_2,
-        userTeam.slot_3,
-        userTeam.slot_4,
-        userTeam.slot_5
-    ];
-
-    // Calculate percentile: "Better than X% of managers"
-    let percentile: string | undefined;
-    if (leaderboard.userRank && leaderboard.totalCount > 1) {
-        const betterThanCount = leaderboard.totalCount - leaderboard.userRank;
-        const percentage = Math.floor((betterThanCount / leaderboard.totalCount) * 100);
-        // Only show if it's significant (e.g., > 10%) or if it's top tier
-        if (percentage >= 1) {
-            percentile = `${percentage}%`;
-        }
-    }
-
-    return (
-        <ShareButton
-            username={username}
-            totalScore={totalScore}
-            rank={leaderboard.userRank || 0}
-            captain={captain}
-            roster={roster}
-            seasonName={seasonName}
-            percentile={percentile}
-        />
     );
 }

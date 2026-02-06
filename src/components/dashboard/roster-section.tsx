@@ -12,21 +12,34 @@ import { getArtistReleases } from '@/lib/spotify';
 import { ARTIST_TIERS } from '@/config/game';
 import DailyPromoFeature from './daily-promo-feature';
 import { SpotifyArtist } from '@/lib/spotify';
+import ShareButton from './share-button';
+import { LeaderboardResponse } from '@/app/actions/leaderboard';
 
 interface RosterSectionProps {
     userTeamPromise: Promise<UserTeamResponse>;
     userId?: string;
     featuredArtists?: SpotifyArtist[];
     dailyPromoState?: DailyPromoState;
+    username: string;
+    totalScore: number;
+    leaderboardPromise: Promise<LeaderboardResponse>;
+    seasonName: string;
 }
 
 export default async function RosterSection({
     userTeamPromise,
     userId,
     featuredArtists: initialFeatured,
-    dailyPromoState: initialPromoState
+    dailyPromoState: initialPromoState,
+    username,
+    totalScore,
+    leaderboardPromise,
+    seasonName
 }: RosterSectionProps) {
-    const userTeam = await userTeamPromise;
+    const [userTeam, leaderboard] = await Promise.all([
+        userTeamPromise,
+        leaderboardPromise
+    ]);
     const hasTeam = userTeam !== null;
 
     let weeklyScores: Record<string, number> = {};
@@ -194,6 +207,32 @@ export default async function RosterSection({
         },
     ];
 
+    // Calculate share data
+    const captain = [
+        userTeam?.slot_1,
+        userTeam?.slot_2,
+        userTeam?.slot_3,
+        userTeam?.slot_4,
+        userTeam?.slot_5
+    ].find(a => a?.id === userTeam?.captain_id) || null;
+
+    const roster = [
+        userTeam?.slot_1 || null,
+        userTeam?.slot_2 || null,
+        userTeam?.slot_3 || null,
+        userTeam?.slot_4 || null,
+        userTeam?.slot_5 || null
+    ];
+
+    let percentile: string | undefined;
+    if (leaderboard.userRank && leaderboard.totalCount > 1) {
+        const betterThanCount = leaderboard.totalCount - leaderboard.userRank;
+        const percentage = Math.floor((betterThanCount / leaderboard.totalCount) * 100);
+        if (percentage >= 1) {
+            percentile = `${percentage}%`;
+        }
+    }
+
     return (
         <div className="lg:col-span-7">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
@@ -205,13 +244,26 @@ export default async function RosterSection({
                     <div className="flex items-center gap-3">
                         <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">La tua Label</h3>
                         {hasTeam && (
-                            <Link
-                                href="/dashboard/draft"
-                                className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all group"
-                                title="Modifica Label"
-                            >
-                                <Pencil size={14} className="text-gray-500 group-hover:text-white" />
-                            </Link>
+                            <div className="flex items-center gap-2">
+                                <Link
+                                    href="/dashboard/draft"
+                                    className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all group"
+                                    title="Modifica Label"
+                                >
+                                    <Pencil size={14} className="text-gray-500 group-hover:text-white" />
+                                </Link>
+
+                                <ShareButton
+                                    username={username}
+                                    totalScore={totalScore}
+                                    rank={leaderboard.userRank || 0}
+                                    captain={captain}
+                                    roster={roster}
+                                    seasonName={seasonName}
+                                    percentile={percentile}
+                                    variant="iconOnly"
+                                />
+                            </div>
                         )}
                     </div>
                 </div>
