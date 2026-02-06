@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Share2, Download, Loader2, X, Sparkles, AlertCircle } from 'lucide-react';
-import { toBlob } from 'html-to-image';
 import { motion, AnimatePresence } from 'framer-motion';
 import ShareCard from './share-card';
 import { SpotifyArtist } from '@/lib/spotify';
@@ -37,120 +36,50 @@ export default function ShareButton({
         setIsGenerating(true);
         setError(null);
         try {
-            console.log("Starting image generation...");
+            console.log("Starting server-side generation...");
 
-            // 1. Wait for DOM stability and rendering
-            // We give it a bit more time now since it's on-demand
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            const params = new URLSearchParams();
+            params.append('username', username);
+            params.append('totalScore', totalScore.toString());
+            params.append('rank', rank.toString());
+            params.append('seasonName', seasonName);
+            if (percentile) params.append('percentile', percentile);
 
-            const cardElement = captureRef.current;
-            if (!cardElement) {
-                throw new Error('Elemento di cattura non trovato (Ref null)');
-            }
-
-            console.log(`Element found. Dimensions: ${cardElement.offsetWidth}x${cardElement.offsetHeight}`);
-
-            if (cardElement.offsetWidth === 0 || cardElement.offsetHeight === 0) {
-                // Try one more desperate wait/force layout
-                await new Promise(r => setTimeout(r, 500));
-                if (cardElement.offsetWidth === 0 || cardElement.offsetHeight === 0) {
-                    throw new Error(`Dimensioni element invalide: ${cardElement.offsetWidth}x${cardElement.offsetHeight}`);
+            if (captain) {
+                params.append('captainName', captain.name);
+                if (captain.images?.[0]?.url) {
+                    params.append('captainImage', captain.images[0].url);
                 }
             }
 
-            // 2. Wait for Fonts
-            await document.fonts.ready;
-
-            // 3. Pre-process Images (Convert to Base64 to bypass CORS/Tainting on Mobile)
-            console.log("Pre-processing images to Base64...");
-            const images = Array.from(cardElement.querySelectorAll('img'));
-
-            await Promise.all(images.map(async (img) => {
-                try {
-                    // Skip if already base64
-                    if (img.src.startsWith('data:') || img.src.startsWith('blob:')) return;
-
-                    const originalSrc = img.src;
-                    let fetchUrl = originalSrc;
-
-                    // If it's a remote URL, route through our proxy to guarantee CORS headers
-                    if (originalSrc.startsWith('http')) {
-                        // We use our local proxy to fetch the image server-side
-                        fetchUrl = `/api/proxy-image?url=${encodeURIComponent(originalSrc)}`;
+            roster.forEach((artist, index) => {
+                if (artist) {
+                    params.append(`rosterName${index}`, artist.name);
+                    if (artist.images?.[0]?.url) {
+                        params.append(`rosterImage${index}`, artist.images[0].url);
                     }
-
-                    // Fetch the image as a blob via proxy or direct (for local assets)
-                    const response = await fetch(fetchUrl, {
-                        cache: 'force-cache'
-                    });
-
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-                    const blob = await response.blob();
-
-                    // Convert to Base64
-                    const base64 = await new Promise<string>((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => resolve(reader.result as string);
-                        reader.onerror = reject;
-                        reader.readAsDataURL(blob);
-                    });
-
-                    // Swap src with Base64
-                    img.dataset.originalSrc = originalSrc;
-                    img.src = base64;
-
-                    // Ensure it loads
-                    await new Promise(resolve => {
-                        if (img.complete) resolve(true);
-                        img.onload = () => resolve(true);
-                        img.onerror = () => resolve(false);
-                    });
-
-                } catch (e) {
-                    console.warn('Failed to preprocess image:', img.src, e);
-                    // Continue with original src
-                }
-            }));
-
-            console.log("Assets processed. Capturing...");
-
-            // 4. Capture using toBlob
-            const blob = await toBlob(cardElement, {
-                quality: 0.9,
-                // Reduce pixel ratio to 1 for mobile stability/memory
-                // On high-DPI screens (3x), forcing 2x (total 6x internal?) crashes.
-                // 1x is 1080x1920 logical pixels, which is already HD.
-                pixelRatio: 1,
-                cacheBust: true,
-                backgroundColor: '#050507',
-                width: 1080,
-                height: 1920,
-                style: {
-                    transform: 'scale(1)',
-                    transformOrigin: 'top left',
-                    opacity: '1',
-                    visibility: 'visible',
                 }
             });
 
-            if (!blob) {
-                console.error("Blob is null");
-                throw new Error('Generazione fallita: Blob nullo');
+            const apiUrl = `/api/og?${params.toString()}`;
+            console.log("Fetching image from:", apiUrl);
+
+            const response = await fetch(apiUrl);
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status}`);
             }
 
-            if (blob.size < 10000) {
-                console.error("Blob too small:", blob.size);
-                throw new Error(`Immagine troppo piccola (${blob.size} bytes). Riprova.`);
+            const blob = await response.blob();
+            if (!blob || blob.size === 0) {
+                throw new Error("Received empty image from server");
             }
 
-            console.log("Capture success. Blob size:", blob.size);
             const url = URL.createObjectURL(blob);
             setDataUrl(url);
             return url;
 
         } catch (err: any) {
-            console.error('Capture Error:', err);
+            console.error('Generation Error:', err);
             setError(err.message || 'Errore di generazione');
             return null;
         } finally {
@@ -338,39 +267,6 @@ export default function ShareButton({
                     </div>
                 )}
             </AnimatePresence>
-
-            <div
-                ref={captureRef}
-                className="fixed overflow-hidden"
-                aria-hidden="true"
-                style={{
-                    position: 'fixed',
-                    top: '0px',
-                    left: '0px',
-                    width: '1080px',
-                    height: '1920px',
-                    opacity: 1,
-                    pointerEvents: 'none',
-                    visibility: 'visible',
-                    zIndex: -100,
-                    // Force a consistent layout context
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    justifyContent: 'flex-start'
-                }}
-            >
-                <div id="share-card-container" className="w-[1080px] h-[1920px] shrink-0">
-                    <ShareCard
-                        username={username}
-                        totalScore={totalScore}
-                        rank={rank}
-                        captain={captain}
-                        roster={roster}
-                        seasonName={seasonName}
-                        percentile={percentile}
-                    />
-                </div>
-            </div>
         </>
     );
 }

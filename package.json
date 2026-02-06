@@ -13,6 +13,7 @@
     "@react-email/render": "^2.0.2",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.84.0",
+    "@vercel/og": "^0.8.6",
     "canvas-confetti": "^1.9.4",
     "framer-motion": "^12.23.26",
     "html-to-image": "^1.11.13",
