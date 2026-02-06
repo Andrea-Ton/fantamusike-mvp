@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Share2, Download, Loader2, X, Sparkles, AlertCircle } from 'lucide-react';
-import { toBlob } from 'html-to-image';
 import { motion, AnimatePresence } from 'framer-motion';
 import ShareCard from './share-card';
 import { SpotifyArtist } from '@/lib/spotify';
@@ -37,114 +36,70 @@ export default function ShareButton({
         setIsGenerating(true);
         setError(null);
         try {
-            console.log("Starting image generation...");
+            console.log("Starting server-side generation...");
 
-            // 1. Wait for DOM stability and rendering
-            // We give it a bit more time now since it's on-demand
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            const params = new URLSearchParams();
+            params.append('username', username);
+            params.append('totalScore', totalScore.toString());
+            params.append('rank', rank.toString());
+            params.append('seasonName', seasonName);
+            if (percentile) params.append('percentile', percentile);
 
-            const cardElement = captureRef.current;
-            if (!cardElement) {
-                throw new Error('Elemento di cattura non trovato (Ref null)');
-            }
-
-            console.log(`Element found. Dimensions: ${cardElement.offsetWidth}x${cardElement.offsetHeight}`);
-
-            if (cardElement.offsetWidth === 0 || cardElement.offsetHeight === 0) {
-                // Try one more desperate wait/force layout
-                await new Promise(r => setTimeout(r, 500));
-                if (cardElement.offsetWidth === 0 || cardElement.offsetHeight === 0) {
-                    throw new Error(`Dimensioni element invalide: ${cardElement.offsetWidth}x${cardElement.offsetHeight}`);
+            if (captain) {
+                params.append('captainName', captain.name);
+                // Use the largest image for the main captain display
+                if (captain.images?.[0]?.url) {
+                    params.append('captainImage', captain.images[0].url);
                 }
             }
 
-            // 2. Wait for Fonts
-            await document.fonts.ready;
+            // Filter out the captain from the roster for the grid
+            const gridArtists = roster.filter(artist => artist && artist.id !== captain?.id).slice(0, 4);
 
-            // 3. Pre-process Images (Convert to Base64 to bypass CORS/Tainting on Mobile)
-            console.log("Pre-processing images to Base64...");
-            const images = Array.from(cardElement.querySelectorAll('img'));
-
-            await Promise.all(images.map(async (img) => {
-                try {
-                    // Skip if already base64 or internal
-                    if (img.src.startsWith('data:') || img.src.startsWith('blob:')) return;
-
-                    // Fetch the image as a blob
-                    const response = await fetch(img.src, {
-                        mode: 'cors',
-                        cache: 'force-cache'
-                    });
-
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-                    const blob = await response.blob();
-
-                    // Convert to Base64
-                    const base64 = await new Promise<string>((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => resolve(reader.result as string);
-                        reader.onerror = reject;
-                        reader.readAsDataURL(blob);
-                    });
-
-                    // Store original src just in case and swap
-                    img.dataset.originalSrc = img.src;
-                    img.src = base64;
-                    // Ensure it uses the new source
-                    await new Promise(resolve => {
-                        if (img.complete) resolve(true);
-                        img.onload = () => resolve(true);
-                        img.onerror = () => resolve(false);
-                    });
-
-                } catch (e) {
-                    console.warn('Failed to preprocess image:', img.src, e);
-                    // We continue with original src, hoping best effort
-                }
-            }));
-
-            console.log("Assets processed. Capturing...");
-
-            // 4. Capture using toBlob
-            const blob = await toBlob(cardElement, {
-                quality: 0.9,
-                pixelRatio: 2,
-                cacheBust: true,
-                backgroundColor: '#050507',
-                width: 1080,
-                height: 1920,
-                style: {
-                    transform: 'scale(1)',
-                    transformOrigin: 'top left',
-                    opacity: '1',
-                    visibility: 'visible',
+            gridArtists.forEach((artist, index) => {
+                if (artist) {
+                    params.append(`rosterName${index}`, artist.name);
+                    // For the roster grid (small images), use a smaller variant (usually 300x300 at index 1)
+                    // to speed up fetching and rendering significantly.
+                    const rosterImg = artist.images?.[1]?.url || artist.images?.[0]?.url;
+                    if (rosterImg) {
+                        params.append(`rosterImage${index}`, rosterImg);
+                    }
                 }
             });
 
-            if (!blob) {
-                console.error("Blob is null");
-                throw new Error('Generazione fallita: Blob nullo');
+            const apiUrl = `/api/og?${params.toString()}`;
+            console.log("Fetching image from:", apiUrl);
+
+            const response = await fetch(apiUrl);
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status}`);
             }
 
-            if (blob.size < 10000) {
-                console.error("Blob too small:", blob.size);
-                throw new Error(`Immagine troppo piccola (${blob.size} bytes). Riprova.`);
+            const blob = await response.blob();
+            if (!blob || blob.size === 0) {
+                throw new Error("Received empty image from server");
             }
 
-            console.log("Capture success. Blob size:", blob.size);
             const url = URL.createObjectURL(blob);
             setDataUrl(url);
             return url;
 
         } catch (err: any) {
-            console.error('Capture Error:', err);
+            console.error('Generation Error:', err);
             setError(err.message || 'Errore di generazione');
             return null;
         } finally {
             setIsGenerating(false);
         }
     };
+
+    // Pre-generate image when modal opens
+    useEffect(() => {
+        if (showModal && !dataUrl && !isGenerating && !error) {
+            generateImage();
+        }
+    }, [showModal, dataUrl, isGenerating, error]);
 
     // Cleanup object URL
     useEffect(() => {
@@ -154,29 +109,22 @@ export default function ShareButton({
     }, [dataUrl]);
 
     const handleDownload = async () => {
-        let currentUrl = dataUrl;
-        if (!currentUrl) {
-            currentUrl = await generateImage();
-        }
-        if (!currentUrl) return;
+        // If image is still generating, wait or do nothing (button should be disabled)
+        if (!dataUrl) return;
 
         const link = document.createElement('a');
         link.download = `fantamusike-${username}.png`;
-        link.href = currentUrl;
+        link.href = dataUrl;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     };
 
     const handleShare = async () => {
-        let currentUrl = dataUrl;
-        if (!currentUrl) {
-            currentUrl = await generateImage();
-        }
-        if (!currentUrl) return;
+        if (!dataUrl) return;
 
         try {
-            const response = await fetch(currentUrl);
+            const response = await fetch(dataUrl);
             const blob = await response.blob();
             const file = new File([blob], `fantamusike-${username}.png`, { type: 'image/png' });
 
@@ -198,7 +146,10 @@ export default function ShareButton({
     return (
         <>
             <button
-                onClick={() => setShowModal(true)}
+                onClick={() => {
+                    setError(null);
+                    setShowModal(true);
+                }}
                 className="px-6 py-3 bg-white/5 border border-white/10 backdrop-blur-md rounded-2xl text-white text-sm font-black uppercase tracking-tighter italic hover:bg-white/10 hover:border-purple-500/50 transition-all shadow-inner flex items-center gap-3 overflow-hidden group h-full"
             >
                 <div className="relative">
@@ -326,39 +277,6 @@ export default function ShareButton({
                     </div>
                 )}
             </AnimatePresence>
-
-            <div
-                ref={captureRef}
-                className="fixed overflow-hidden"
-                aria-hidden="true"
-                style={{
-                    position: 'fixed',
-                    top: '0px',
-                    left: '0px',
-                    width: '1080px',
-                    height: '1920px',
-                    opacity: 1,
-                    pointerEvents: 'none',
-                    visibility: 'visible',
-                    zIndex: -100,
-                    // Force a consistent layout context
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    justifyContent: 'flex-start'
-                }}
-            >
-                <div id="share-card-container" className="w-[1080px] h-[1920px] shrink-0">
-                    <ShareCard
-                        username={username}
-                        totalScore={totalScore}
-                        rank={rank}
-                        captain={captain}
-                        roster={roster}
-                        seasonName={seasonName}
-                        percentile={percentile}
-                    />
-                </div>
-            </div>
         </>
     );
 }
