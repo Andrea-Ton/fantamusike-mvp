@@ -87,6 +87,13 @@ export default function ShareButton({
         }
     };
 
+    // Pre-generate image when modal opens
+    useEffect(() => {
+        if (showModal && !dataUrl && !isGenerating && !error) {
+            generateImage();
+        }
+    }, [showModal, dataUrl, isGenerating, error]);
+
     // Cleanup object URL
     useEffect(() => {
         return () => {
@@ -95,29 +102,22 @@ export default function ShareButton({
     }, [dataUrl]);
 
     const handleDownload = async () => {
-        let currentUrl = dataUrl;
-        if (!currentUrl) {
-            currentUrl = await generateImage();
-        }
-        if (!currentUrl) return;
+        // If image is still generating, wait or do nothing (button should be disabled)
+        if (!dataUrl) return;
 
         const link = document.createElement('a');
         link.download = `fantamusike-${username}.png`;
-        link.href = currentUrl;
+        link.href = dataUrl;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     };
 
     const handleShare = async () => {
-        let currentUrl = dataUrl;
-        if (!currentUrl) {
-            currentUrl = await generateImage();
-        }
-        if (!currentUrl) return;
+        if (!dataUrl) return;
 
         try {
-            const response = await fetch(currentUrl);
+            const response = await fetch(dataUrl);
             const blob = await response.blob();
             const file = new File([blob], `fantamusike-${username}.png`, { type: 'image/png' });
 
@@ -139,7 +139,10 @@ export default function ShareButton({
     return (
         <>
             <button
-                onClick={() => setShowModal(true)}
+                onClick={() => {
+                    setError(null);
+                    setShowModal(true);
+                }}
                 className="px-6 py-3 bg-white/5 border border-white/10 backdrop-blur-md rounded-2xl text-white text-sm font-black uppercase tracking-tighter italic hover:bg-white/10 hover:border-purple-500/50 transition-all shadow-inner flex items-center gap-3 overflow-hidden group h-full"
             >
                 <div className="relative">

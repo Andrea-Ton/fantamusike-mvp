@@ -1,7 +1,37 @@
 import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
+import fs from 'fs';
+import path from 'path';
 
 // export const runtime = 'edge';
+
+// --- Load Assets from Filesystem ---
+// This makes generation instant and avoids network issues.
+const assetsPath = path.join(process.cwd(), 'src/assets/fonts');
+const logoPath = path.join(process.cwd(), 'public/logo.png');
+
+// Note: We use try-catch/readFileSync for reliability.
+let fontDataRegular: ArrayBuffer | null = null;
+let fontDataBold: ArrayBuffer | null = null;
+let fontDataBlackItalic: ArrayBuffer | null = null;
+let logoData: ArrayBuffer | null = null;
+
+try {
+    const regular = fs.readFileSync(path.join(assetsPath, 'inter-400.woff'));
+    const bold = fs.readFileSync(path.join(assetsPath, 'inter-700.woff'));
+    const italic = fs.readFileSync(path.join(assetsPath, 'inter-900-italic.woff'));
+    const logo = fs.readFileSync(logoPath);
+
+    // Precise conversion from Node Buffer to ArrayBuffer for Satori/DataView
+    const toArrayBuffer = (buf: Buffer) => buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+
+    fontDataRegular = toArrayBuffer(regular) as ArrayBuffer;
+    fontDataBold = toArrayBuffer(bold) as ArrayBuffer;
+    fontDataBlackItalic = toArrayBuffer(italic) as ArrayBuffer;
+    logoData = toArrayBuffer(logo) as ArrayBuffer;
+} catch (e) {
+    console.error('Failed to load local assets:', e);
+}
 
 export async function GET(request: NextRequest) {
     try {
@@ -21,8 +51,7 @@ export async function GET(request: NextRequest) {
         const captainName = searchParams.get('captainName') || 'Nessuno';
         const captainImage = searchParams.get('captainImage'); // URL
 
-        // Roster Data (up to 4 artists)
-        // Expected format: rosterName0, rosterImage0, rosterName1...
+        // Roster Data
         const roster = [];
         for (let i = 0; i < 4; i++) {
             const name = searchParams.get(`rosterName${i}`);
@@ -32,37 +61,10 @@ export async function GET(request: NextRequest) {
             }
         }
 
-        // Ensure exactly 4 slots for grid consistency (fill with placeholders if needed)
-        // Actually the original design had empty slots as distinct visual elements.
-        // We'll just map the roster array and render empty slots if length < 4.
         const rosterSlots = [...roster];
         while (rosterSlots.length < 4) {
             rosterSlots.push({ name: "", image: null });
         }
-
-
-        // --- Fonts & Assets ---
-        const loadResource = async (url: string) => {
-            try {
-                const res = await fetch(url);
-                if (res.ok) return await res.arrayBuffer();
-            } catch (e) {
-                console.error(`Resource load failed: ${url}`, e);
-            }
-            return null;
-        };
-
-        const fontBoldUrl = 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuFuYAZ9hjp-Ek-_EeA.woff';
-        const fontRegularUrl = 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hjp-Ek-_EeA.woff';
-        const fontItalicUrl = 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuDyYAZ9hjp-Ek-_EeA.woff';
-        const logoUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000') + '/logo.png';
-
-        const [fontDataBold, fontDataRegular, fontDataBlackItalic, logoData] = await Promise.all([
-            loadResource(fontBoldUrl),
-            loadResource(fontRegularUrl),
-            loadResource(fontItalicUrl),
-            loadResource(logoUrl),
-        ]);
 
 
         // --- Render ---
@@ -179,7 +181,7 @@ export async function GET(request: NextRequest) {
                                         <img src={artist.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     ) : null}
                                 </div>
-                                <div style={{ display: 'flex', fontSize: '18px', fontWeight: 800, fontStyle: 'italic', textTransform: 'uppercase', textAlign: 'center' }}>
+                                <div style={{ display: 'flex', fontSize: '18px', fontWeight: 900, fontStyle: 'italic', textTransform: 'uppercase', textAlign: 'center' }}>
                                     <span>{artist?.name || '-'}</span>
                                 </div>
                             </div>
@@ -199,7 +201,7 @@ export async function GET(request: NextRequest) {
                             marginBottom: '60px',
                             boxShadow: '0 0 30px rgba(168, 85, 247, 0.1)'
                         }}>
-                            <div style={{ display: 'flex', alignItems: 'center', fontSize: '24px', fontWeight: 800, fontStyle: 'italic', color: 'white' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', fontSize: '24px', fontWeight: 900, fontStyle: 'italic', color: 'white' }}>
                                 <span>MEGLIO DEL&nbsp;</span>
                                 <span style={{ color: '#ffcc00' }}>{percentile}</span>
                                 <span>&nbsp;DEI MANAGERS</span>
