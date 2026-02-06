@@ -47,16 +47,23 @@ export default function ShareButton({
 
             if (captain) {
                 params.append('captainName', captain.name);
+                // Use the largest image for the main captain display
                 if (captain.images?.[0]?.url) {
                     params.append('captainImage', captain.images[0].url);
                 }
             }
 
-            roster.forEach((artist, index) => {
+            // Filter out the captain from the roster for the grid
+            const gridArtists = roster.filter(artist => artist && artist.id !== captain?.id).slice(0, 4);
+
+            gridArtists.forEach((artist, index) => {
                 if (artist) {
                     params.append(`rosterName${index}`, artist.name);
-                    if (artist.images?.[0]?.url) {
-                        params.append(`rosterImage${index}`, artist.images[0].url);
+                    // For the roster grid (small images), use a smaller variant (usually 300x300 at index 1)
+                    // to speed up fetching and rendering significantly.
+                    const rosterImg = artist.images?.[1]?.url || artist.images?.[0]?.url;
+                    if (rosterImg) {
+                        params.append(`rosterImage${index}`, rosterImg);
                     }
                 }
             });
