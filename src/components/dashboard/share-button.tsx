@@ -14,6 +14,7 @@ interface ShareButtonProps {
     roster: (SpotifyArtist | null)[];
     seasonName: string;
     percentile?: string;
+    variant?: 'default' | 'iconOnly';
 }
 
 export default function ShareButton({
@@ -23,7 +24,8 @@ export default function ShareButton({
     captain,
     roster,
     seasonName,
-    percentile
+    percentile,
+    variant = 'default'
 }: ShareButtonProps) {
     const [showModal, setShowModal] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -145,18 +147,50 @@ export default function ShareButton({
 
     return (
         <>
-            <button
-                onClick={() => {
-                    setError(null);
-                    setShowModal(true);
-                }}
-                className="px-6 py-3 bg-white/5 border border-white/10 backdrop-blur-md rounded-2xl text-white text-sm font-black uppercase tracking-tighter italic hover:bg-white/10 hover:border-purple-500/50 transition-all shadow-inner flex items-center gap-3 overflow-hidden group h-full"
-            >
-                <div className="relative">
-                    <Share2 size={18} className="text-purple-400 group-hover:rotate-12 transition-transform" />
-                </div>
-                <span>Condividi&nbsp;Label</span>
-            </button>
+            {variant === 'iconOnly' ? (
+                <button
+                    onClick={() => {
+                        setError(null);
+                        setShowModal(true);
+                    }}
+                    className="relative p-2.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 rounded-xl transition-all group overflow-hidden"
+                    title="Condividi Label"
+                >
+                    {/* Pulsing Background Effect */}
+                    <motion.div
+                        animate={{
+                            scale: [1, 1.2, 1],
+                            opacity: [0.2, 0.4, 0.2]
+                        }}
+                        transition={{
+                            repeat: Infinity,
+                            duration: 2,
+                            ease: "easeInOut"
+                        }}
+                        className="absolute inset-0 bg-purple-500 blur-md pointer-events-none"
+                    />
+
+                    <div className="relative z-10">
+                        <Share2 size={16} className="text-purple-300 group-hover:scale-110 transition-transform" />
+                    </div>
+
+                    {/* Subtle outer pulse circle */}
+                    <div className="absolute inset-0 rounded-xl border border-purple-500/50 animate-pulse"></div>
+                </button>
+            ) : (
+                <button
+                    onClick={() => {
+                        setError(null);
+                        setShowModal(true);
+                    }}
+                    className="px-6 py-3 bg-white/5 border border-white/10 backdrop-blur-md rounded-2xl text-white text-sm font-black uppercase tracking-tighter italic hover:bg-white/10 hover:border-purple-500/50 transition-all shadow-inner flex items-center gap-3 overflow-hidden group h-full"
+                >
+                    <div className="relative">
+                        <Share2 size={18} className="text-purple-400 group-hover:rotate-12 transition-transform" />
+                    </div>
+                    <span>Condividi&nbsp;Label</span>
+                </button>
+            )}
 
             {/* Preview Modal */}
             <AnimatePresence mode="wait">
