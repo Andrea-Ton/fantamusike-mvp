@@ -73,11 +73,11 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
         artists.push(artist);
     };
 
-    validateSlot('slot_1', slots.slot_1, ARTIST_TIERS.BIG.min, ARTIST_TIERS.BIG.max, `${ARTIST_TIERS.BIG.label} (>65)`, previousTeam?.slot_1_id);
-    validateSlot('slot_2', slots.slot_2, ARTIST_TIERS.MID.min, ARTIST_TIERS.MID.max, `${ARTIST_TIERS.MID.label} (${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max})`, previousTeam?.slot_2_id);
-    validateSlot('slot_3', slots.slot_3, ARTIST_TIERS.MID.min, ARTIST_TIERS.MID.max, `${ARTIST_TIERS.MID.label} (${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max})`, previousTeam?.slot_3_id);
-    validateSlot('slot_4', slots.slot_4, ARTIST_TIERS.NEW_GEN.min, ARTIST_TIERS.NEW_GEN.max, `${ARTIST_TIERS.NEW_GEN.label} (<55)`, previousTeam?.slot_4_id);
-    validateSlot('slot_5', slots.slot_5, ARTIST_TIERS.NEW_GEN.min, ARTIST_TIERS.NEW_GEN.max, `${ARTIST_TIERS.NEW_GEN.label} (<55)`, previousTeam?.slot_5_id);
+    validateSlot('slot_1', slots.slot_1, ARTIST_TIERS.BIG.min, ARTIST_TIERS.BIG.max, `${ARTIST_TIERS.BIG.label} (Pop: ${ARTIST_TIERS.BIG.min}-${ARTIST_TIERS.BIG.max})`, previousTeam?.slot_1_id);
+    validateSlot('slot_2', slots.slot_2, ARTIST_TIERS.MID.min, ARTIST_TIERS.MID.max, `${ARTIST_TIERS.MID.label} (Pop: ${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max})`, previousTeam?.slot_2_id);
+    validateSlot('slot_3', slots.slot_3, ARTIST_TIERS.MID.min, ARTIST_TIERS.MID.max, `${ARTIST_TIERS.MID.label} (Pop: ${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max})`, previousTeam?.slot_3_id);
+    validateSlot('slot_4', slots.slot_4, ARTIST_TIERS.NEW_GEN.min, ARTIST_TIERS.NEW_GEN.max, `${ARTIST_TIERS.NEW_GEN.label} (Pop: ${ARTIST_TIERS.NEW_GEN.min}-${ARTIST_TIERS.NEW_GEN.max})`, previousTeam?.slot_4_id);
+    validateSlot('slot_5', slots.slot_5, ARTIST_TIERS.NEW_GEN.min, ARTIST_TIERS.NEW_GEN.max, `${ARTIST_TIERS.NEW_GEN.label} (Pop: ${ARTIST_TIERS.NEW_GEN.min}-${ARTIST_TIERS.NEW_GEN.max})`, previousTeam?.slot_5_id);
 
     // Validate Captain
     if (captainId) {

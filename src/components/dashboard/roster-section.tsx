@@ -114,7 +114,7 @@ export default async function RosterSection({
     const teamSlots: Slot[] = [
         {
             id: 1,
-            type: 'Big',
+            type: ARTIST_TIERS.BIG.label,
             label: ARTIST_TIERS.BIG.label,
             requirement: `Popolarità > ${ARTIST_TIERS.BIG.min - 1}`,
             artist: userTeam?.slot_1 ? {
@@ -133,7 +133,7 @@ export default async function RosterSection({
         },
         {
             id: 2,
-            type: 'Mid',
+            type: ARTIST_TIERS.MID.label,
             label: ARTIST_TIERS.MID.label,
             requirement: `Popolarità ${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max}`,
             artist: userTeam?.slot_2 ? {
@@ -152,7 +152,7 @@ export default async function RosterSection({
         },
         {
             id: 3,
-            type: 'Mid',
+            type: ARTIST_TIERS.MID.label,
             label: ARTIST_TIERS.MID.label,
             requirement: `Popolarità ${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max}`,
             artist: userTeam?.slot_3 ? {
@@ -171,7 +171,7 @@ export default async function RosterSection({
         },
         {
             id: 4,
-            type: 'New Gen',
+            type: ARTIST_TIERS.NEW_GEN.label,
             label: ARTIST_TIERS.NEW_GEN.label,
             requirement: `Popolarità < ${ARTIST_TIERS.NEW_GEN.max + 1}`,
             artist: userTeam?.slot_4 ? {
@@ -190,7 +190,7 @@ export default async function RosterSection({
         },
         {
             id: 5,
-            type: 'New Gen',
+            type: ARTIST_TIERS.NEW_GEN.label,
             label: ARTIST_TIERS.NEW_GEN.label,
             requirement: `Popolarità < ${ARTIST_TIERS.NEW_GEN.max + 1}`,
             artist: userTeam?.slot_5 ? {

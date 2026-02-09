@@ -274,9 +274,9 @@ export default function TalentScoutPage() {
     const filteredArtists = artists.filter(artist => {
         const category = getCategory(artist.popularity);
         const matchesFilter = activeFilter === 'All' ||
-            (activeFilter === 'New Gen' && category === 'New Gen') ||
-            (activeFilter === 'Mid Tier' && category === 'Mid Tier') ||
-            (activeFilter === 'Big' && category === 'Big');
+            (activeFilter === ARTIST_TIERS.NEW_GEN.label && category === ARTIST_TIERS.NEW_GEN.label) ||
+            (activeFilter === ARTIST_TIERS.MID.label && category === ARTIST_TIERS.MID.label) ||
+            (activeFilter === ARTIST_TIERS.BIG.label && category === ARTIST_TIERS.BIG.label);
         return matchesFilter;
     });
 
@@ -360,12 +360,12 @@ export default function TalentScoutPage() {
         const category = getCategory(artist.popularity);
         const slots: { key: keyof TeamSlots; label: string }[] = [];
 
-        if (category === 'Big') {
+        if (category === ARTIST_TIERS.BIG.label) {
             if (!draftTeam.slot_1) slots.push({ key: 'slot_1', label: ARTIST_TIERS.BIG.label });
-        } else if (category === 'Mid Tier') {
+        } else if (category === ARTIST_TIERS.MID.label) {
             if (!draftTeam.slot_2) slots.push({ key: 'slot_2', label: ARTIST_TIERS.MID.label });
             if (!draftTeam.slot_3) slots.push({ key: 'slot_3', label: ARTIST_TIERS.MID.label });
-        } else if (category === 'New Gen') {
+        } else if (category === ARTIST_TIERS.NEW_GEN.label) {
             if (!draftTeam.slot_4) slots.push({ key: 'slot_4', label: ARTIST_TIERS.NEW_GEN.label });
             if (!draftTeam.slot_5) slots.push({ key: 'slot_5', label: ARTIST_TIERS.NEW_GEN.label });
         }
