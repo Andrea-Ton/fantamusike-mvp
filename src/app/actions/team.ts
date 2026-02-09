@@ -29,21 +29,26 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
         return { success: false, message: 'Unauthorized' };
     }
 
-    // 2. Get Active Season & Previous Team (Moved up for validation context)
-    const currentSeason = await getCurrentSeasonAction();
+    // 2. Get Active Season & Previous Team
+    const GLOBAL_SEASON_ID = '00000000-0000-0000-0000-000000000001';
+    let currentSeason = await getCurrentSeasonAction();
     if (!currentSeason) {
-        return { success: false, message: 'No active season found' };
+        // Fallback to global season if no other is active
+        currentSeason = { id: GLOBAL_SEASON_ID, name: 'Global Season', start_date: '2024-01-01', end_date: '2099-12-31', is_active: true, status: 'active' };
     }
 
-    // Fetch Previous Team (Latest Saved) for Validation & Cost Calculation
-    const { data: previousTeam } = await supabase
+    const { data: previousTeam, error: prevTeamError } = await supabase
         .from('teams')
         .select('*')
         .eq('user_id', user.id)
         .eq('season_id', currentSeason.id)
         .order('week_number', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
+
+    if (prevTeamError) {
+        console.error('Fetch Previous Team Error:', prevTeamError);
+    }
 
     // 3. Validation
     const errors: Record<string, string> = {};
@@ -88,15 +93,18 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
 
     try {
         // 4. Determine Target Week
-        // Fetch the latest snapshot week to determine current week
-        const { data: latestSnap } = await supabase
+        const { data: latestSnap, error: snapFetchError } = await supabase
             .from('weekly_snapshots')
             .select('week_number')
             .order('week_number', { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
-        const currentWeek = latestSnap?.week_number || 1;
+        if (snapFetchError) {
+            console.error('Fetch Latest Snapshot Error:', snapFetchError);
+        }
+
+        const currentWeek = Number(latestSnap?.week_number || 1);
 
         // Check if user has ANY team for this season
         const { data: existingSeasonTeam } = await supabase
@@ -106,22 +114,22 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
             .eq('season_id', currentSeason.id)
             .limit(1);
 
-        // UX Nuance: If First Team of Season -> Current Week. Else -> Next Week.
+        // UX Nuance: If First Team of Season -> Current Week. Else -> Next Week (currentWeek + 1).
         const targetWeek = (!existingSeasonTeam || existingSeasonTeam.length === 0) ? currentWeek : currentWeek + 1;
 
         // Previous Team is already fetched above
 
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
             .from('profiles')
-            .select('musi_coins, total_score')
+            .select('id, musi_coins, total_score, has_used_free_label')
             .eq('id', user.id)
-            .single();
+            .maybeSingle();
 
-        if (!profile) {
+        if (profileError || !profile) {
+            console.error('Profile Fetch Error:', profileError);
             return { success: false, message: 'Profile not found' };
         }
 
-        // 6. Calculate Cost
         // 6. Calculate Cost
         let cost = 0;
 
@@ -143,6 +151,31 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
             if (previousTeam.captain_id && captainId && previousTeam.captain_id !== captainId) {
                 cost += 10;
             }
+        }
+
+        // 5. Cache Artists (Ensures Foreign Keys are met)
+        const artistsToUpsert = artists.map(artist => ({
+            spotify_id: artist.id,
+            name: artist.name,
+            image_url: artist.images[0]?.url || '',
+            current_popularity: artist.popularity,
+            current_followers: artist.followers.total,
+            last_updated: new Date().toISOString()
+        }));
+
+        const { error: cacheError } = await supabase
+            .from('artists_cache')
+            .upsert(artistsToUpsert, { onConflict: 'spotify_id' });
+
+        if (cacheError) {
+            console.error('Cache Error:', cacheError);
+            return { success: false, message: 'Failed to cache artists' };
+        }
+
+        // 6. Apply Free Label Logic
+        const isFreeLabel = !profile.has_used_free_label;
+        if (isFreeLabel) {
+            cost = 0;
         }
         // If no previousTeam (First team of season), cost remains 0 (Free)
         if (!previousTeam) {
@@ -232,24 +265,14 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
             }
         }
 
-        // 7. Cache Artists
-        const artistsToUpsert = artists.map(artist => ({
-            spotify_id: artist.id,
-            name: artist.name,
-            image_url: artist.images[0]?.url || '',
-            current_popularity: artist.popularity,
-            current_followers: artist.followers.total,
-            last_updated: new Date().toISOString()
-        }));
-
-        const { error: cacheError } = await supabase
-            .from('artists_cache')
-            .upsert(artistsToUpsert, { onConflict: 'spotify_id' });
-
-        if (cacheError) {
-            console.error('Cache Error:', cacheError);
-            return { success: false, message: 'Failed to cache artists' };
+        // 5. Update Free Label Flag if this was the first one
+        if (isFreeLabel) {
+            await supabase
+                .from('profiles')
+                .update({ has_used_free_label: true })
+                .eq('id', user.id);
         }
+
 
         // 8. Save Team (Versioned)
         const teamData = {

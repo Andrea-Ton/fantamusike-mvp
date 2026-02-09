@@ -23,7 +23,7 @@ interface RosterSectionProps {
     username: string;
     totalScore: number;
     leaderboardPromise: Promise<LeaderboardResponse>;
-    seasonName: string;
+    weekNumber: number;
 }
 
 export default async function RosterSection({
@@ -34,7 +34,7 @@ export default async function RosterSection({
     username,
     totalScore,
     leaderboardPromise,
-    seasonName
+    weekNumber
 }: RosterSectionProps) {
     const [userTeam, leaderboard] = await Promise.all([
         userTeamPromise,
@@ -259,7 +259,7 @@ export default async function RosterSection({
                                     rank={leaderboard.userRank || 0}
                                     captain={captain}
                                     roster={roster}
-                                    seasonName={seasonName}
+                                    weekNumber={weekNumber}
                                     percentile={percentile}
                                     variant="iconOnly"
                                 />
@@ -296,7 +296,7 @@ export default async function RosterSection({
                         <Trophy className="text-purple-400" size={32} />
                     </div>
                     <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-4">Nessun Team Trovato</h3>
-                    <p className="text-gray-500 mb-8 max-w-sm font-medium">Non hai ancora creato la tua etichetta discografica. Inizia subito a fare scouting per vincere la stagione!</p>
+                    <p className="text-gray-500 mb-8 max-w-sm font-medium">Non hai ancora creato la tua etichetta discografica. Inizia subito a fare scouting per vincere MusiCoins!</p>
                     <Link
                         href="/dashboard/draft"
                         className="group relative px-10 py-4 bg-white text-black font-black uppercase tracking-tighter italic rounded-2xl hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)]"

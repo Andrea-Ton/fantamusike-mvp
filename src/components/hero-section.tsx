@@ -8,7 +8,7 @@ import Link from 'next/link';
 
 import { User } from '@supabase/supabase-js';
 
-export default function HeroSection({ seasonName = 'Season Zero', featuredArtists = [], user }: { seasonName?: string, featuredArtists?: SpotifyArtist[], user?: User | null }) {
+export default function HeroSection({ seasonName = 'Settimana 1', featuredArtists = [], user }: { seasonName?: string, featuredArtists?: SpotifyArtist[], user?: User | null }) {
     return (
         <main className="relative z-10 max-w-7xl mx-auto px-6 pt-40 pb-20 lg:pt-64 lg:pb-40 flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
             {/* Background Bloom Layers */}
@@ -25,7 +25,7 @@ export default function HeroSection({ seasonName = 'Season Zero', featuredArtist
                 <div className="space-y-4">
                     <h1 className="text-4xl md:text-6xl xl:text-7xl font-black tracking-tighter leading-[0.85] text-white uppercase">
                         <span className="text-white whitespace-nowrap">CREA</span><br />
-                        <span className="text-white whitespace-nowrap">LA TUA SQUADRA   </span><br />
+                        <span className="text-white whitespace-nowrap">LA TUA SQUADRA</span><br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-blue-500 drop-shadow-sm">
                             OTTIENI
                         </span><br />
@@ -36,7 +36,7 @@ export default function HeroSection({ seasonName = 'Season Zero', featuredArtist
                 </div>
 
                 <p className="text-lg md:text-xl text-gray-500 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
-                    Smetti di essere solo un fan. Diventa un Manager. Scova i talenti emergenti prima dei tuoi amici e vinci le Mystery Box della musica.
+                    Smetti di essere solo un fan. Diventa un Manager. Scova i talenti emergenti prima dei tuoi amici e ottieni le Mystery Box della musica.
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-5 justify-center lg:justify-start pt-6">

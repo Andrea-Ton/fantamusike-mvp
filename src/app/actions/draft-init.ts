@@ -34,7 +34,7 @@ export async function getDraftInitialDataAction() {
             .from('profiles')
             .select('musi_coins, referral_code')
             .eq('id', user.id)
-            .single();
+            .maybeSingle();
         profile = data;
     }
 

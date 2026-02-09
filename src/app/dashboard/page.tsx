@@ -2,7 +2,6 @@ import React, { Suspense } from 'react';
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { getUserTeamAction } from '@/app/actions/team';
-import { getCurrentSeasonAction } from '@/app/actions/season';
 import Image from 'next/image';
 import LogoutButton from '@/components/logout-button';
 import InviteButton from '@/components/dashboard/invite-button';
@@ -39,7 +38,6 @@ export default async function DashboardPage() {
         featured: featuredArtists
     } = metadata;
 
-    const seasonName = season?.name || 'Season Zero';
     const musiCoins = profile?.musi_coins || 0;
 
     // Background Promises (Non-Blocking)
@@ -86,7 +84,6 @@ export default async function DashboardPage() {
                     </div>
                     <div>
                         <h1 className="text-xl font-black text-white tracking-tighter uppercase italic leading-none">FantaMusiké</h1>
-                        <p className="hidden text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{seasonName}</p>
                     </div>
                 </div>
                 <LogoutButton />
@@ -107,10 +104,11 @@ export default async function DashboardPage() {
                 </div>
             </div>
 
-            {/* Sequential Modals: Daily Recap -> MusiBet Results */}
+            {/* Sequential Modals: Weekly Recap -> Daily Recap -> MusiBet Results */}
             <DashboardModals
                 unseenLogs={unseenLogs}
                 pendingBet={pendingBet}
+                unseenWeeklyRecap={metadata.unseenWeeklyRecap}
             />
 
             {/* Content Area */}
@@ -168,7 +166,7 @@ export default async function DashboardPage() {
                             username={profile?.username || 'Manager'}
                             totalScore={(profile?.total_score || 0) + (profile?.listen_score || 0)}
                             leaderboardPromise={leaderboardPromise}
-                            seasonName={seasonName}
+                            weekNumber={currentWeek}
                         />
                     </Suspense>
 

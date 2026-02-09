@@ -1,12 +1,12 @@
 
 
 import React from 'react';
-import { Zap, LogOut, Crown, Medal, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Zap, LogOut, Crown, Medal, ChevronLeft, ChevronRight, Coins } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/server';
-import { getLeaderboardAction } from '@/app/actions/leaderboard';
-import { getCurrentSeasonAction } from '@/app/actions/season';
+import { getLeaderboardAction, getLeaderboardConfigAction } from '@/app/actions/leaderboard';
+import { getNextResetDateAction } from '@/app/actions/game';
 import LogoutButton from '@/components/logout-button';
 
 interface PageProps {
@@ -21,20 +21,25 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
     const page = sParams.page ? parseInt(sParams.page) : undefined;
 
     // Fetch real leaderboard data
-    const leaderboardData = await getLeaderboardAction(user?.id, page);
+    const [leaderboardData, rewardsConfig] = await Promise.all([
+        getLeaderboardAction(user?.id, page),
+        getLeaderboardConfigAction()
+    ]);
 
-    // Fetch Current Season
-    const currentSeason = await getCurrentSeasonAction();
-    const seasonName = currentSeason?.name || 'Season Zero';
+    // Weekly Reset Countdown Calculation
+    const nextResetDateStr = await getNextResetDateAction();
+    const nextResetDate = new Date(nextResetDateStr);
+    const now = new Date();
+    const diff = nextResetDate.getTime() - now.getTime();
+
+    const daysLeft = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hoursLeft = Math.floor((diff / (1000 * 60 * 60)) % 24);
+
+    const weekNumber = leaderboardData.currentWeek || 1;
+    const isResetSoon = daysLeft === 0 && hoursLeft <= 12;
 
     const topThree = leaderboardData.podium;
     const entries = leaderboardData.entries;
-
-    // Season Countdown Calculation
-    const seasonEndDate = currentSeason ? new Date(currentSeason.end_date) : null;
-    const now = new Date();
-    const daysLeft = seasonEndDate ? Math.ceil((seasonEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 0;
-    const isSeasonEndingSoon = daysLeft > 0 && daysLeft <= 7;
 
     // Helper to get initials
     const getInitials = (name: string) => name.substring(0, 1).toUpperCase();
@@ -64,7 +69,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                     </div>
                     <div>
                         <h1 className="text-xl font-black text-white tracking-tighter uppercase italic leading-none">FantaMusiké</h1>
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{seasonName}</p>
+                        <p className="hidden text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">Settimana {weekNumber}</p>
                     </div>
                 </div>
                 <LogoutButton />
@@ -81,20 +86,18 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                         <p className="text-gray-500 text-sm font-medium">Competi con i migliori manager d'Italia e scala la vetta.</p>
                     </div>
                     <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
-                        {/* Season Countdown - Mobile/Tablet visible but desktop integrated */}
-                        {currentSeason && (
-                            <div className={`flex items-center justify-between px-6 py-3 rounded-2xl border ${isSeasonEndingSoon ? 'bg-red-500/10 border-red-500/20' : 'bg-purple-500/10 border-purple-500/20'} backdrop-blur-xl shadow-inner group transition-all hover:bg-white/10`}>
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Fine Stagione</span>
-                                    <span className={`text-lg font-black italic uppercase tracking-tighter leading-none ${isSeasonEndingSoon ? 'text-red-400 animate-pulse' : 'text-purple-400'}`}>
-                                        {daysLeft > 0 ? `${daysLeft} giorni` : 'Oggi'}
-                                    </span>
-                                </div>
-                                <div className={`ml-4 p-2 rounded-lg ${isSeasonEndingSoon ? 'bg-red-500/20 text-red-500' : 'bg-purple-500/20 text-purple-400'} hidden sm:block`}>
-                                    <Zap size={16} className={isSeasonEndingSoon ? 'animate-pulse' : ''} />
-                                </div>
+                        {/* Weekly Reset Countdown */}
+                        <div className={`flex items-center justify-between px-6 py-3 rounded-2xl border ${isResetSoon ? 'bg-red-500/10 border-red-500/20' : 'bg-purple-500/10 border-purple-500/20'} backdrop-blur-xl shadow-inner group transition-all hover:bg-white/10`}>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Reset Classifica</span>
+                                <span className={`text-lg font-black italic uppercase tracking-tighter leading-none ${isResetSoon ? 'text-red-400 animate-pulse' : 'text-purple-400'}`}>
+                                    {daysLeft > 0 ? `${daysLeft}d ${hoursLeft}h` : `${hoursLeft} ore`}
+                                </span>
                             </div>
-                        )}
+                            <div className={`ml-4 p-2 rounded-lg ${isResetSoon ? 'bg-red-500/20 text-red-500' : 'bg-purple-500/20 text-purple-400'} hidden sm:block`}>
+                                <Zap size={16} className={isResetSoon ? 'animate-pulse' : ''} />
+                            </div>
+                        </div>
 
                         <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 px-6 py-3 rounded-2xl backdrop-blur-xl shadow-inner">
                             <div className="flex -space-x-2">
@@ -214,36 +217,39 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                                 </div>
                             </div>
 
-                            {/* Mystery Box Reward Card */}
-                            <div className="mt-8 bg-gradient-to-br from-yellow-500/10 via-purple-500/5 to-transparent border border-white/10 rounded-[2.5rem] p-8 relative overflow-hidden backdrop-blur-3xl shadow-2xl group/mystery">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 blur-[60px] rounded-full group-hover/mystery:bg-yellow-500/20 transition-colors" />
+                            {/* Rewards Info Card */}
+                            <div className="mt-8 bg-gradient-to-br from-yellow-500/10 via-purple-500/5 to-transparent border border-white/10 rounded-[2.5rem] p-8 relative overflow-hidden backdrop-blur-3xl shadow-2xl group/rewards">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 blur-[60px] rounded-full group-hover/rewards:bg-yellow-500/20 transition-colors" />
 
                                 <div className="relative z-10 flex flex-col items-center text-center">
-                                    <div className="relative w-32 h-32 mb-4 group-hover/mystery:scale-110 transition-transform duration-500">
-                                        <div className="absolute inset-0 bg-yellow-400 blur-2xl opacity-20 animate-pulse" />
-                                        <Image
-                                            src="/mystery_box.png"
-                                            alt="MusiBox Mystery Prize"
-                                            fill
-                                            className="object-contain drop-shadow-[0_0_15px_rgba(234,179,8,0.4)]"
-                                        />
+                                    <div className="w-16 h-16 rounded-full bg-yellow-500/20 flex items-center justify-center mb-6 group-hover/rewards:scale-110 transition-transform duration-500">
+                                        <Coins className="text-yellow-500" size={32} />
                                     </div>
 
                                     <div className="inline-flex items-center gap-2 mb-3 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20">
                                         <Zap size={10} className="text-yellow-500 fill-yellow-500" />
-                                        <span className="text-[9px] font-black text-yellow-500 uppercase tracking-widest">Premio Stagionale</span>
+                                        <span className="text-[9px] font-black text-yellow-500 uppercase tracking-widest">Premi Settimanali</span>
                                     </div>
 
-                                    <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-2">Vinci la Mystery Box</h3>
-                                    <p className="text-gray-400 text-sm font-medium leading-relaxed max-w-[200px]">
-                                        Il <span className="text-yellow-400 font-bold italic">#1 in classifica</span> a fine stagione riceve la MusiBox esclusiva a casa.
+                                    <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-2">Vinci MusiCoins</h3>
+                                    <p className="text-gray-400 text-sm font-medium leading-relaxed max-w-[200px] mb-6">
+                                        Scala la vetta! Ogni settimana i migliori manager vincono premi in <span className="text-yellow-400 font-bold italic">MusiCoins</span>.
                                     </p>
 
-                                    <div className="mt-6 w-full pt-6 border-t border-white/5 flex items-center justify-center gap-4">
-                                        <div className="flex flex-col items-center">
-                                            <span className="text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">Spedizione</span>
-                                            <span className="text-xs font-black text-green-400 uppercase italic leading-none">Gratuita in Tutto il Mondo</span>
-                                        </div>
+                                    <div className="w-full space-y-2 pt-6 border-t border-white/5">
+                                        {rewardsConfig.length > 0 ? (
+                                            rewardsConfig.sort((a, b) => b.reward_musicoins - a.reward_musicoins).map((config) => (
+                                                <div key={config.tier} className="flex items-center justify-between group/reward-item">
+                                                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{config.label}</span>
+                                                    <div className="flex items-center gap-1.5 bg-yellow-400/10 px-2 py-0.5 rounded-md border border-yellow-400/20">
+                                                        <span className="text-[10px] font-black text-yellow-500">{config.reward_musicoins}</span>
+                                                        <Coins size={10} className="text-yellow-500" />
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p className="text-[10px] text-gray-600 uppercase font-black tracking-widest italic">Caricamento premi...</p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -306,7 +312,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                                                 </div>
                                                 <div className="col-span-3 text-right">
                                                     <span className={`font-black italic uppercase tracking-tighter text-lg ${isCurrentUser ? 'text-purple-400' : 'text-white'}`}>
-                                                        {entry.total_score}
+                                                        {entry.combined_score}
                                                     </span>
                                                     <span className="text-[10px] text-gray-500 ml-1">pts</span>
                                                 </div>

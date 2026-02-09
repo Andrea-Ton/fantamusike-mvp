@@ -81,7 +81,7 @@ export default function LeaderboardCard({ entries, currentUserId }: LeaderboardC
                                         </div>
                                     </div>
                                     <div className="text-sm font-black italic uppercase text-white tracking-tighter">
-                                        {entry.total_score} <span className="text-[9px] text-gray-500 not-italic font-bold ml-0.5">PTS</span>
+                                        {entry.combined_score} <span className="text-[9px] text-gray-500 not-italic font-bold ml-0.5">PTS</span>
                                     </div>
                                 </div>
                             </React.Fragment>

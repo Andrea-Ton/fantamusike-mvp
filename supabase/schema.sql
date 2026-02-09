@@ -2,10 +2,10 @@
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 
--- 1. Schedule Weekly Snapshots (Mondays 04:00 UTC)
+-- 1. Schedule Weekly Snapshots (Mondays 05:00 UTC)
 select cron.schedule(
   'perform-weekly-snapshot-job',
-  '0 4 * * 1',
+  '0 5 * * 1',
   $$
   select net.http_post(
     url := 'https://<your-project-ref>.supabase.co/functions/v1/perform-weekly-snapshot',
@@ -26,6 +26,19 @@ select cron.schedule(
   $$
 );
 
+-- 3. Schedule Weekly Leaderboard Processing (Mondays 04:00 UTC)
+-- Runs after final weekly scoring and before new weekly snapshot
+select cron.schedule(
+  'process-weekly-leaderboard-job',
+  '0 4 * * 1',
+  $$
+  select net.http_post(
+    url := 'https://<your-project-ref>.supabase.co/functions/v1/process-weekly-leaderboard',
+    headers := '{"Content-Type": "application/json", "Authorization": "Bearer <YOUR_SERVICE_ROLE_KEY>"}'::jsonb
+  ) as request_id;
+  $$
+);
+
 -- 3. PROFILES Table
 create table public.profiles (
   id uuid references auth.users not null primary key,
@@ -39,6 +52,7 @@ create table public.profiles (
   referral_code text unique,
   referred_by uuid references public.profiles(id),
   has_completed_onboarding boolean default false,
+  has_used_free_label boolean default false,
   created_at timestamp with time zone default timezone('utc'::text, now()),
   updated_at timestamp with time zone default timezone('utc'::text, now())
 );
@@ -61,6 +75,8 @@ create table public.artists_cache (
 
 alter table public.artists_cache enable row level security;
 create policy "Artists cache is viewable by everyone." on public.artists_cache for select using ( true );
+create policy "Authenticated users can upsert artists." on public.artists_cache for insert with check ( auth.role() = 'authenticated' );
+create policy "Authenticated users can update artists." on public.artists_cache for update using ( auth.role() = 'authenticated' );
 
 -- 5. SEASONS Table
 create table public.seasons (
@@ -128,6 +144,7 @@ create table public.weekly_snapshots (
 
 alter table public.weekly_snapshots enable row level security;
 create policy "Weekly snapshots are viewable by everyone." on public.weekly_snapshots for select using ( true );
+create policy "Authenticated users can insert snapshots." on public.weekly_snapshots for insert with check ( auth.role() = 'authenticated' );
 create index weekly_snapshots_week_artist_idx on public.weekly_snapshots(week_number, artist_id);
 
 -- 9. SEASON RANKINGS Table
@@ -244,7 +261,53 @@ insert into public.badges (name, description, image_url)
 select 'Pioneer', 'Membro fondatore di FantaMusiké MVP', '/badges/pioneer.png'
 where not exists (select 1 from public.badges where name = 'Pioneer');
 
--- 15. STORAGE SETUP
+-- 15. LEADERBOARD SYSTEM
+create table public.leaderboard_config (
+    tier text primary key,
+    reward_musicoins integer not null,
+    label text not null
+);
+
+alter table public.leaderboard_config enable row level security;
+create policy "Leaderboard config is viewable by everyone." on public.leaderboard_config for select using ( true );
+create policy "Admins can manage leaderboard config." on public.leaderboard_config for all
+  using ( exists ( select 1 from public.profiles where id = auth.uid() and is_admin = true ) );
+
+insert into public.leaderboard_config (tier, reward_musicoins, label) values
+('rank_1', 1000, '1° Posto'),
+('rank_2', 400, '2° Posto'),
+('rank_3', 200, '3° Posto'),
+('top_10', 50, 'Top 10'),
+('top_20', 25, 'Top 20'),
+('top_50', 10, 'Top 50'),
+('top_100', 5, 'Top 100')
+on conflict (tier) do nothing;
+
+create table public.weekly_leaderboard_history (
+    id uuid default uuid_generate_v4() primary key,
+    user_id uuid references public.profiles(id) on delete cascade not null,
+    week_number integer not null,
+    rank integer not null,
+    score integer not null,
+    reward_musicoins integer not null,
+    is_seen boolean default false,
+    created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+alter table public.weekly_leaderboard_history enable row level security;
+create policy "Users can view their own leaderboard history." on public.weekly_leaderboard_history for select using ( auth.uid() = user_id );
+create policy "Admins can view all leaderboard history." on public.weekly_leaderboard_history for select
+  using ( exists ( select 1 from public.profiles where id = auth.uid() and is_admin = true ) );
+
+create policy "Users can update their own leaderboard history." on public.weekly_leaderboard_history for update 
+  using ( auth.uid() = user_id );
+
+-- Seed a "Global" Season if none exists (Internal use only)
+insert into public.seasons (id, name, start_date, end_date, is_active, status)
+values ('00000000-0000-0000-0000-000000000001', 'Global Season', '2024-01-01', '2099-12-31', true, 'active')
+on conflict (id) do nothing;
+
+-- 16. STORAGE SETUP
 insert into storage.buckets (id, name, public) values ('avatars', 'avatars', true) on conflict (id) do nothing;
 create policy "Avatar images are publicly accessible." on storage.objects for select using ( bucket_id = 'avatars' );
 create policy "Anyone can upload an avatar." on storage.objects for insert with check ( bucket_id = 'avatars' );
@@ -300,7 +363,8 @@ begin
     referral_code,
     referred_by,
     marketing_opt_in,
-    has_completed_onboarding
+    has_completed_onboarding,
+    has_used_free_label
   )
   values (
     new.id,
@@ -310,6 +374,7 @@ begin
     new_referral_code,
     referrer_id,
     coalesce((new.raw_user_meta_data->>'marketing_opt_in')::boolean, false),
+    false,
     false
   );
 
@@ -343,3 +408,10 @@ begin
   where id = user_id_param;
 end;
 $$ language plpgsql security definer;
+
+-- 17. LEADERBOARD VIEW (Combined Score)
+CREATE OR REPLACE VIEW public.leaderboard_view AS
+SELECT 
+    *,
+    (total_score + listen_score) as combined_score
+FROM public.profiles;

@@ -7,6 +7,8 @@ import { getUnseenScoreLogsAction } from './dashboard';
 import { getPendingBetResultAction, getDailyPromoStateAction } from './promo';
 import { getFeaturedArtistsAction } from './artist';
 
+import { getUnseenWeeklyRecapAction } from './leaderboard';
+
 export async function getDashboardMetadataAction() {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -23,15 +25,17 @@ export async function getDashboardMetadataAction() {
         unseenLogs,
         pendingBet,
         dailyPromoState,
-        featured
+        featured,
+        unseenWeeklyRecap
     ] = await Promise.all([
         getCurrentSeasonAction(),
         getCurrentWeekAction(),
-        supabase.from('profiles').select('*').eq('id', user.id).single(),
+        supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
         getUnseenScoreLogsAction(),
         getPendingBetResultAction(),
         getDailyPromoStateAction(),
-        getFeaturedArtistsAction()
+        getFeaturedArtistsAction(),
+        getUnseenWeeklyRecapAction()
     ]);
 
     const profile = profileRes.data;
@@ -44,6 +48,7 @@ export async function getDashboardMetadataAction() {
         unseenLogs,
         pendingBet,
         dailyPromoState,
-        featured
+        featured,
+        unseenWeeklyRecap
     };
 }

@@ -67,7 +67,7 @@ export async function getDailyPromoStateAction(): Promise<DailyPromoState> {
         .select('*')
         .eq('user_id', user.id)
         .eq('date', today)
-        .single();
+        .maybeSingle();
 
     if (!promo) {
         return {
@@ -346,7 +346,7 @@ export async function startBetAction(artistId: string): Promise<{ success: boole
             .from('artists_cache')
             .select('*')
             .eq('spotify_id', artistId)
-            .single();
+            .maybeSingle();
 
         if (!myArtist) return { success: false, message: 'Artist not found' };
 
@@ -445,7 +445,7 @@ export async function placeBetAction(artistId: string, prediction: 'my_artist' |
             .from('profiles')
             .select('musi_coins')
             .eq('id', user.id)
-            .single();
+            .maybeSingle();
 
         if (!profile || (profile.musi_coins || 0) < BET_CONFIG.ENTRY_FEE) {
             return { success: false, message: 'MusiCoins insufficient' };
@@ -465,7 +465,7 @@ export async function placeBetAction(artistId: string, prediction: 'my_artist' |
             .select('week_number')
             .order('week_number', { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
         const currentWeekNumber = latestSnap?.week_number || 1;
 
@@ -536,7 +536,7 @@ export async function getPendingBetResultAction() {
         .eq('bet_resolved', true)
         .eq('bet_result_seen', false)
         .limit(1)
-        .single();
+        .maybeSingle();
 
     if (!promo) return null;
 
@@ -761,7 +761,7 @@ export async function finalizeBoostAction(artistId: string): Promise<ClaimPromoR
             .from('profiles')
             .select('listen_score, musi_coins')
             .eq('id', user.id)
-            .single();
+            .maybeSingle();
 
         if (profile && user) {
             const updates: any = {};

@@ -3,25 +3,37 @@
 import React, { useState } from 'react';
 import { DailyRecapModalWrapper } from './daily-recap-modal-wrapper';
 import { BetResultModalWrapper } from './bet-result-modal-wrapper';
+import { WeeklyRecapModal } from './weekly-recap-modal';
+import { WeeklyRecap } from '@/app/actions/leaderboard';
 
 interface DashboardModalsProps {
     unseenLogs: any[] | null;
     pendingBet: any | null;
+    unseenWeeklyRecap: WeeklyRecap | null;
 }
 
-export default function DashboardModals({ unseenLogs, pendingBet }: DashboardModalsProps) {
+export default function DashboardModals({ unseenLogs, pendingBet, unseenWeeklyRecap }: DashboardModalsProps) {
+    const hasWeekly = !!unseenWeeklyRecap;
     const hasLogs = unseenLogs && unseenLogs.length > 0;
     const hasBet = !!pendingBet;
 
-    // State to track if we've finished the recap and should show the bet
+    // State to track progression
+    const [weeklyFinished, setWeeklyFinished] = useState(false);
     const [recapFinished, setRecapFinished] = useState(false);
 
-    // Logic:
-    // 1. If there are logs and we haven't finished the recap, show the recap modal.
-    // 2. Once the recap modal is closed (onClose called), set recapFinished to true.
-    // 3. If there's a pending bet AND (either recap is finished OR there were no logs to begin with), show the bet modal.
+    // Order:
+    // 1. Weekly Recap
+    if (hasWeekly && !weeklyFinished) {
+        return (
+            <WeeklyRecapModal
+                recap={unseenWeeklyRecap!}
+                onClose={() => setWeeklyFinished(true)}
+            />
+        );
+    }
 
-    if (hasLogs && !recapFinished) {
+    // 2. Daily Recap (only after weekly or if none)
+    if (hasLogs && !recapFinished && (weeklyFinished || !hasWeekly)) {
         return (
             <DailyRecapModalWrapper
                 logs={unseenLogs}
@@ -30,7 +42,8 @@ export default function DashboardModals({ unseenLogs, pendingBet }: DashboardMod
         );
     }
 
-    if (hasBet && (recapFinished || !hasLogs)) {
+    // 3. Bet Results (only after others)
+    if (hasBet && (recapFinished || (!hasLogs && (weeklyFinished || !hasWeekly)))) {
         return (
             <BetResultModalWrapper result={pendingBet} />
         );

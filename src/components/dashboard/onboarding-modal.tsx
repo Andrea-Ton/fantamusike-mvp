@@ -130,10 +130,20 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
             }
 
             // 2. Save Team
-            await saveTeamAction(team, captainId);
+            const teamRes = await saveTeamAction(team, captainId);
+            if (!teamRes.success) {
+                alert(teamRes.message || 'Errore nel salvataggio del team');
+                setIsSaving(false);
+                return;
+            }
 
             // 3. Mark Onboarding as Complete
-            await completeOnboardingAction();
+            const onboardRes = await completeOnboardingAction();
+            if (!onboardRes.success) {
+                alert(onboardRes.message || 'Errore completamento onboarding');
+                setIsSaving(false);
+                return;
+            }
 
             window.location.reload();
         } catch (err) {
