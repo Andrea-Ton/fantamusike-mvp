@@ -155,7 +155,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                                                 <div className="marquee-container w-full mb-1">
                                                     <span className="block text-xs font-black text-white italic tracking-tighter group-hover/p2:animate-marquee">{topThree[1].username}</span>
                                                 </div>
-                                                <span className="block text-sm font-black text-slate-400 italic uppercase tracking-tighter">{topThree[1].total_score} <span className="text-[8px] not-italic opacity-50">Pts</span></span>
+                                                <span className="block text-sm font-black text-slate-400 italic uppercase tracking-tighter">{topThree[1].combined_score} <span className="text-[8px] not-italic opacity-50">Pts</span></span>
                                             </div>
                                         </div>
                                     )}
@@ -183,7 +183,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                                                 <div className="marquee-container w-full mb-2">
                                                     <span className="block text-sm font-black text-white italic tracking-tighter group-hover/p1:animate-marquee">{topThree[0].username}</span>
                                                 </div>
-                                                <span className="block text-sm font-black text-yellow-500 italic uppercase tracking-tighter">{topThree[0].total_score} <span className="text-[8px] not-italic opacity-50">Pts</span></span>
+                                                <span className="block text-sm font-black text-yellow-500 italic uppercase tracking-tighter">{topThree[0].combined_score} <span className="text-[8px] not-italic opacity-50">Pts</span></span>
                                             </div>
                                         </div>
                                     )}
@@ -210,7 +210,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                                                 <div className="marquee-container w-full mb-1">
                                                     <span className="block text-xs font-black text-white italic tracking-tighter group-hover/p3:animate-marquee">{topThree[2].username}</span>
                                                 </div>
-                                                <span className="block text-sm font-black text-amber-600 italic uppercase tracking-tighter">{topThree[2].total_score} <span className="text-[8px] not-italic opacity-50">Pts</span></span>
+                                                <span className="block text-sm font-black text-amber-600 italic uppercase tracking-tighter">{topThree[2].combined_score} <span className="text-[8px] not-italic opacity-50">Pts</span></span>
                                             </div>
                                         </div>
                                     )}

@@ -165,6 +165,7 @@ export default async function DashboardPage() {
                             dailyPromoState={dailyPromoState}
                             username={profile?.username || 'Manager'}
                             totalScore={(profile?.total_score || 0) + (profile?.listen_score || 0)}
+                            seasonName={season?.name || 'Season 1'}
                             leaderboardPromise={leaderboardPromise}
                             weekNumber={currentWeek}
                         />

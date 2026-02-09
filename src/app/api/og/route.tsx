@@ -224,52 +224,64 @@ export async function GET(request: NextRequest) {
 
 
                     {/* Footer Stats */}
-                    <div style={{
-                        display: 'flex',
-                        width: '920px',
-                        backgroundColor: 'rgba(255,255,255,0.03)',
-                        borderRadius: '60px',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        padding: '45px',
-                        justifyContent: 'space-around',
-                        alignItems: 'center',
-                        marginBottom: '30px',
-                        marginTop: '0px',
-                        zIndex: 10,
-                        position: 'relative',
-                        overflow: 'hidden'
-                    }}>
-                        <div style={{ display: 'flex', position: 'absolute', top: 0, right: 0, width: '300px', height: '300px', backgroundColor: 'rgba(168, 85, 247, 0.05)', filter: 'blur(80px)', borderRadius: '500px' }}></div>
+                    {(() => {
+                        const getFontSize = (val: string | number) => {
+                            const len = val.toString().length;
+                            if (len > 8) return '36px';
+                            if (len > 6) return '48px';
+                            if (len > 5) return '60px';
+                            return '72px';
+                        };
 
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '280px' }}>
-                            <div style={{ display: 'flex', fontSize: '18px', fontWeight: 900, textTransform: 'uppercase', color: '#6b7280', marginBottom: '10px', letterSpacing: '4px' }}>
-                                <span>Punti Totali</span>
-                            </div>
-                            <div style={{ display: 'flex', fontSize: '72px', fontWeight: 900, fontStyle: 'italic', textTransform: 'uppercase', color: '#ffffff' }}>
-                                <span>{totalScore}</span>
-                            </div>
-                        </div>
+                        return (
+                            <div style={{
+                                display: 'flex',
+                                width: '920px',
+                                backgroundColor: 'rgba(255,255,255,0.03)',
+                                borderRadius: '60px',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                padding: '45px',
+                                justifyContent: 'space-around',
+                                alignItems: 'center',
+                                marginBottom: '30px',
+                                marginTop: '0px',
+                                zIndex: 10,
+                                position: 'relative',
+                                overflow: 'hidden'
+                            }}>
+                                <div style={{ display: 'flex', position: 'absolute', top: 0, right: 0, width: '300px', height: '300px', backgroundColor: 'rgba(168, 85, 247, 0.05)', filter: 'blur(80px)', borderRadius: '500px' }}></div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '280px' }}>
-                            <div style={{ display: 'flex', fontSize: '18px', fontWeight: 900, textTransform: 'uppercase', color: '#6b7280', marginBottom: '10px', letterSpacing: '4px' }}>
-                                <span>Posizione</span>
-                            </div>
-                            <div style={{ display: 'flex', fontSize: '72px', fontWeight: 900, fontStyle: 'italic', textTransform: 'uppercase', color: '#a855f7' }}>
-                                <span>#{rank}</span>
-                            </div>
-                        </div>
-
-                        {percentile && (
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '280px' }}>
-                                <div style={{ display: 'flex', fontSize: '18px', fontWeight: 900, textTransform: 'uppercase', color: '#6b7280', marginBottom: '10px', letterSpacing: '4px' }}>
-                                    <span>Ranking</span>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '280px' }}>
+                                    <div style={{ display: 'flex', fontSize: '18px', fontWeight: 900, textTransform: 'uppercase', color: '#6b7280', marginBottom: '10px', letterSpacing: '4px' }}>
+                                        <span>Punti Totali</span>
+                                    </div>
+                                    <div style={{ display: 'flex', fontSize: getFontSize(totalScore), fontWeight: 900, fontStyle: 'italic', textTransform: 'uppercase', color: '#ffffff' }}>
+                                        <span>{totalScore}</span>
+                                    </div>
                                 </div>
-                                <div style={{ display: 'flex', fontSize: '56px', fontWeight: 900, fontStyle: 'italic', textTransform: 'uppercase', color: '#fbbf24' }}>
-                                    <span>Top {percentile}</span>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '280px' }}>
+                                    <div style={{ display: 'flex', fontSize: '18px', fontWeight: 900, textTransform: 'uppercase', color: '#6b7280', marginBottom: '10px', letterSpacing: '4px' }}>
+                                        <span>Posizione</span>
+                                    </div>
+                                    <div style={{ display: 'flex', fontSize: getFontSize('#' + rank), fontWeight: 900, fontStyle: 'italic', textTransform: 'uppercase', color: '#a855f7' }}>
+                                        <span>#{rank}</span>
+                                    </div>
                                 </div>
+
+                                {percentile && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '280px' }}>
+                                        <div style={{ display: 'flex', fontSize: '18px', fontWeight: 900, textTransform: 'uppercase', color: '#6b7280', marginBottom: '10px', letterSpacing: '4px' }}>
+                                            <span>Ranking</span>
+                                        </div>
+                                        <div style={{ display: 'flex', fontSize: '56px', fontWeight: 900, fontStyle: 'italic', textTransform: 'uppercase', color: '#fbbf24' }}>
+                                            <span>Top {percentile}</span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
+                        );
+                    })()}
                 </div>
             ),
             {

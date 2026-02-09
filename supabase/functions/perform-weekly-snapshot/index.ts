@@ -18,18 +18,24 @@ Deno.serve(async (_req: Request) => {
       .from('seasons')
       .select('*')
       .eq('is_active', true)
-      .single()
+      .maybeSingle()
 
     if (seasonError || !season) {
       return new Response(JSON.stringify({ message: 'No active season found. Skipping snapshot.' }), { status: 200 })
     }
 
-    // 2. Calculate Week Number
-    const start = new Date(season.start_date)
-    const now = new Date()
-    const diff = now.getTime() - start.getTime()
-    const oneWeek = 7 * 24 * 60 * 60 * 1000
-    const weekNumber = Math.max(1, Math.ceil(diff / oneWeek))
+    // 2. Fetch Latest Week and calculate next one (Incremental Logic)
+    const { data: latestSnap, error: lastWeekError } = await supabaseClient
+      .from('weekly_snapshots')
+      .select('week_number')
+      .order('week_number', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (lastWeekError) throw lastWeekError;
+
+    // Se non ci sono snapshot, partiamo dalla settimana 1
+    const weekNumber = latestSnap ? Number(latestSnap.week_number) + 1 : 1;
 
     console.log(`Performing weekly snapshot for Week ${weekNumber}...`)
 

@@ -182,96 +182,105 @@ Deno.serve(async (_req: Request) => {
             .eq('bet_resolved', false);
 
         if (pendingBets && pendingBets.length > 0) {
-            // Fetch latest scores for all involved artists efficiently
-            const artistIds = new Set<string>();
+            // Group bets by week to handle transitions correctly
+            const betsByWeek = new Map<number, any[]>();
             pendingBets.forEach((p: any) => {
-                if (p.artist_id) artistIds.add(p.artist_id);
-                if (p.bet_snapshot?.rival?.id) artistIds.add(p.bet_snapshot.rival.id);
+                const w = Number(p.bet_snapshot.week_number || weekNumber);
+                if (!betsByWeek.has(w)) betsByWeek.set(w, []);
+                betsByWeek.get(w)!.push(p);
             });
 
-            const { data: latestScores } = await supabaseClient
-                .from('weekly_scores')
-                .select('artist_id, total_points')
-                .eq('week_number', weekNumber)
-                .gte('created_at', season.start_date) // Filter by season
-                .in('artist_id', Array.from(artistIds));
+            for (const [w, bets] of betsByWeek) {
+                console.log(`Resolving ${bets.length} bets for Week ${w}...`);
 
-            const scoreMap = new Map<string, number>();
-            latestScores?.forEach((s: any) => scoreMap.set(s.artist_id, s.total_points));
+                const artistIdsForWeek = new Set<string>();
+                bets.forEach((p: any) => {
+                    if (p.artist_id) artistIdsForWeek.add(p.artist_id);
+                    if (p.bet_snapshot?.rival?.id) artistIdsForWeek.add(p.bet_snapshot.rival.id);
+                });
 
-            for (const promo of pendingBets) {
-                try {
-                    const myId = promo.artist_id;
-                    const rivalId = promo.bet_snapshot.rival.id;
-                    const startMy = promo.bet_snapshot.initial_scores?.my || 0;
-                    const startRival = promo.bet_snapshot.initial_scores?.rival || 0;
+                const { data: scoresForWeek } = await supabaseClient
+                    .from('weekly_scores')
+                    .select('artist_id, total_points')
+                    .eq('week_number', w);
 
-                    const currMy = scoreMap.get(myId) || 0;
-                    const currRival = scoreMap.get(rivalId) || 0;
+                const weekScoreMap = new Map<string, number>();
+                scoresForWeek?.forEach((s: any) => weekScoreMap.set(s.artist_id, s.total_points));
 
-                    const myDelta = currMy - startMy;
-                    const rivalDelta = currRival - startRival;
+                for (const promo of bets) {
+                    try {
+                        const myId = promo.artist_id;
+                        const rivalId = promo.bet_snapshot.rival.id;
+                        const startMy = promo.bet_snapshot.initial_scores?.my || 0;
+                        const startRival = promo.bet_snapshot.initial_scores?.rival || 0;
 
-                    const wager = promo.bet_snapshot.wager; // 'my_artist' | 'rival' | 'draw'
-                    let outcome = 'lost';
-                    if (myDelta > rivalDelta) outcome = 'my_artist';
-                    else if (rivalDelta > myDelta) outcome = 'rival';
-                    else outcome = 'draw';
+                        const currMy = weekScoreMap.get(myId) || 0;
+                        const currRival = weekScoreMap.get(rivalId) || 0;
 
-                    let status = 'lost';
-                    if (wager === outcome) {
-                        status = 'won';
-                    } else if (outcome === 'draw') {
-                        status = 'draw'; // Refund case
-                    }
+                        const myDelta = currMy - startMy;
+                        const rivalDelta = currRival - startRival;
 
-                    const isWin = status === 'won';
-                    const isDraw = status === 'draw';
+                        const wager = promo.bet_snapshot.wager; // 'my_artist' | 'rival' | 'draw'
+                        let outcome = 'lost';
+                        if (myDelta > rivalDelta) outcome = 'my_artist';
+                        else if (rivalDelta > myDelta) outcome = 'rival';
+                        else outcome = 'draw';
 
-                    // Rewards
-                    const POINTS_REWARD = 10;
-                    const COINS_REWARD = 4;
-                    const REFUND_AMOUNT = 2; // Stake refund on draw
-
-                    const pointsAwarded = isWin ? POINTS_REWARD : 0;
-                    const coinsAwarded = isWin ? COINS_REWARD : (isDraw ? REFUND_AMOUNT : 0);
-
-                    // Update Snapshot
-                    const newSnapshot = {
-                        ...promo.bet_snapshot,
-                        status: status,
-                        scores: { my: myDelta, rival: rivalDelta },
-                        won_points: pointsAwarded,
-                        won_coins: coinsAwarded
-                    };
-
-                    // Update Promo
-                    await supabaseClient
-                        .from('daily_promos')
-                        .update({
-                            bet_snapshot: newSnapshot,
-                            bet_resolved: true,
-                            total_points: (promo.total_points || 0) + pointsAwarded,
-                            total_coins: (promo.total_coins || 0) + coinsAwarded
-                        })
-                        .eq('id', promo.id);
-
-                    // Award to Profile immediately
-                    if (isWin || (isDraw && coinsAwarded > 0)) {
-                        const { data: prof } = await supabaseClient.from('profiles').select('listen_score, musi_coins').eq('id', promo.user_id).single();
-                        if (prof) {
-                            await supabaseClient
-                                .from('profiles')
-                                .update({
-                                    listen_score: (prof.listen_score || 0) + pointsAwarded,
-                                    musi_coins: (prof.musi_coins || 0) + coinsAwarded
-                                })
-                                .eq('id', promo.user_id);
+                        let status = 'lost';
+                        if (wager === outcome) {
+                            status = 'won';
+                        } else if (outcome === 'draw') {
+                            status = 'draw'; // Refund case
                         }
-                    }
 
-                } catch (e) {
-                    console.error("Error resolving bet for promo " + promo.id, e);
+                        const isWin = status === 'won';
+                        const isDraw = status === 'draw';
+
+                        // Rewards
+                        const POINTS_REWARD = 10;
+                        const COINS_REWARD = 4;
+                        const REFUND_AMOUNT = 2; // Stake refund on draw
+
+                        const pointsAwarded = isWin ? POINTS_REWARD : 0;
+                        const coinsAwarded = isWin ? COINS_REWARD : (isDraw ? REFUND_AMOUNT : 0);
+
+                        // Update Snapshot
+                        const newSnapshot = {
+                            ...promo.bet_snapshot,
+                            status: status,
+                            scores: { my: myDelta, rival: rivalDelta },
+                            won_points: pointsAwarded,
+                            won_coins: coinsAwarded
+                        };
+
+                        // Update Promo
+                        await supabaseClient
+                            .from('daily_promos')
+                            .update({
+                                bet_snapshot: newSnapshot,
+                                bet_resolved: true,
+                                total_points: (promo.total_points || 0) + pointsAwarded,
+                                total_coins: (promo.total_coins || 0) + coinsAwarded
+                            })
+                            .eq('id', promo.id);
+
+                        // Award to Profile immediately
+                        if (isWin || (isDraw && coinsAwarded > 0)) {
+                            const { data: prof } = await supabaseClient.from('profiles').select('listen_score, musi_coins').eq('id', promo.user_id).single();
+                            if (prof) {
+                                await supabaseClient
+                                    .from('profiles')
+                                    .update({
+                                        listen_score: (prof.listen_score || 0) + pointsAwarded,
+                                        musi_coins: (prof.musi_coins || 0) + coinsAwarded
+                                    })
+                                    .eq('id', promo.user_id);
+                            }
+                        }
+
+                    } catch (e) {
+                        console.error("Error resolving bet for promo " + promo.id, e);
+                    }
                 }
             }
         }
@@ -282,14 +291,23 @@ Deno.serve(async (_req: Request) => {
         // Use the snapshot timestamp as the "week start" for log reconciliation
         const weekStartDate = latestSnapshot.created_at;
 
-        // Fetch all profiles and teams efficiently
+        // Fetch all profiles and the LATEST team for each user up to the current week
         const profiles = await fetchAll(supabaseClient, 'profiles', 'id, total_score');
-        const activeTeams = await fetchAll(supabaseClient, 'teams', '*', (q: any) =>
-            q.eq('week_number', weekNumber).eq('season_id', season.id)
+
+        // To handle carry-over effectively with pagination, we fetch all teams <= current week
+        // and then reduce them to the latest one per user.
+        // NOTE: In a very large DB, this should be optimized with a specialized RPC or window function.
+        const allTeamsUpToNow = await fetchAll(supabaseClient, 'teams', '*', (q: any) =>
+            q.lte('week_number', weekNumber).eq('season_id', season.id).order('week_number', { ascending: false })
         );
 
         const teamsByUser: Record<string, any> = {};
-        (activeTeams as any[])?.forEach((t: any) => teamsByUser[t.user_id] = t);
+        (allTeamsUpToNow as any[])?.forEach((t: any) => {
+            // Since we ordered by week_number DESC, the first one we see for each user is the latest
+            if (!teamsByUser[t.user_id]) {
+                teamsByUser[t.user_id] = t;
+            }
+        });
 
         // Fetch all weekly scores for current week - filtered by season
         const currentWeeklyScores = await fetchAll(supabaseClient, 'weekly_scores', 'artist_id, total_points', (q: any) =>

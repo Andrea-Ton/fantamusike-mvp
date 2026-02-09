@@ -148,7 +148,7 @@ export default function BetResultModal({ promoId, betSnapshot, onClose }: BetRes
                                             +<SpringCounter from={0} to={won_points ?? 10} />
                                         </div>
                                         <div className="relative z-10 text-[9px] font-black text-purple-400 tracking-[0.4em] uppercase opacity-70">
-                                            Punti Fantamusiké
+                                            Punti Promo
                                         </div>
                                     </div>
                                 )}

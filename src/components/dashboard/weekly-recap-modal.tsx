@@ -84,10 +84,10 @@ export function WeeklyRecapModal({ recap, onClose }: WeeklyRecapModalProps) {
                             </motion.div>
 
                             <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter leading-none mb-2">
-                                Fine Settimana!
+                                Hai vinto!
                             </h2>
                             <p className="text-gray-400 text-xs font-black uppercase tracking-[0.2em] mb-8">
-                                Week {recap.week_number} • Risultati Ufficiali
+                                Risultati Finali
                             </p>
 
                             <div className="grid grid-cols-2 gap-4 w-full mb-10">
@@ -115,7 +115,7 @@ export function WeeklyRecapModal({ recap, onClose }: WeeklyRecapModalProps) {
                             >
                                 <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                                 <span className="relative z-10 group-hover:text-white transition-colors">
-                                    {isMarkingSeen ? 'Salvataggio...' : 'Raccogli e Ricomincia'}
+                                    {isMarkingSeen ? 'Salvataggio...' : 'Avanti tutta!'}
                                 </span>
                                 {isMarkingSeen ? (
                                     <Loader2 size={20} className="animate-spin relative z-10 group-hover:text-white" />

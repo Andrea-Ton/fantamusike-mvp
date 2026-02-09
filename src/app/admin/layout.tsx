@@ -10,9 +10,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const pathname = usePathname();
 
     const navItems = [
-        { name: 'Leaderboard Config', href: '/admin/leaderboard', icon: <Trophy size={20} /> },
-        { name: 'Curated Roster', href: '/admin/roster', icon: <Users size={20} /> },
-        { name: 'Email System', href: '/admin/email', icon: <Mail size={20} /> },
+        { name: 'Gestione Premi', href: '/admin/leaderboard', icon: <Trophy size={20} /> },
+        { name: 'Gestione Artisti', href: '/admin/roster', icon: <Users size={20} /> },
+        { name: 'Email Marketing', href: '/admin/email', icon: <Mail size={20} /> },
         //{ name: 'Season Management', href: '/admin/season', icon: <Calendar size={20} /> },
     ];
 

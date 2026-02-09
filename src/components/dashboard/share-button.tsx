@@ -12,7 +12,8 @@ interface ShareButtonProps {
     rank: number;
     captain: SpotifyArtist | null;
     roster: (SpotifyArtist | null)[];
-    seasonName: string;
+    weekNumber: number;
+    seasonName?: string;
     percentile?: string;
     variant?: 'default' | 'iconOnly';
 }
@@ -23,7 +24,8 @@ export default function ShareButton({
     rank,
     captain,
     roster,
-    seasonName,
+    weekNumber,
+    seasonName = 'Season 1',
     percentile,
     variant = 'default'
 }: ShareButtonProps) {
@@ -244,7 +246,7 @@ export default function ShareButton({
                                             rank={rank}
                                             captain={captain}
                                             roster={roster}
-                                            seasonName={seasonName}
+                                            weekNumber={weekNumber}
                                             percentile={percentile}
                                         />
                                     </div>

@@ -483,6 +483,7 @@ export async function placeBetAction(artistId: string, prediction: 'my_artist' |
         const newSnapshot = {
             ...promo.bet_snapshot,
             wager: prediction,
+            week_number: currentWeekNumber,
             initial_scores: {
                 my: myStartScore,
                 rival: rivalStartScore

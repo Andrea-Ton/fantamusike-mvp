@@ -9,7 +9,7 @@ interface ShareCardProps {
     rank: number;
     captain: SpotifyArtist | null;
     roster: (SpotifyArtist | null)[];
-    seasonName: string;
+    weekNumber: number;
     percentile?: string;
 }
 
@@ -19,7 +19,7 @@ export default function ShareCard({
     rank,
     captain,
     roster,
-    seasonName,
+    weekNumber,
     percentile
 }: ShareCardProps) {
     // The roster contains all 5 artists, we need to filter out the captain and nulls for the grid
@@ -122,20 +122,39 @@ export default function ShareCard({
                 <div className="bg-white/[0.03] border border-white/10 rounded-[4rem] p-8 backdrop-blur-3xl relative overflow-hidden shadow-2xl">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 blur-[80px] -mr-32 -mt-32"></div>
                     <div className="grid grid-cols-3 gap-10 items-center">
-                        <div className="text-center">
-                            <p className="text-xl text-gray-500 font-black uppercase tracking-widest mb-4">Punti Totali</p>
-                            <h3 className="text-7xl font-black italic tracking-tighter uppercase text-transparent bg-clip-text bg-gradient-to-br from-white to-white/50">{totalScore}</h3>
-                        </div>
-                        <div className="text-center">
-                            <p className="text-xl text-gray-500 font-black uppercase tracking-widest mb-4">Posizione</p>
-                            <h3 className="text-7xl font-black italic tracking-tighter uppercase text-purple-400">#{rank}</h3>
-                        </div>
-                        {percentile && (
-                            <div className="text-center">
-                                <p className="text-xl text-gray-500 font-black uppercase tracking-widest mb-4">Ranking</p>
-                                <h3 className="text-6xl font-black italic tracking-tighter uppercase text-yellow-400">Top {percentile}</h3>
-                            </div>
-                        )}
+                        {/* Dynamic Font Sizing Helper */}
+                        {(() => {
+                            const getFontSize = (val: string | number) => {
+                                const len = val.toString().length;
+                                if (len > 8) return 'text-4xl';
+                                if (len > 6) return 'text-5xl';
+                                if (len > 5) return 'text-6xl';
+                                return 'text-7xl';
+                            };
+
+                            return (
+                                <>
+                                    <div className="text-center">
+                                        <p className="text-xl text-gray-500 font-black uppercase tracking-widest mb-4">Punti Totali</p>
+                                        <h3 className={`${getFontSize(totalScore)} font-black italic tracking-tighter uppercase text-transparent bg-clip-text bg-gradient-to-br from-white to-white/50`}>
+                                            {totalScore}
+                                        </h3>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-xl text-gray-500 font-black uppercase tracking-widest mb-4">Posizione</p>
+                                        <h3 className={`${getFontSize('#' + rank)} font-black italic tracking-tighter uppercase text-purple-400`}>
+                                            #{rank}
+                                        </h3>
+                                    </div>
+                                    {percentile && (
+                                        <div className="text-center">
+                                            <p className="text-xl text-gray-500 font-black uppercase tracking-widest mb-4">Ranking</p>
+                                            <h3 className="text-6xl font-black italic tracking-tighter uppercase text-yellow-400">Top {percentile}</h3>
+                                        </div>
+                                    )}
+                                </>
+                            );
+                        })()}
                     </div>
                 </div>
             </div>

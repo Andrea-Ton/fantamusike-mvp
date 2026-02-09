@@ -22,6 +22,7 @@ interface RosterSectionProps {
     dailyPromoState?: DailyPromoState;
     username: string;
     totalScore: number;
+    seasonName: string;
     leaderboardPromise: Promise<LeaderboardResponse>;
     weekNumber: number;
 }
@@ -33,6 +34,7 @@ export default async function RosterSection({
     dailyPromoState: initialPromoState,
     username,
     totalScore,
+    seasonName,
     leaderboardPromise,
     weekNumber
 }: RosterSectionProps) {
@@ -226,10 +228,9 @@ export default async function RosterSection({
 
     let percentile: string | undefined;
     if (leaderboard.userRank && leaderboard.totalCount > 1) {
-        const betterThanCount = leaderboard.totalCount - leaderboard.userRank;
-        const percentage = Math.floor((betterThanCount / leaderboard.totalCount) * 100);
-        if (percentage >= 1) {
-            percentile = `${percentage}%`;
+        const topPercentage = Math.max(1, Math.ceil((leaderboard.userRank / leaderboard.totalCount) * 100));
+        if (topPercentage <= 50) {
+            percentile = `${topPercentage}%`;
         }
     }
 
@@ -260,6 +261,7 @@ export default async function RosterSection({
                                     captain={captain}
                                     roster={roster}
                                     weekNumber={weekNumber}
+                                    seasonName={seasonName}
                                     percentile={percentile}
                                     variant="iconOnly"
                                 />
