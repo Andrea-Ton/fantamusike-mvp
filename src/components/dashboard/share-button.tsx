@@ -34,48 +34,65 @@ export default function ShareButton({
     const [dataUrl, setDataUrl] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
+    const getBase64 = async (url: string): Promise<string> => {
+        try {
+            // This should hit the browser cache since images are already displayed
+            const response = await fetch(url);
+            const blob = await response.blob();
+            return new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        } catch (e) {
+            console.error('Base64 conversion failed:', e);
+            return url; // Fallback to URL
+        }
+    };
+
     const captureRef = useRef<HTMLDivElement>(null);
 
     const generateImage = async (): Promise<string | null> => {
+        if (isGenerating) return null;
+
         setIsGenerating(true);
         setError(null);
         try {
-            console.log("Starting server-side generation...");
-
-            const params = new URLSearchParams();
-            params.append('username', username);
-            params.append('totalScore', totalScore.toString());
-            params.append('rank', rank.toString());
-            params.append('seasonName', seasonName);
-            if (percentile) params.append('percentile', percentile);
+            // Prepare all data including base64 images to avoid server-side fetching
+            const data: any = {
+                username,
+                totalScore: totalScore.toString(),
+                rank: rank.toString(),
+                seasonName,
+                percentile,
+                roster: []
+            };
 
             if (captain) {
-                params.append('captainName', captain.name);
-                // Use the largest image for the main captain display
+                data.captainName = captain.name;
                 if (captain.images?.[0]?.url) {
-                    params.append('captainImage', captain.images[0].url);
+                    data.captainImage = await getBase64(captain.images[0].url);
                 }
             }
 
-            // Filter out the captain from the roster for the grid
             const gridArtists = roster.filter(artist => artist && artist.id !== captain?.id).slice(0, 4);
-
-            gridArtists.forEach((artist, index) => {
+            for (const artist of gridArtists) {
                 if (artist) {
-                    params.append(`rosterName${index}`, artist.name);
-                    // For the roster grid (small images), use a smaller variant (usually 300x300 at index 1)
-                    // to speed up fetching and rendering significantly.
-                    const rosterImg = artist.images?.[1]?.url || artist.images?.[0]?.url;
-                    if (rosterImg) {
-                        params.append(`rosterImage${index}`, rosterImg);
-                    }
+                    const img = artist.images?.[1]?.url || artist.images?.[0]?.url;
+                    data.roster.push({
+                        name: artist.name,
+                        image: img ? await getBase64(img) : null
+                    });
                 }
+            }
+
+            const response = await fetch('/api/og', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
             });
 
-            const apiUrl = `/api/og?${params.toString()}`;
-            console.log("Fetching image from:", apiUrl);
-
-            const response = await fetch(apiUrl);
             if (!response.ok) {
                 throw new Error(`Server error: ${response.status}`);
             }
@@ -98,12 +115,16 @@ export default function ShareButton({
         }
     };
 
-    // Pre-generate image when modal opens
+    // Pre-generate image as soon as the dashboard loads (on mount)
     useEffect(() => {
-        if (showModal && !dataUrl && !isGenerating && !error) {
-            generateImage();
+        if (!dataUrl && !isGenerating && !error) {
+            // Small delay to ensure browser has finished initial rendering/caching
+            const timer = setTimeout(() => {
+                generateImage();
+            }, 1000);
+            return () => clearTimeout(timer);
         }
-    }, [showModal, dataUrl, isGenerating, error]);
+    }, []);
 
     // Cleanup object URL
     useEffect(() => {
