@@ -415,3 +415,58 @@ SELECT
     *,
     (total_score + listen_score) as combined_score
 FROM public.profiles;
+
+-- 18. MYSTERY BOXES System
+CREATE TABLE public.mystery_boxes (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    image_url TEXT,
+    type TEXT CHECK (type IN ('physical', 'digital')) NOT NULL,
+    price_musicoins INTEGER NOT NULL,
+    total_copies INTEGER, -- NULL for unlimited
+    available_copies INTEGER,
+    max_copies_per_user INTEGER,
+    is_active BOOLEAN DEFAULT TRUE,
+    prizes JSONB NOT NULL DEFAULT '[]'::jsonb, -- Array of { name, probability, is_certain, image_url? }
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+ALTER TABLE public.mystery_boxes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Mystery boxes viewable by everyone" ON public.mystery_boxes FOR SELECT USING (is_active = true);
+CREATE POLICY "Admins manage mystery boxes" ON public.mystery_boxes FOR ALL 
+  USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true));
+
+CREATE TABLE public.mystery_box_orders (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES public.profiles(id) NOT NULL,
+    box_id UUID REFERENCES public.mystery_boxes(id) NOT NULL,
+    status TEXT CHECK (status IN ('pending', 'shipped', 'completed')) DEFAULT 'pending',
+    prize_won JSONB, -- The specific prize assigned from the box
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+ALTER TABLE public.mystery_box_orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users view own orders" ON public.mystery_box_orders FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Admins manage orders" ON public.mystery_box_orders FOR ALL 
+  USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true));
+
+-- 19. STORAGE POLICIES (Marketplace Bucket)
+-- Assuming the bucket 'marketplace' is created via Supabase Dashboard
+
+-- Allow public access to view images
+CREATE POLICY "Public Access Marketplace" ON storage.objects FOR SELECT 
+USING ( bucket_id = 'marketplace' );
+
+-- Allow admins to upload/manage images
+CREATE POLICY "Admin Manage Marketplace" ON storage.objects FOR ALL
+USING (
+    bucket_id = 'marketplace' AND 
+    (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true))
+)
+WITH CHECK (
+    bucket_id = 'marketplace' AND 
+    (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true))
+);
