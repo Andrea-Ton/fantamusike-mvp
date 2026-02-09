@@ -184,6 +184,18 @@ export async function getLeaderboardAction(userId?: string, page: number = 1): P
 }
 
 export async function triggerWeeklyLeaderboardAction() {
+    return await triggerEdgeFunction('process-weekly-leaderboard');
+}
+
+export async function triggerDailyScoringAction() {
+    return await triggerEdgeFunction('calculate-daily-scores');
+}
+
+export async function triggerWeeklySnapshotAction() {
+    return await triggerEdgeFunction('perform-weekly-snapshot');
+}
+
+async function triggerEdgeFunction(functionName: string) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, message: 'Unauthorized' };
@@ -192,7 +204,7 @@ export async function triggerWeeklyLeaderboardAction() {
     if (!profile?.is_admin) return { success: false, message: 'Unauthorized' };
 
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/process-weekly-leaderboard`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/${functionName}`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
@@ -204,12 +216,12 @@ export async function triggerWeeklyLeaderboardAction() {
         if (response.ok) {
             revalidatePath('/dashboard');
             revalidatePath('/admin/leaderboard');
-            return { success: true, message: data.message };
+            return { success: true, message: data.message || 'Success' };
         } else {
             return { success: false, message: data.error || 'Failed to process' };
         }
     } catch (err) {
-        console.error('Trigger Error:', err);
+        console.error(`Trigger Error (${functionName}):`, err);
         return { success: false, message: 'Network error calling Edge Function' };
     }
 }

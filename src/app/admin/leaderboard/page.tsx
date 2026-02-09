@@ -1,14 +1,21 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Trophy, Coins, Play, Save, Loader2, ListChecks } from 'lucide-react';
-import { getLeaderboardConfigAction, updateLeaderboardConfigAction, triggerWeeklyLeaderboardAction, LeaderboardConfig } from '@/app/actions/leaderboard';
+import { Trophy, Coins, Play, Save, Loader2, ListChecks, Zap, BarChart3, Clock } from 'lucide-react';
+import {
+    getLeaderboardConfigAction,
+    updateLeaderboardConfigAction,
+    triggerWeeklyLeaderboardAction,
+    triggerDailyScoringAction,
+    triggerWeeklySnapshotAction,
+    LeaderboardConfig
+} from '@/app/actions/leaderboard';
 
 export default function AdminLeaderboardPage() {
     const [config, setConfig] = useState<LeaderboardConfig[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState<string | null>(null);
-    const [processing, setProcessing] = useState(false);
+    const [processing, setProcessing] = useState<string | null>(null);
     const [logs, setLogs] = useState<string[]>([]);
 
     useEffect(() => {
@@ -33,23 +40,37 @@ export default function AdminLeaderboardPage() {
         setSaving(null);
     };
 
-    const handleProcessManual = async () => {
-        if (!confirm('Sei sicuro? Questa azione resetterà i punteggi settimanali di tutti gli utenti e assegnerà i premi.')) return;
+    const handleTrigger = async (type: 'scoring' | 'ranking' | 'snapshot') => {
+        const labels = {
+            scoring: 'Daily Scoring',
+            ranking: 'Weekly Ranking/Rewards',
+            snapshot: 'Weekly Snapshot (New Week)'
+        };
 
-        setProcessing(true);
-        addLog('🚀 Triggering manual weekly processing...');
+        const confirmation = type === 'scoring'
+            ? 'Sei sicuro? Questa azione ricalcolerà i punteggi di oggi per tutti gli artisti e gli utenti.'
+            : 'Sei sicuro? Questa azione è irreversibile e impatterà la classifica globale.';
+
+        if (!confirm(confirmation)) return;
+
+        setProcessing(type);
+        addLog(`🚀 Manually triggering ${labels[type]}...`);
 
         try {
-            const res = await triggerWeeklyLeaderboardAction();
+            let res;
+            if (type === 'scoring') res = await triggerDailyScoringAction();
+            else if (type === 'ranking') res = await triggerWeeklyLeaderboardAction();
+            else res = await triggerWeeklySnapshotAction();
+
             if (res.success) {
                 addLog(`✅ Success: ${res.message}`);
             } else {
                 addLog(`❌ Error: ${res.message || 'Unknown error'}`);
             }
         } catch (err) {
-            addLog('❌ Failed to call action');
+            addLog(`❌ Failed to call ${type} action`);
         } finally {
-            setProcessing(false);
+            setProcessing(null);
         }
     };
 
@@ -67,20 +88,10 @@ export default function AdminLeaderboardPage() {
 
     return (
         <div className="p-8 max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <header className="flex justify-between items-end">
+            <header>
                 <div>
                     <h1 className="text-3xl font-black text-white italic tracking-tighter uppercase mb-2">Gestione Classifica</h1>
-                    <p className="text-gray-400 text-sm">Configura i premi settimanali e gestisci il reset globale.</p>
-                </div>
-                <div className="flex gap-4">
-                    <button
-                        onClick={handleProcessManual}
-                        disabled={processing}
-                        className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold flex items-center gap-2 transition-all disabled:opacity-50"
-                    >
-                        {processing ? <Loader2 size={18} className="animate-spin" /> : <Play size={18} />}
-                        Processa Classifica Ora
-                    </button>
+                    <p className="text-gray-400 text-sm">Configura i premi settimanali e gestisci le automazioni manuali.</p>
                 </div>
             </header>
 
@@ -127,20 +138,64 @@ export default function AdminLeaderboardPage() {
                     <div className="p-6 bg-white/5 border border-white/10 rounded-3xl space-y-6">
                         <div className="space-y-2">
                             <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Schedules (UTC)</p>
-                            <ul className="space-y-2 text-sm">
-                                <li className="flex justify-between">
-                                    <span className="text-gray-500">Daily Scoring:</span>
-                                    <span className="text-white font-mono">03:00 AM</span>
-                                </li>
-                                <li className="flex justify-between">
-                                    <span className="text-gray-500">Weekly Ranking:</span>
-                                    <span className="text-white font-mono font-bold text-blue-400">04:00 AM (Mon)</span>
-                                </li>
-                                <li className="flex justify-between">
-                                    <span className="text-gray-500">Weekly Snapshot:</span>
-                                    <span className="text-white font-mono text-purple-400">04:15 AM (Mon)</span>
-                                </li>
-                            </ul>
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between p-3 bg-black/20 rounded-2xl border border-white/5 group">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
+                                            <BarChart3 size={16} />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-black text-white uppercase tracking-tight">1. Scoring</p>
+                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tight">Scheduled: 03:00 AM</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => handleTrigger('scoring')}
+                                        disabled={!!processing}
+                                        className="px-3 py-1.5 bg-white/5 hover:bg-blue-500 hover:text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-30"
+                                    >
+                                        {processing === 'scoring' ? <Loader2 size={12} className="animate-spin" /> : 'Run Now'}
+                                    </button>
+                                </div>
+
+                                <div className="flex items-center justify-between p-3 bg-black/20 rounded-2xl border border-white/5 group">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400">
+                                            <Trophy size={16} />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-black text-white uppercase tracking-tight">2. Assegnazione Punti</p>
+                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tight">Scheduled: 04:00 AM (Mon)</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => handleTrigger('ranking')}
+                                        disabled={!!processing}
+                                        className="px-3 py-1.5 bg-white/5 hover:bg-purple-500 hover:text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-30"
+                                    >
+                                        {processing === 'ranking' ? <Loader2 size={12} className="animate-spin" /> : 'Run Now'}
+                                    </button>
+                                </div>
+
+                                <div className="flex items-center justify-between p-3 bg-black/20 rounded-2xl border border-white/5 group">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-400">
+                                            <Clock size={16} />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-black text-white uppercase tracking-tight">3. Start Nuova settimana</p>
+                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tight">Scheduled: 05:00 AM (Mon)</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => handleTrigger('snapshot')}
+                                        disabled={!!processing}
+                                        className="px-3 py-1.5 bg-white/5 hover:bg-cyan-500 hover:text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-30"
+                                    >
+                                        {processing === 'snapshot' ? <Loader2 size={12} className="animate-spin" /> : 'Run Now'}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="space-y-4">

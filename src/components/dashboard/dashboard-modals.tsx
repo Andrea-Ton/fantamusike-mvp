@@ -18,22 +18,12 @@ export default function DashboardModals({ unseenLogs, pendingBet, unseenWeeklyRe
     const hasBet = !!pendingBet;
 
     // State to track progression
-    const [weeklyFinished, setWeeklyFinished] = useState(false);
     const [recapFinished, setRecapFinished] = useState(false);
+    const [betFinished, setBetFinished] = useState(false);
 
-    // Order:
-    // 1. Weekly Recap
-    if (hasWeekly && !weeklyFinished) {
-        return (
-            <WeeklyRecapModal
-                recap={unseenWeeklyRecap!}
-                onClose={() => setWeeklyFinished(true)}
-            />
-        );
-    }
-
-    // 2. Daily Recap (only after weekly or if none)
-    if (hasLogs && !recapFinished && (weeklyFinished || !hasWeekly)) {
+    // Sequence Order:
+    // 1. Daily Recap (Points)
+    if (hasLogs && !recapFinished) {
         return (
             <DailyRecapModalWrapper
                 logs={unseenLogs}
@@ -42,10 +32,23 @@ export default function DashboardModals({ unseenLogs, pendingBet, unseenWeeklyRe
         );
     }
 
-    // 3. Bet Results (only after others)
-    if (hasBet && (recapFinished || (!hasLogs && (weeklyFinished || !hasWeekly)))) {
+    // 2. Bet Results (only after daily recap or if none)
+    if (hasBet && !betFinished && (recapFinished || !hasLogs)) {
         return (
-            <BetResultModalWrapper result={pendingBet} />
+            <BetResultModalWrapper
+                result={pendingBet}
+                onClose={() => setBetFinished(true)}
+            />
+        );
+    }
+
+    // 3. Weekly Recap (Last in sequence)
+    if (hasWeekly && (betFinished || !hasBet) && (recapFinished || !hasLogs)) {
+        return (
+            <WeeklyRecapModal
+                recap={unseenWeeklyRecap!}
+                onClose={() => { }} // Last one, no more steps
+            />
         );
     }
 

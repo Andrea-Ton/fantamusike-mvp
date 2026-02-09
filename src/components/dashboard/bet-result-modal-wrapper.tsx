@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import BetResultModal from '@/components/dashboard/bet-result-modal';
 
-export function BetResultModalWrapper({ result }: { result: any }) {
+export function BetResultModalWrapper({ result, onClose }: { result: any, onClose?: () => void }) {
     const [isOpen, setIsOpen] = useState(true);
 
     if (!isOpen || !result) return null;
@@ -12,7 +12,10 @@ export function BetResultModalWrapper({ result }: { result: any }) {
         <BetResultModal
             promoId={result.id}
             betSnapshot={result.betSnapshot}
-            onClose={() => setIsOpen(false)}
+            onClose={() => {
+                setIsOpen(false);
+                onClose?.();
+            }}
         />
     );
 }
