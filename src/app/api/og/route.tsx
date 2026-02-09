@@ -107,7 +107,7 @@ async function generateImage(data: any) {
                 </div>
 
                 {/* Header: Logo + Title */}
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '40px', zIndex: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px', zIndex: 10 }}>
                     {logoData ? (
                         <img
                             src={logoData as any}
@@ -136,7 +136,7 @@ async function generateImage(data: any) {
 
 
                 {/* Captain Section */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '54px', zIndex: 10 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '42px', zIndex: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px', color: '#6b7280', fontSize: '16px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '4px' }}>
                         <div style={{ width: '40px', height: '2px', backgroundColor: '#a855f7', marginRight: '14px' }}></div>
                         <span>Capitano</span>
@@ -251,7 +251,7 @@ async function generateImage(data: any) {
                     backgroundColor: 'rgba(255,255,255,0.05)',
                     borderRadius: '40px',
                     border: '1px solid rgba(255,255,255,0.15)',
-                    padding: '30px',
+                    padding: '22px',
                     justifyContent: 'space-around',
                     alignItems: 'center',
                     marginBottom: '20px',

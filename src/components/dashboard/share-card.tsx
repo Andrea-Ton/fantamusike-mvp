@@ -45,7 +45,7 @@ export default function ShareCard({
             </div>
 
             {/* Header - Horizontal Layout */}
-            <div className="flex items-center justify-center gap-4 mb-12 z-10 w-full">
+            <div className="flex items-center justify-center gap-4 mb-8  z-10 w-full">
                 <div className="relative w-20 h-20">
                     <img
                         src="/logo.png"
