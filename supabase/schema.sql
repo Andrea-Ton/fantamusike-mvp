@@ -464,3 +464,22 @@ WITH CHECK (
     bucket_id = 'marketplace' AND 
     (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true))
 );
+
+-- 20. MUSICOIN TRANSACTIONS (PayPal)
+CREATE TABLE public.musicoin_transactions (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES public.profiles(id) NOT NULL,
+    paypal_order_id TEXT UNIQUE NOT NULL,
+    amount_eur NUMERIC(10, 2) NOT NULL,
+    coins_amount INTEGER NOT NULL,
+    package_label TEXT,
+    status TEXT NOT NULL DEFAULT 'PENDING',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+ALTER TABLE public.musicoin_transactions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users view own transactions" 
+ON public.musicoin_transactions FOR SELECT 
+USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own transactions" 
+ON public.musicoin_transactions FOR INSERT 
+WITH CHECK (auth.uid() = user_id);
