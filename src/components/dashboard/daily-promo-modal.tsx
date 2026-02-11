@@ -242,8 +242,6 @@ export default function DailyPromoModal({
                 setPromoStatus(prev => ({ ...prev, bet: true }));
                 setBetPlaced(true);
                 triggerConfetti(); // Visual feedback for successful bet placement
-            } else if (res.message === 'MusiCoins insufficient') {
-                alert("Non hai abbastanza MusiCoins per piazzare questa scommessa!");
             }
         } catch (e) {
             console.error(e);
@@ -639,15 +637,7 @@ export default function DailyPromoModal({
                                                                         {loadingAction === 'place-bet' ? (
                                                                             <div className="w-full flex justify-center"><Loader2 className="animate-spin" size={24} /></div>
                                                                         ) : (
-                                                                            <>
-                                                                                <div className="flex flex-col items-start gap-0">
-                                                                                    <span className="text-xs sm:text-base font-black uppercase tracking-tight">Scommetti</span>
-                                                                                </div>
-                                                                                <div className="flex ml-3 items-center gap-1 bg-black/20 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border border-white/10 backdrop-blur-sm shadow-inner shrink-0">
-                                                                                    <span className="text-[10px] sm:text-xs font-bold">-{BET_CONFIG.ENTRY_FEE}</span>
-                                                                                    <span className="text-[8px] sm:text-[10px] font-black opacity-80 uppercase">COINS</span>
-                                                                                </div>
-                                                                            </>
+                                                                            <span className="w-full text-xs sm:text-base font-black uppercase tracking-tight text-center">Conferma Scommessa</span>
                                                                         )}
                                                                     </button>
                                                                 )}
@@ -687,48 +677,23 @@ export default function DailyPromoModal({
                                             ) : (promoResult || initialState.boostSnapshot?.reward) ? (
                                                 <div className="flex-1 flex flex-col items-center justify-center py-4 animate-in zoom-in duration-300">
                                                     {/* Reward Content Inspired by PromoModal */}
-                                                    {(promoResult?.musiCoinsAwarded || initialState.boostSnapshot?.reward?.type === 'coins') ? (
-                                                        <>
-                                                            <div className="relative w-24 h-24 sm:w-32 sm:h-32 mb-4 sm:mb-6">
-                                                                <div className="absolute inset-0 bg-yellow-500 rounded-full blur-2xl opacity-20 animate-pulse"></div>
-                                                                <div className="relative w-full h-full animate-spin-3d">
-                                                                    <div className="w-full h-full rounded-full border-4 border-yellow-300 bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 flex items-center justify-center shadow-[0_0_50px_rgba(234,179,8,0.5)]">
-                                                                        <img
-                                                                            src="/musike_logo_pict.png"
-                                                                            alt="MusiCoin"
-                                                                            className="w-1/2 h-1/2 object-contain drop-shadow-md brightness-[0.8] contrast-[1.2]"
-                                                                        />
-                                                                    </div>
-                                                                </div>
+                                                    <>
+                                                        <div className="relative w-24 h-24 sm:w-32 sm:h-32 mb-4 sm:mb-6 flex items-center justify-center">
+                                                            <div className="absolute inset-0 bg-purple-500 rounded-full blur-2xl opacity-20 animate-pulse"></div>
+                                                            <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center shadow-[0_0_40px_rgba(168,85,247,0.4)] border-4 border-white/10 animate-bounce transition-all duration-1000">
+                                                                <Trophy size={32} className="sm:hidden text-white drop-shadow-lg" />
+                                                                <Trophy size={40} className="hidden sm:block text-white drop-shadow-lg" />
                                                             </div>
-                                                            <h3 className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-100 to-yellow-300 mb-1 sm:mb-2 text-center drop-shadow-sm uppercase italic">
-                                                                MusiCoins Found!
-                                                            </h3>
-                                                            <p className="text-gray-400 mb-6 sm:mb-8 text-center text-xs sm:text-sm uppercase font-bold tracking-widest">
-                                                                Hai trovato <span className="text-yellow-400 font-black text-base sm:text-lg">
-                                                                    +<SpringCounter from={0} to={promoResult?.musiCoinsAwarded || initialState.boostSnapshot?.reward?.amount || 0} /> MusiCoins
-                                                                </span>
-                                                            </p>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <div className="relative w-24 h-24 sm:w-32 sm:h-32 mb-4 sm:mb-6 flex items-center justify-center">
-                                                                <div className="absolute inset-0 bg-purple-500 rounded-full blur-2xl opacity-20 animate-pulse"></div>
-                                                                <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center shadow-[0_0_40px_rgba(168,85,247,0.4)] border-4 border-white/10 animate-bounce transition-all duration-1000">
-                                                                    <Trophy size={32} className="sm:hidden text-white drop-shadow-lg" />
-                                                                    <Trophy size={40} className="hidden sm:block text-white drop-shadow-lg" />
-                                                                </div>
-                                                            </div>
-                                                            <h3 className="text-xl sm:text-2xl font-black text-white mb-1 sm:mb-2 text-center uppercase italic tracking-tighter">
-                                                                Punti Raccolti!
-                                                            </h3>
-                                                            <p className="text-gray-400 mb-6 sm:mb-8 text-center text-[10px] sm:text-sm uppercase font-bold tracking-widest">
-                                                                Hai guadagnato <span className="text-purple-400 font-black text-base sm:text-xl">
-                                                                    +<SpringCounter from={0} to={promoResult?.pointsAwarded || initialState.boostSnapshot?.reward?.amount || 0} /> PTS
-                                                                </span>
-                                                            </p>
-                                                        </>
-                                                    )}
+                                                        </div>
+                                                        <h3 className="text-xl sm:text-2xl font-black text-white mb-1 sm:mb-2 text-center uppercase italic tracking-tighter">
+                                                            Punti Raccolti!
+                                                        </h3>
+                                                        <p className="text-gray-400 mb-6 sm:mb-8 text-center text-[10px] sm:text-sm uppercase font-bold tracking-widest">
+                                                            Hai guadagnato <span className="text-purple-400 font-black text-base sm:text-xl">
+                                                                +<SpringCounter from={0} to={promoResult?.pointsAwarded || initialState.boostSnapshot?.reward?.amount || 0} /> PTS
+                                                            </span>
+                                                        </p>
+                                                    </>
 
                                                     <a
                                                         href={pendingRedirectUrl || '#'}

@@ -1,44 +1,30 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { Trophy, Coins, Play, Save, Loader2, ListChecks, Zap, BarChart3, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-    getLeaderboardConfigAction,
-    updateLeaderboardConfigAction,
+    Loader2,
+    ListChecks,
+    Zap,
+    BarChart3,
+    Clock,
+    Trophy,
+    Terminal,
+    Activity,
+    ShieldCheck,
+    AlertTriangle,
+    RefreshCw,
+    Play
+} from 'lucide-react';
+import {
     triggerWeeklyLeaderboardAction,
     triggerDailyScoringAction,
-    triggerWeeklySnapshotAction,
-    LeaderboardConfig
+    triggerWeeklySnapshotAction
 } from '@/app/actions/leaderboard';
 
 export default function AdminLeaderboardPage() {
-    const [config, setConfig] = useState<LeaderboardConfig[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState<string | null>(null);
     const [processing, setProcessing] = useState<string | null>(null);
     const [logs, setLogs] = useState<string[]>([]);
-
-    useEffect(() => {
-        fetchConfig();
-    }, []);
-
-    const fetchConfig = async () => {
-        setLoading(true);
-        const data = await getLeaderboardConfigAction();
-        setConfig(data);
-        setLoading(false);
-    };
-
-    const handleUpdateReward = async (tier: string, reward: number) => {
-        setSaving(tier);
-        const res = await updateLeaderboardConfigAction(tier, reward);
-        if (res.success) {
-            addLog(`✅ Updated ${tier} to ${reward} MusiCoins`);
-        } else {
-            addLog(`❌ Failed to update ${tier}`);
-        }
-        setSaving(null);
-    };
 
     const handleTrigger = async (type: 'scoring' | 'ranking' | 'snapshot') => {
         const labels = {
@@ -54,7 +40,7 @@ export default function AdminLeaderboardPage() {
         if (!confirm(confirmation)) return;
 
         setProcessing(type);
-        addLog(`🚀 Manually triggering ${labels[type]}...`);
+        addLog(`🚀 [SYSTEM] Initiating ${labels[type]} protocol...`, 'info');
 
         try {
             let res;
@@ -63,158 +49,246 @@ export default function AdminLeaderboardPage() {
             else res = await triggerWeeklySnapshotAction();
 
             if (res.success) {
-                addLog(`✅ Success: ${res.message}`);
+                addLog(`✅ [SUCCESS] ${res.message}`, 'success');
             } else {
-                addLog(`❌ Error: ${res.message || 'Unknown error'}`);
+                addLog(`❌ [ERROR] ${res.message || 'Unknown protocol failure'}`, 'error');
             }
         } catch (err) {
-            addLog(`❌ Failed to call ${type} action`);
+            addLog(`❌ [FATAL] Communication error with processing core`, 'error');
         } finally {
             setProcessing(null);
         }
     };
 
-    const addLog = (msg: string) => {
-        setLogs(prev => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev].slice(0, 10));
+    const addLog = (msg: string, type: 'info' | 'success' | 'error' = 'info') => {
+        setLogs((prev: string[]) => [
+            `[${new Date().toLocaleTimeString()}] ${msg}`,
+            ...prev
+        ].slice(0, 15));
     };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <Loader2 className="animate-spin text-purple-500" size={32} />
-            </div>
-        );
-    }
+    const automationTasks = [
+        {
+            id: 'scoring',
+            title: 'Daily Scoring',
+            desc: 'Calcola i punti basati su stream e hype Spotify.',
+            schedule: 'Ogni giorno alle 03:00 UTC',
+            icon: <BarChart3 className="text-blue-400" />,
+            color: 'from-blue-500/20 to-indigo-500/20',
+            border: 'border-blue-500/30',
+            accent: 'bg-blue-500',
+            glow: 'shadow-[0_0_20px_rgba(59,130,246,0.2)]'
+        },
+        {
+            id: 'ranking',
+            title: 'Weekly Ranking',
+            desc: 'Genera il recap settimanale e archivia i risultati.',
+            schedule: 'Lunedì alle 04:00 UTC',
+            icon: <Trophy className="text-purple-400" />,
+            color: 'from-purple-500/20 to-pink-500/20',
+            border: 'border-purple-500/30',
+            accent: 'bg-purple-500',
+            glow: 'shadow-[0_0_20px_rgba(168,85,247,0.2)]'
+        },
+        {
+            id: 'snapshot',
+            title: 'Week Reset',
+            desc: 'Prepara la nuova settimana e svuota le lineup.',
+            schedule: 'Lunedì alle 05:00 UTC',
+            icon: <Clock className="text-cyan-400" />,
+            color: 'from-cyan-500/20 to-teal-500/20',
+            border: 'border-cyan-500/30',
+            accent: 'bg-cyan-500',
+            glow: 'shadow-[0_0_20px_rgba(6,182,212,0.2)]'
+        }
+    ];
 
     return (
-        <div className="p-8 max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <header>
-                <div>
-                    <h1 className="text-3xl font-black text-white italic tracking-tighter uppercase mb-2">Gestione Classifica</h1>
-                    <p className="text-gray-400 text-sm">Configura i premi settimanali e gestisci le automazioni manuali.</p>
-                </div>
-            </header>
+        <div className="min-h-screen bg-[#050507] p-4 sm:p-8 md:p-12 overflow-x-hidden selection:bg-purple-500/30">
+            {/* Ambient Background Glows */}
+            <div className="fixed top-0 left-1/4 w-[500px] h-[500px] bg-purple-600/10 blur-[120px] rounded-full -z-10 animate-pulse-slow"></div>
+            <div className="fixed bottom-0 right-1/4 w-[400px] h-[400px] bg-blue-600/10 blur-[100px] rounded-full -z-10"></div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Reward Configuration */}
-                <div className="space-y-4">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Trophy className="text-yellow-500" size={20} />
-                        <h2 className="text-xl font-bold text-white uppercase italic tracking-tighter">Premi MusiCoin</h2>
-                    </div>
-
-                    <div className="space-y-3">
-                        {config.map((item) => (
-                            <div key={item.tier} className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-2xl group hover:border-white/20 transition-all">
-                                <div className="flex flex-col">
-                                    <span className="text-sm font-black text-white">{item.label}</span>
-                                    <span className="text-[10px] text-gray-500 uppercase font-bold">{item.tier}</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <input
-                                        type="number"
-                                        defaultValue={item.reward_musicoins}
-                                        onBlur={(e) => handleUpdateReward(item.tier, parseInt(e.target.value))}
-                                        className="w-24 bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-right font-black text-yellow-500 focus:outline-none focus:border-purple-500"
-                                    />
-                                    {saving === item.tier ? (
-                                        <Loader2 size={16} className="animate-spin text-gray-500" />
-                                    ) : (
-                                        <Coins size={16} className="text-gray-600 group-hover:text-yellow-500 transition-colors" />
-                                    )}
-                                </div>
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="max-w-6xl mx-auto space-y-12"
+            >
+                {/* Header "Mission Control" Aesthetic */}
+                <header className="relative flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/5 pb-10">
+                    <div className="relative">
+                        <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-1 h-12 bg-gradient-to-b from-purple-500 to-blue-500 rounded-full blur-[2px]"></div>
+                        <h1 className="text-4xl md:text-6xl font-black text-white italic tracking-tighter uppercase leading-none mb-4">
+                            Gestione <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">Classifica</span>
+                        </h1>
+                        <div className="flex items-center gap-4 text-gray-500">
+                            <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
+                                <Activity size={12} className="text-green-500 animate-pulse" />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Core Status: Active</span>
                             </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Automation & Status Logs */}
-                <div className="space-y-4">
-                    <div className="flex items-center gap-2 mb-4">
-                        <ListChecks className="text-blue-500" size={20} />
-                        <h2 className="text-xl font-bold text-white uppercase italic tracking-tighter">Automazione & Status</h2>
-                    </div>
-
-                    <div className="p-6 bg-white/5 border border-white/10 rounded-3xl space-y-6">
-                        <div className="space-y-2">
-                            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Schedules (UTC)</p>
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between p-3 bg-black/20 rounded-2xl border border-white/5 group">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
-                                            <BarChart3 size={16} />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-black text-white uppercase tracking-tight">1. Scoring</p>
-                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tight">Scheduled: 03:00 AM</p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => handleTrigger('scoring')}
-                                        disabled={!!processing}
-                                        className="px-3 py-1.5 bg-white/5 hover:bg-blue-500 hover:text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-30"
-                                    >
-                                        {processing === 'scoring' ? <Loader2 size={12} className="animate-spin" /> : 'Run Now'}
-                                    </button>
-                                </div>
-
-                                <div className="flex items-center justify-between p-3 bg-black/20 rounded-2xl border border-white/5 group">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400">
-                                            <Trophy size={16} />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-black text-white uppercase tracking-tight">2. Assegnazione Punti</p>
-                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tight">Scheduled: 04:00 AM (Mon)</p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => handleTrigger('ranking')}
-                                        disabled={!!processing}
-                                        className="px-3 py-1.5 bg-white/5 hover:bg-purple-500 hover:text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-30"
-                                    >
-                                        {processing === 'ranking' ? <Loader2 size={12} className="animate-spin" /> : 'Run Now'}
-                                    </button>
-                                </div>
-
-                                <div className="flex items-center justify-between p-3 bg-black/20 rounded-2xl border border-white/5 group">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-400">
-                                            <Clock size={16} />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-black text-white uppercase tracking-tight">3. Start Nuova settimana</p>
-                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tight">Scheduled: 05:00 AM (Mon)</p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => handleTrigger('snapshot')}
-                                        disabled={!!processing}
-                                        className="px-3 py-1.5 bg-white/5 hover:bg-cyan-500 hover:text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-30"
-                                    >
-                                        {processing === 'snapshot' ? <Loader2 size={12} className="animate-spin" /> : 'Run Now'}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Logs Recenti</p>
-                            <div className="bg-black/50 border border-white/5 rounded-2xl p-4 font-mono text-[10px] space-y-1 h-[200px] overflow-y-auto">
-                                {logs.length === 0 ? (
-                                    <span className="text-gray-700 italic">No activity logs...</span>
-                                ) : (
-                                    logs.map((log, i) => (
-                                        <div key={i} className="text-gray-400">
-                                            {log}
-                                        </div>
-                                    ))
-                                )}
+                            <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
+                                <ShieldCheck size={12} className="text-blue-500" />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Admin Authorization: Valid</span>
                             </div>
                         </div>
                     </div>
+                </header>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    {/* Operations Dashboard */}
+                    <div className="lg:col-span-8 space-y-8">
+                        <div className="flex items-center gap-2">
+                            <Zap className="text-yellow-500" size={20} />
+                            <h2 className="text-xl font-bold text-white uppercase italic tracking-tighter">Protocolli di Automazione</h2>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {automationTasks.map((task, idx) => (
+                                <motion.div
+                                    key={task.id}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: idx * 0.1 }}
+                                    className={`relative group p-6 rounded-[2rem] bg-gradient-to-br ${task.color} border ${task.border} backdrop-blur-xl overflow-hidden transition-all hover:scale-[1.02] ${task.glow}`}
+                                >
+                                    <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity rotate-12">
+                                        {React.cloneElement(task.icon as any, { size: 80 })}
+                                    </div>
+
+                                    <div className="relative z-10 flex flex-col h-full justify-between gap-8">
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-10 h-10 rounded-xl ${task.accent}/20 flex items-center justify-center border border-white/10`}>
+                                                    {task.icon}
+                                                </div>
+                                                <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">{task.title}</h3>
+                                            </div>
+                                            <p className="text-xs text-gray-400 font-medium leading-relaxed max-w-[200px]">
+                                                {task.desc}
+                                            </p>
+                                        </div>
+
+                                        <div className="pt-4 border-t border-white/5 flex items-center justify-between mt-auto">
+                                            <div className="flex flex-col">
+                                                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Schedule</span>
+                                                <span className="text-[10px] font-black text-white uppercase">{task.schedule}</span>
+                                            </div>
+                                            <button
+                                                onClick={() => handleTrigger(task.id as any)}
+                                                disabled={!!processing}
+                                                className="relative px-6 py-2.5 bg-white text-black rounded-xl font-black uppercase text-[10px] tracking-widest transition-all hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] disabled:opacity-30 group/btn overflow-hidden"
+                                            >
+                                                <div className="absolute inset-0 bg-black opacity-0 group-hover/btn:opacity-10 transition-opacity"></div>
+                                                <span className="relative z-10 flex items-center gap-2">
+                                                    {processing === task.id ? (
+                                                        <RefreshCw size={12} className="animate-spin" />
+                                                    ) : (
+                                                        <Play size={12} className="fill-current" />
+                                                    )}
+                                                    {processing === task.id ? 'Running...' : 'Execute'}
+                                                </span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ))}
+
+                            {/* Manual Alert/Status Card */}
+                            <div className="bg-white/[0.02] border border-white/5 rounded-[2rem] p-6 flex flex-col justify-center items-center text-center space-y-4 group">
+                                <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-500 border border-yellow-500/20 group-hover:scale-110 transition-transform">
+                                    <AlertTriangle size={20} />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Warning</p>
+                                    <p className="text-xs font-medium text-gray-400 leading-tight italic">
+                                        L'esecuzione manuale bypassa i controlli schedulati. Procedere con cautela.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Terminal Logs */}
+                    <div className="lg:col-span-4 space-y-4">
+                        <div className="flex items-center gap-2">
+                            <Terminal className="text-purple-400" size={20} />
+                            <h2 className="text-xl font-bold text-white uppercase italic tracking-tighter">Command Log</h2>
+                        </div>
+
+                        <div className="relative group">
+                            <div className="absolute -inset-[1px] bg-gradient-to-b from-purple-500/20 to-blue-500/20 rounded-[2rem] blur-[1px]"></div>
+                            <div className="relative bg-[#0a0a0f]/80 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-6 h-[500px] flex flex-col font-mono">
+                                <div className="flex items-center gap-1.5 mb-6">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-red-500/50"></div>
+                                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50"></div>
+                                    <div className="w-2.5 h-2.5 rounded-full bg-green-500/50"></div>
+                                    <span className="text-[9px] text-gray-600 font-bold ml-2 uppercase tracking-widest">system_monitor.sh</span>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar">
+                                    <AnimatePresence>
+                                        {logs.length === 0 ? (
+                                            <motion.div
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                className="text-gray-700 italic text-[10px]"
+                                            >
+                                                Waiting for system commands...
+                                            </motion.div>
+                                        ) : (
+                                            logs.map((log, i) => (
+                                                <motion.div
+                                                    key={i}
+                                                    initial={{ opacity: 0, x: 10 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    className={`text-[10px] leading-relaxed break-all ${log.includes('SUCCESS') ? 'text-green-400' :
+                                                        log.includes('ERROR') ? 'text-red-400' :
+                                                            'text-purple-300'
+                                                        }`}
+                                                >
+                                                    <span className="opacity-50 inline-block mr-2">$</span>
+                                                    {log}
+                                                </motion.div>
+                                            ))
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+
+                                <div className="mt-4 pt-4 border-t border-white/5">
+                                    <div className="flex items-center gap-2 text-[10px] text-green-500/50">
+                                        <span className="animate-pulse">●</span>
+                                        <span className="font-black tracking-widest uppercase">Connection: Secure</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </motion.div>
+
+            {/* Custom Scrollbar Styles */}
+            <style jsx global>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 4px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(255, 255, 255, 0.05);
+                    border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: rgba(255, 255, 255, 0.1);
+                }
+                @keyframes pulse-slow {
+                    0%, 100% { opacity: 0.1; transform: scale(1); }
+                    50% { opacity: 0.2; transform: scale(1.05); }
+                }
+                .animate-pulse-slow {
+                    animation: pulse-slow 8s ease-in-out infinite;
+                }
+            `}</style>
         </div>
     );
 }

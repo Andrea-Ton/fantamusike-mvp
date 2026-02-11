@@ -54,7 +54,7 @@ export default function ShareCard({
                         crossOrigin="anonymous"
                     />
                 </div>
-                <h1 className="text-6xl font-black italic tracking-tighter uppercase leading-none">www.fanta.musike.fm</h1>
+                <h1 className="text-6xl font-black italic tracking-tighter uppercase leading-none">fantamusiké</h1>
             </div>
 
             {/* Captain Section */}

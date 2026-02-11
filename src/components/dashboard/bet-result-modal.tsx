@@ -69,7 +69,7 @@ export default function BetResultModal({ promoId, betSnapshot, onClose }: BetRes
                 return {
                     title: 'PAREGGIO',
                     subtitle: 'EQUILIBRIO PERFETTO',
-                    desc: 'Incredibile! Entrambi gli artisti hanno performato allo stesso modo. Ti abbiamo restituito i 2 MusiCoins della scommessa!',
+                    desc: 'Incredibile! Entrambi gli artisti hanno performato allo stesso modo. Un pareggio perfetto!',
                     color: 'from-amber-400 to-orange-600',
                     glow: 'bg-amber-500/30',
                     accent: 'text-amber-400',

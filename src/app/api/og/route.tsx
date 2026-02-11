@@ -130,7 +130,7 @@ async function generateImage(data: any) {
                         </div>
                     )}
                     <div style={{ display: 'flex', fontSize: '34px', fontWeight: 900, fontStyle: 'italic', textTransform: 'uppercase', letterSpacing: '-2px' }}>
-                        <span>WWW.FANTA.MUSIKE.FM</span>
+                        <span>fantamusiké</span>
                     </div>
                 </div>
 

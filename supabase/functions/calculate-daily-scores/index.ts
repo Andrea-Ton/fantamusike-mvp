@@ -234,15 +234,13 @@ Deno.serve(async (_req: Request) => {
                         }
 
                         const isWin = status === 'won';
-                        const isDraw = status === 'draw';
 
                         // Rewards
                         const POINTS_REWARD = 10;
-                        const COINS_REWARD = 4;
-                        const REFUND_AMOUNT = 2; // Stake refund on draw
+                        const COINS_REWARD = 0;
 
                         const pointsAwarded = isWin ? POINTS_REWARD : 0;
-                        const coinsAwarded = isWin ? COINS_REWARD : (isDraw ? REFUND_AMOUNT : 0);
+                        const coinsAwarded = isWin ? COINS_REWARD : 0;
 
                         // Update Snapshot
                         const newSnapshot = {
@@ -265,7 +263,7 @@ Deno.serve(async (_req: Request) => {
                             .eq('id', promo.id);
 
                         // Award to Profile immediately
-                        if (isWin || (isDraw && coinsAwarded > 0)) {
+                        if (isWin) {
                             const { data: prof } = await supabaseClient.from('profiles').select('listen_score, musi_coins').eq('id', promo.user_id).single();
                             if (prof) {
                                 await supabaseClient

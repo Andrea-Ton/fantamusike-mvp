@@ -5,7 +5,7 @@ import { Zap, LogOut, Crown, Medal, ChevronLeft, ChevronRight, Coins } from 'luc
 import Image from 'next/image';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/server';
-import { getLeaderboardAction, getLeaderboardConfigAction } from '@/app/actions/leaderboard';
+import { getLeaderboardAction } from '@/app/actions/leaderboard';
 import { getNextResetDateAction } from '@/app/actions/game';
 import LogoutButton from '@/components/logout-button';
 
@@ -21,9 +21,8 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
     const page = sParams.page ? parseInt(sParams.page) : undefined;
 
     // Fetch real leaderboard data
-    const [leaderboardData, rewardsConfig] = await Promise.all([
-        getLeaderboardAction(user?.id, page),
-        getLeaderboardConfigAction()
+    const [leaderboardData] = await Promise.all([
+        getLeaderboardAction(user?.id, page)
     ]);
 
     // Weekly Reset Countdown Calculation
@@ -214,43 +213,6 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                                             </div>
                                         </div>
                                     )}
-                                </div>
-                            </div>
-
-                            {/* Rewards Info Card */}
-                            <div className="mt-8 bg-gradient-to-br from-yellow-500/10 via-purple-500/5 to-transparent border border-white/10 rounded-[2.5rem] p-8 relative overflow-hidden backdrop-blur-3xl shadow-2xl group/rewards">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 blur-[60px] rounded-full group-hover/rewards:bg-yellow-500/20 transition-colors" />
-
-                                <div className="relative z-10 flex flex-col items-center text-center">
-                                    <div className="w-16 h-16 rounded-full bg-yellow-500/20 flex items-center justify-center mb-6 group-hover/rewards:scale-110 transition-transform duration-500">
-                                        <Coins className="text-yellow-500" size={32} />
-                                    </div>
-
-                                    <div className="inline-flex items-center gap-2 mb-3 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20">
-                                        <Zap size={10} className="text-yellow-500 fill-yellow-500" />
-                                        <span className="text-[9px] font-black text-yellow-500 uppercase tracking-widest">Premi Settimanali</span>
-                                    </div>
-
-                                    <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-2">Vinci MusiCoins</h3>
-                                    <p className="text-gray-400 text-sm font-medium leading-relaxed max-w-[200px] mb-6">
-                                        Scala la vetta! Ogni settimana i migliori manager vincono premi in <span className="text-yellow-400 font-bold italic">MusiCoins</span>.
-                                    </p>
-
-                                    <div className="w-full space-y-2 pt-6 border-t border-white/5">
-                                        {rewardsConfig.length > 0 ? (
-                                            rewardsConfig.sort((a, b) => b.reward_musicoins - a.reward_musicoins).map((config) => (
-                                                <div key={config.tier} className="flex items-center justify-between group/reward-item">
-                                                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{config.label}</span>
-                                                    <div className="flex items-center gap-1.5 bg-yellow-400/10 px-2 py-0.5 rounded-md border border-yellow-400/20">
-                                                        <span className="text-[10px] font-black text-yellow-500">{config.reward_musicoins}</span>
-                                                        <Coins size={10} className="text-yellow-500" />
-                                                    </div>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <p className="text-[10px] text-gray-600 uppercase font-black tracking-widest italic">Caricamento premi...</p>
-                                        )}
-                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -13,9 +13,9 @@ export interface LuckyDropTier {
 
 
 export const BET_CONFIG = {
-    ENTRY_FEE: 2, // Cost in MusiCoins to place a bet
+    ENTRY_FEE: 0, // MusiBets are free
     POINTS_REWARD: 5,
-    COINS_REWARD: 4
+    COINS_REWARD: 0
 } as const;
 
 export const BOOST_CONFIG = {
@@ -28,8 +28,16 @@ export const BOOST_CONFIG = {
         { id: 'radio', label: 'Artist Radio', subLabel: 'Scopri brani simili', icon: 'Radio', type: 'radio' }
     ],
     REWARDS: {
-        POINTS_AMOUNT: 2,
-        COINS_PROBABILITY: 0.1, // 10% chance
-        COINS_AMOUNT: 2
+        POINTS_DISTRIBUTION: [
+            { points: 2, weight: 40 }, // 40%
+            { points: 3, weight: 25 }, // 25%
+            { points: 4, weight: 15 }, // 15%
+            { points: 5, weight: 10 }, // 10%
+            { points: 6, weight: 4 },  // 4%
+            { points: 7, weight: 3 },  // 3%
+            { points: 8, weight: 1 },  // 1%
+            { points: 9, weight: 1 },  // 1%
+            { points: 10, weight: 1 }  // 1%
+        ]
     }
 } as const;

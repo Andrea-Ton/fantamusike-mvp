@@ -440,24 +440,7 @@ export async function placeBetAction(artistId: string, prediction: 'my_artist' |
             return { success: false, message: 'Scommessa già piazzata' };
         }
 
-        // Check and Deduct MusiCoins
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('musi_coins')
-            .eq('id', user.id)
-            .maybeSingle();
-
-        if (!profile || (profile.musi_coins || 0) < BET_CONFIG.ENTRY_FEE) {
-            return { success: false, message: 'MusiCoins insufficient' };
-        }
-
-        // Deduct Coins from Profile
-        const { error: profileError } = await supabase
-            .from('profiles')
-            .update({ musi_coins: (profile.musi_coins || 0) - BET_CONFIG.ENTRY_FEE })
-            .eq('id', user.id);
-
-        if (profileError) throw profileError;
+        // MusiBets are now free, so no cost deduction needed
 
         // Fetch current week number to ensure baseline is from the active week
         const { data: latestSnap } = await supabase
@@ -504,7 +487,7 @@ export async function placeBetAction(artistId: string, prediction: 'my_artist' |
 
         return {
             success: true,
-            message: `Scommessa piazzata! (-${BET_CONFIG.ENTRY_FEE} MusiCoins)`,
+            message: `Scommessa piazzata!`,
             musiCoinsAwarded: 0 // No coins yet, delayed result
         };
 
@@ -679,15 +662,27 @@ export async function claimBoostAction(artistId: string, optionId: string): Prom
             return { success: false, message: 'Invalid option selected' };
         }
 
-        // Determine Reward Logic
-        const isCoinWin = Math.random() < BOOST_CONFIG.REWARDS.COINS_PROBABILITY;
+        // Determine Reward Logic (Randomized Points 2-10)
+        const distribution = BOOST_CONFIG.REWARDS.POINTS_DISTRIBUTION;
+        const totalWeight = distribution.reduce((acc, curr) => acc + curr.weight, 0);
+        let random = Math.floor(Math.random() * totalWeight);
+
+        let selectedPoints = 2;
+        for (const item of distribution) {
+            if (random < item.weight) {
+                selectedPoints = item.points;
+                break;
+            }
+            random -= item.weight;
+        }
+
         const reward = {
-            type: isCoinWin ? 'coins' : 'points',
-            amount: isCoinWin ? BOOST_CONFIG.REWARDS.COINS_AMOUNT : BOOST_CONFIG.REWARDS.POINTS_AMOUNT
+            type: 'points' as const,
+            amount: selectedPoints
         };
 
-        const points = reward.type === 'points' ? reward.amount : 0;
-        const coins = reward.type === 'coins' ? reward.amount : 0;
+        const points = reward.amount;
+        const coins = 0;
 
         // Update Snapshot (Selection Only - NO mark as done yet)
         const newSnapshot = {
@@ -707,9 +702,8 @@ export async function claimBoostAction(artistId: string, optionId: string): Prom
 
         return {
             success: true,
-            message: isCoinWin ? 'MusiCoins Found!' : 'Points Collected!',
-            pointsAwarded: points > 0 ? points : undefined,
-            musiCoinsAwarded: coins > 0 ? coins : undefined,
+            message: 'Points Collected!',
+            pointsAwarded: points,
             url: selectedOption.url
         };
 
@@ -743,15 +737,13 @@ export async function finalizeBoostAction(artistId: string): Promise<ClaimPromoR
 
         const reward = promo.boost_snapshot.reward;
         const points = reward.type === 'points' ? reward.amount : 0;
-        const coins = reward.type === 'coins' ? reward.amount : 0;
 
         // Update Promo Flags (Done + Accreditation)
         const { error: updateError } = await supabase
             .from('daily_promos')
             .update({
                 boost_done: true,
-                total_points: (promo.total_points || 0) + points,
-                total_coins: (promo.total_coins || 0) + coins
+                total_points: (promo.total_points || 0) + points
             })
             .eq('id', promo.id);
 
@@ -760,21 +752,16 @@ export async function finalizeBoostAction(artistId: string): Promise<ClaimPromoR
         // Update Profile
         const { data: profile } = await supabase
             .from('profiles')
-            .select('listen_score, musi_coins')
+            .select('listen_score')
             .eq('id', user.id)
             .maybeSingle();
 
-        if (profile && user) {
-            const updates: any = {};
-            if (points > 0) updates.listen_score = (profile.listen_score || 0) + points;
-            if (coins > 0) updates.musi_coins = (profile.musi_coins || 0) + coins;
-
-            if (Object.keys(updates).length > 0) {
-                await supabase
-                    .from('profiles')
-                    .update(updates)
-                    .eq('id', user.id);
-            }
+        if (profile && user && points > 0) {
+            const newScore = (profile.listen_score || 0) + points;
+            await supabase
+                .from('profiles')
+                .update({ listen_score: newScore })
+                .eq('id', user.id);
         }
 
         revalidatePath('/dashboard');

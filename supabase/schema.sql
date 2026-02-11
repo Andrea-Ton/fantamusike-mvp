@@ -262,27 +262,6 @@ select 'Pioneer', 'Membro fondatore di FantaMusiké MVP', '/badges/pioneer.png'
 where not exists (select 1 from public.badges where name = 'Pioneer');
 
 -- 15. LEADERBOARD SYSTEM
-create table public.leaderboard_config (
-    tier text primary key,
-    reward_musicoins integer not null,
-    label text not null
-);
-
-alter table public.leaderboard_config enable row level security;
-create policy "Leaderboard config is viewable by everyone." on public.leaderboard_config for select using ( true );
-create policy "Admins can manage leaderboard config." on public.leaderboard_config for all
-  using ( exists ( select 1 from public.profiles where id = auth.uid() and is_admin = true ) );
-
-insert into public.leaderboard_config (tier, reward_musicoins, label) values
-('rank_1', 1000, '1° Posto'),
-('rank_2', 400, '2° Posto'),
-('rank_3', 200, '3° Posto'),
-('top_10', 50, 'Top 10'),
-('top_20', 25, 'Top 20'),
-('top_50', 10, 'Top 50'),
-('top_100', 5, 'Top 100')
-on conflict (tier) do nothing;
-
 create table public.weekly_leaderboard_history (
     id uuid default uuid_generate_v4() primary key,
     user_id uuid references public.profiles(id) on delete cascade not null,

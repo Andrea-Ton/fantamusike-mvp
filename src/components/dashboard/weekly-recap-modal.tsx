@@ -3,16 +3,18 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Trophy, Star, X, Loader2, Coins, TrendingUp } from 'lucide-react';
+import { Trophy, Star, X, Loader2, Coins, TrendingUp, Share2 } from 'lucide-react';
 import { markWeeklyRecapSeenAction, WeeklyRecap } from '@/app/actions/leaderboard';
 import SpringCounter from '@/components/spring-counter';
+import ShareButton from './share-button';
 
 interface WeeklyRecapModalProps {
     recap: WeeklyRecap;
+    username: string;
     onClose: () => void;
 }
 
-export function WeeklyRecapModal({ recap, onClose }: WeeklyRecapModalProps) {
+export function WeeklyRecapModal({ recap, username, onClose }: WeeklyRecapModalProps) {
     const [isVisible, setIsVisible] = useState(true);
     const [isMarkingSeen, setIsMarkingSeen] = useState(false);
 
@@ -41,6 +43,11 @@ export function WeeklyRecapModal({ recap, onClose }: WeeklyRecapModalProps) {
             setIsMarkingSeen(false);
         }
     };
+
+    // Prepare team and roster for ShareButton
+    const team = recap.team;
+    const captain = [team?.slot_1, team?.slot_2, team?.slot_3, team?.slot_4, team?.slot_5].find(a => a?.id === team?.captain_id) || null;
+    const roster = [team?.slot_1 || null, team?.slot_2 || null, team?.slot_3 || null, team?.slot_4 || null, team?.slot_5 || null];
 
     return (
         <AnimatePresence>
@@ -84,48 +91,59 @@ export function WeeklyRecapModal({ recap, onClose }: WeeklyRecapModalProps) {
                             </motion.div>
 
                             <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter leading-none mb-2">
-                                Hai vinto!
+                                Settimana Conclusa
                             </h2>
                             <p className="text-gray-400 text-xs font-black uppercase tracking-[0.2em] mb-8">
                                 Risultati Finali
                             </p>
 
-                            <div className="grid grid-cols-2 gap-4 w-full mb-10">
-                                <div className="bg-white/5 border border-white/5 rounded-3xl p-5 backdrop-blur-sm group hover:border-purple-500/30 transition-all">
-                                    <Trophy className="text-purple-400 mx-auto mb-2" size={24} />
-                                    <div className="text-2xl font-black text-white italic tabular-nums">
-                                        <SpringCounter from={0} to={recap.score} />
+                            <div className="flex flex-col gap-4 w-full mb-8">
+                                <div className="bg-white/5 border border-white/5 rounded-3xl p-6 backdrop-blur-sm group hover:border-purple-500/30 transition-all flex items-center justify-center">
+                                    <div className="flex items-center gap-4">
+                                        <Trophy className="text-purple-400" size={28} />
+                                        <div className="text-left">
+                                            <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Punteggio Totale</div>
+                                            <div className="text-4xl font-black text-white italic tabular-nums leading-none">
+                                                <SpringCounter from={0} to={recap.score} />
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Punti Finali</div>
-                                </div>
-
-                                <div className="bg-white/5 border border-white/5 rounded-3xl p-5 backdrop-blur-sm group hover:border-yellow-500/30 transition-all">
-                                    <Coins className="text-yellow-500 mx-auto mb-2" size={24} />
-                                    <div className="text-2xl font-black text-yellow-500 italic tabular-nums">
-                                        +<SpringCounter from={0} to={recap.reward_musicoins} />
-                                    </div>
-                                    <div className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Premi Vinti</div>
                                 </div>
                             </div>
 
-                            <button
-                                onClick={handleContinue}
-                                disabled={isMarkingSeen}
-                                className="group relative w-full h-16 bg-white text-black font-black italic uppercase tracking-tighter rounded-2xl shadow-[0_10px_40px_rgba(255,255,255,0.2)] transform hover:-translate-y-1 active:scale-95 transition-all overflow-hidden flex items-center justify-center gap-3"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                                <span className="relative z-10 group-hover:text-white transition-colors">
-                                    {isMarkingSeen ? 'Salvataggio...' : 'Avanti tutta!'}
-                                </span>
-                                {isMarkingSeen ? (
-                                    <Loader2 size={20} className="animate-spin relative z-10 group-hover:text-white" />
-                                ) : (
-                                    <TrendingUp size={20} className="relative z-10 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                            <div className="flex flex-col gap-3 w-full">
+                                {recap.team && (
+                                    <ShareButton
+                                        username={username}
+                                        totalScore={recap.score}
+                                        rank={recap.rank}
+                                        captain={captain}
+                                        roster={roster}
+                                        weekNumber={recap.week_number}
+                                        percentile={recap.percentile}
+                                        variant="primary"
+                                    />
                                 )}
-                            </button>
+
+                                <button
+                                    onClick={handleContinue}
+                                    disabled={isMarkingSeen}
+                                    className="group relative w-full h-16 bg-white text-black font-black italic uppercase tracking-tighter rounded-2xl shadow-[0_10px_40px_rgba(255,255,255,0.1)] transform hover:-translate-y-1 active:scale-95 transition-all overflow-hidden flex items-center justify-center gap-3"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-gray-100 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                    <span className="relative z-10">
+                                        {isMarkingSeen ? 'Salvataggio...' : 'Avanti tutta!'}
+                                    </span>
+                                    {isMarkingSeen ? (
+                                        <Loader2 size={20} className="animate-spin relative z-10" />
+                                    ) : (
+                                        <TrendingUp size={20} className="relative z-10 group-hover:translate-x-1 transition-all" />
+                                    )}
+                                </button>
+                            </div>
 
                             <p className="mt-6 text-[9px] text-gray-600 font-bold uppercase tracking-widest">
-                                Una nuova sfida ha inizio. Scala la classifica!
+                                Condividi i tuoi risultati e scala la classifica!
                             </p>
                         </div>
                     </motion.div>

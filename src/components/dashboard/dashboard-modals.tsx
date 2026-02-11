@@ -10,9 +10,10 @@ interface DashboardModalsProps {
     unseenLogs: any[] | null;
     pendingBet: any | null;
     unseenWeeklyRecap: WeeklyRecap | null;
+    username: string;
 }
 
-export default function DashboardModals({ unseenLogs, pendingBet, unseenWeeklyRecap }: DashboardModalsProps) {
+export default function DashboardModals({ unseenLogs, pendingBet, unseenWeeklyRecap, username }: DashboardModalsProps) {
     const hasWeekly = !!unseenWeeklyRecap;
     const hasLogs = unseenLogs && unseenLogs.length > 0;
     const hasBet = !!pendingBet;
@@ -47,6 +48,7 @@ export default function DashboardModals({ unseenLogs, pendingBet, unseenWeeklyRe
         return (
             <WeeklyRecapModal
                 recap={unseenWeeklyRecap!}
+                username={username}
                 onClose={() => { }} // Last one, no more steps
             />
         );

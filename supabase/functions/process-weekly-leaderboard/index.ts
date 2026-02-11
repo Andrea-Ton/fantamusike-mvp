@@ -55,12 +55,7 @@ Deno.serve(async (_req: Request) => {
             return new Response(JSON.stringify({ message: 'No active players found. Skipping.' }), { status: 200 });
         }
 
-        // 2. Fetch Leaderboard Configuration
-        const { data: configRows } = await supabaseClient.from('leaderboard_config').select('*');
-        const configMap: Record<string, number> = {};
-        configRows?.forEach((c: any) => configMap[c.tier] = c.reward_musicoins);
-
-        // 3. Determine Week Number
+        // 2. Determine Week Number
         // We look at the latest snapshot to find the week we just finished
         const { data: latestSnap } = await supabaseClient
             .from('weekly_snapshots')
@@ -71,40 +66,22 @@ Deno.serve(async (_req: Request) => {
 
         const weekNumber = Number(latestSnap?.week_number || 1);
 
-        // 4. Calculate Rewards & Prepare Batch Data
-        // The results are for the week that JUST FINISHED
+        // 4. Calculate Rewards & Prepare Batch Data (REWARDS REMOVED)
+        // Historically, this gave MusiCoins. Now it only records the rank and score.
         const finishedWeek = weekNumber;
         const historyEntries: any[] = [];
-        const profileUpdates: any[] = [];
 
         sortedPlayers.forEach((player, index) => {
             const rank = index + 1;
-            let reward = 0;
-
-            // Tier Logic
-            if (rank === 1) reward = configMap['rank_1'] || 0;
-            else if (rank === 2) reward = configMap['rank_2'] || 0;
-            else if (rank === 3) reward = configMap['rank_3'] || 0;
-            else if (rank <= 10) reward = configMap['top_10'] || 0;
-            else if (rank <= 20) reward = configMap['top_20'] || 0;
-            else if (rank <= 50) reward = configMap['top_50'] || 0;
-            else if (rank <= 100) reward = configMap['top_100'] || 0;
 
             historyEntries.push({
                 user_id: player.id,
                 week_number: finishedWeek,
                 rank: rank,
                 score: player.combined_score,
-                reward_musicoins: reward,
+                reward_musicoins: 0, // No rewards
                 is_seen: false
             });
-
-            if (reward > 0) {
-                profileUpdates.push({
-                    id: player.id,
-                    musi_coins: (player.musi_coins || 0) + reward
-                });
-            }
         });
 
         // 5. Execute Updates in Batches
@@ -114,12 +91,6 @@ Deno.serve(async (_req: Request) => {
         for (let i = 0; i < historyEntries.length; i += BATCH_SIZE) {
             const batch = historyEntries.slice(i, i + BATCH_SIZE);
             await supabaseClient.from('weekly_leaderboard_history').insert(batch);
-        }
-
-        // Credit Rewards
-        for (let i = 0; i < profileUpdates.length; i += BATCH_SIZE) {
-            const batch = profileUpdates.slice(i, i + BATCH_SIZE);
-            await supabaseClient.from('profiles').upsert(batch, { onConflict: 'id' });
         }
 
         // 6. RESET SCORES FOR ALL PLAYERS
@@ -133,7 +104,7 @@ Deno.serve(async (_req: Request) => {
 
         return new Response(JSON.stringify({
             success: true,
-            message: `Weekly leaderboard processed for Week ${weekNumber}. Rewards assigned to ${profileUpdates.length} players.`
+            message: `Weekly leaderboard processed for Week ${weekNumber}. History recorded for ${historyEntries.length} players.`
         }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
     } catch (error: any) {

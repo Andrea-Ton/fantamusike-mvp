@@ -2,12 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
-
-export type LeaderboardConfig = {
-    tier: string;
-    reward_musicoins: number;
-    label: string;
-};
+import { getUserTeamAction, UserTeamResponse } from './team';
 
 export type WeeklyRecap = {
     id: string;
@@ -15,6 +10,8 @@ export type WeeklyRecap = {
     rank: number;
     score: number;
     reward_musicoins: number;
+    team?: UserTeamResponse;
+    percentile?: string;
 };
 
 export type LeaderboardEntry = {
@@ -40,38 +37,6 @@ export type LeaderboardResponse = {
 /**
  * NEW: Weekly Recap Actions
  */
-// ... (omitting lines for brevity in instruction, will apply to correct range)
-export async function getLeaderboardConfigAction(): Promise<LeaderboardConfig[]> {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-        .from('leaderboard_config')
-        .select('*');
-
-    if (error) {
-        console.error('Error fetching leaderboard config:', error);
-        return [];
-    }
-
-    return data as LeaderboardConfig[];
-}
-
-export async function updateLeaderboardConfigAction(tier: string, reward: number) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, message: 'Unauthorized' };
-
-    const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
-    if (!profile?.is_admin) return { success: false, message: 'Unauthorized' };
-
-    const { error } = await supabase
-        .from('leaderboard_config')
-        .update({ reward_musicoins: reward })
-        .eq('tier', tier);
-
-    if (error) return { success: false, message: 'Failed to update config' };
-    revalidatePath('/admin/leaderboard');
-    return { success: true, message: 'Config updated successfully' };
-}
 
 export async function getUnseenWeeklyRecapAction(): Promise<WeeklyRecap | null> {
     const supabase = await createClient();
@@ -88,7 +53,29 @@ export async function getUnseenWeeklyRecapAction(): Promise<WeeklyRecap | null> 
         .maybeSingle();
 
     if (error || !data) return null;
-    return data as WeeklyRecap;
+
+    // Enhance recap with historical team data
+    const team = await getUserTeamAction(data.week_number);
+
+    // Calculate percentile for THAT specific week
+    let percentile = undefined;
+    const { count: totalParticipants } = await supabase
+        .from('weekly_leaderboard_history')
+        .select('*', { count: 'exact', head: true })
+        .eq('week_number', data.week_number);
+
+    if (totalParticipants && totalParticipants > 1) {
+        const topPercentage = Math.max(1, Math.ceil((data.rank / totalParticipants) * 100));
+        if (topPercentage <= 50) {
+            percentile = `${topPercentage}%`;
+        }
+    }
+
+    return {
+        ...(data as WeeklyRecap),
+        team: team || undefined,
+        percentile: percentile
+    };
 }
 
 export async function markWeeklyRecapSeenAction(id: string) {

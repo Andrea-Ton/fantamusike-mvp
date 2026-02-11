@@ -109,6 +109,7 @@ export default async function DashboardPage() {
                 unseenLogs={unseenLogs}
                 pendingBet={pendingBet}
                 unseenWeeklyRecap={metadata.unseenWeeklyRecap}
+                username={profile?.username || 'Manager'}
             />
 
             {/* Content Area */}
