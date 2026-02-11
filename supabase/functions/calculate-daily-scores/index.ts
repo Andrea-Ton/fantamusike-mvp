@@ -351,7 +351,7 @@ Deno.serve(async (_req: Request) => {
             const pointsAlreadyLoggedThisWeek = logsSumByUser[profile.id] || 0;
             const delta = currentWeekCalculatedTotal - pointsAlreadyLoggedThisWeek;
 
-            if (delta > 0) {
+            if (delta !== 0) {
                 dailyLogsToInsert.push({
                     user_id: profile.id,
                     points_gained: delta,
