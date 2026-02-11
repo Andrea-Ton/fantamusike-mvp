@@ -53,9 +53,24 @@ create table public.profiles (
   referred_by uuid references public.profiles(id),
   has_completed_onboarding boolean default false,
   has_used_free_label boolean default false,
+  last_login_at timestamp with time zone,
+  current_streak integer default 0,
   created_at timestamp with time zone default timezone('utc'::text, now()),
   updated_at timestamp with time zone default timezone('utc'::text, now())
 );
+
+-- 4. CLAIMED REWARDS Table
+create table public.claimed_rewards (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  reward_slug text not null,
+  claimed_at timestamp with time zone default timezone('utc'::text, now()),
+  unique(user_id, reward_slug)
+);
+
+alter table public.claimed_rewards enable row level security;
+create policy "Users can view their own claimed rewards." on public.claimed_rewards for select using ( auth.uid() = user_id );
+create policy "Users can insert their own claimed rewards." on public.claimed_rewards for insert with check ( auth.uid() = user_id );
 
 alter table public.profiles enable row level security;
 
