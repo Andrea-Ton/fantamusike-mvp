@@ -11,7 +11,7 @@ import { User } from '@supabase/supabase-js';
 const NAV_ITEMS = [
     { href: '/dashboard', label: 'Dashboard', icon: Home },
     { href: '/dashboard/draft', label: 'Talent Scout', icon: Search },
-    { href: '/dashboard/marketplace', label: 'Marketplace', icon: ShoppingBag },
+    { href: '/dashboard/marketplace', label: 'MusiMarket', icon: ShoppingBag },
     { href: '/dashboard/leaderboard', label: 'Classifica', icon: Trophy },
 ];
 

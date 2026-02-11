@@ -4,7 +4,6 @@ import { redirect } from 'next/navigation';
 import { getUserTeamAction } from '@/app/actions/team';
 import Image from 'next/image';
 import LogoutButton from '@/components/logout-button';
-import InviteButton from '@/components/dashboard/invite-button';
 import { getCurrentWeekAction } from '@/app/actions/game';
 import StatsSection from '@/components/dashboard/stats-section';
 import RosterSection from '@/components/dashboard/roster-section';
@@ -20,6 +19,7 @@ import { UserTeamResponse } from '@/app/actions/team';
 import { LeaderboardResponse } from '@/app/actions/leaderboard';
 import { updateLoginStreakAction, getRewardsStateAction } from '@/app/actions/rewards';
 import MusiRewards from '@/components/dashboard/musi-rewards';
+import MusiCoinBalance from '@/components/dashboard/musicoin-balance';
 
 export default async function DashboardPage() {
     const metadata = await getDashboardMetadataAction();
@@ -95,18 +95,8 @@ export default async function DashboardPage() {
             </div>
 
             {/* Mobile Action Bar */}
-            <div className="md:hidden px-6 mb-6 flex flex-col gap-3">
-                <div className="flex gap-3">
-                    <div className="px-4 py-2.5 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md text-sm font-black text-yellow-400 flex items-center gap-2 flex-1 justify-between shadow-inner">
-                        <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">MusiCoins</span>
-                        <div className="flex items-center gap-1.5">
-                            <span className="text-base">{musiCoins}</span>
-                        </div>
-                    </div>
-                    <div className="flex-1">
-                        <InviteButton referralCode={profile?.referral_code} />
-                    </div>
-                </div>
+            <div className="md:hidden px-6 mb-10 flex flex-col gap-3">
+                <MusiCoinBalance musiCoins={musiCoins} referralCode={profile?.referral_code} />
             </div>
 
             {/* Sequential Modals: Weekly Recap -> Daily Recap -> MusiBet Results */}
@@ -128,18 +118,7 @@ export default async function DashboardPage() {
                         <h1 className="text-5xl font-black text-white italic tracking-tighter uppercase leading-none">Bentornato {profile?.username},</h1>
                         <p className="text-gray-500 mt-3 font-medium text-lg">Controlla la tua Label e scala le classifiche mondiali.</p>
                     </div>
-                    <div className="flex gap-4 items-center h-12">
-                        {/* Status indicators */}
-                        <div className="px-6 py-3 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md text-sm font-black text-yellow-400 flex items-center gap-4 shadow-inner group transition-all hover:bg-white/10 h-full">
-                            <div className="flex flex-col justify-center">
-                                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold leading-none mb-1">MUSICOINS</span>
-                                <div className='flex justify-center items-center'><span className="text-xl tracking-tighter leading-none">{musiCoins}</span></div>
-                            </div>
-                        </div>
-                        <div className="h-full">
-                            <InviteButton referralCode={profile?.referral_code} />
-                        </div>
-                    </div>
+                    <MusiCoinBalance musiCoins={musiCoins} referralCode={profile?.referral_code} />
                 </header>
 
 

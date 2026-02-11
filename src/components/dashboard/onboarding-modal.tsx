@@ -540,7 +540,7 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
                                             </div>
                                             <div>
                                                 <h4 className="text-[12px] font-black text-white uppercase tracking-widest mb-1">MysteryBox Esclusive</h4>
-                                                <p className="text-[12px] text-gray-400 font-medium">Usa i tuoi MusiCoin nel Marketplace: sblocca MysteryBox piene di sorprese uniche.</p>
+                                                <p className="text-[12px] text-gray-400 font-medium">Usa i tuoi MusiCoin nel MusiMarket: sblocca MysteryBox piene di sorprese uniche.</p>
                                             </div>
                                         </div>
 

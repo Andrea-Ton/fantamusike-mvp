@@ -50,25 +50,6 @@ export default function MarketplaceClient({ initialBoxes, userMusiCoins, userOrd
 
     return (
         <div className="space-y-12">
-            {/* MusiCoins Balance - Responsive */}
-            <div className="lg:hidden md:hidden bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-[2.5rem] p-4 flex flex-col items-center justify-center text-center shadow-2xl relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-3xl -mr-32 -mt-32" />
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl -ml-32 -mb-32" />
-
-                <div className="relative z-10 flex flex-col items-center gap-2">
-                    <p className="text-[10px] font-black text-yellow-600 uppercase tracking-[0.3em] mb-1">Il tuo Saldo Attuale</p>
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-yellow-400/20 flex items-center justify-center text-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.2)]">
-                            <Coins size={28} />
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-4xl font-black text-yellow-400 italic tracking-tighter">{userMusiCoins}</span>
-                            <span className="text-sm font-black text-yellow-600 uppercase tracking-widest italic">MusiCoins</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {initialBoxes.map((box) => (
                     <div
