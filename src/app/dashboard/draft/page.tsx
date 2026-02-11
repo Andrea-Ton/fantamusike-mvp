@@ -106,7 +106,7 @@ export default function TalentScoutPage() {
                 popularity: s.popularity,
                 genres: s.genre ? [s.genre] : [],
                 followers: { total: s.followers || 0 }
-            }));
+            })).filter(a => !data.featured.some(f => f.id === a.id));
             setArtists(mappedSuggested);
 
             // 5. Load Team (DB priority, then LocalStorage)
@@ -259,7 +259,7 @@ export default function TalentScoutPage() {
             popularity: s.popularity,
             genres: s.genre ? [s.genre] : [],
             followers: { total: s.followers || 0 }
-        }));
+        })).filter(a => !featuredArtists.has(a.id));
         setArtists(mappedArtists);
         setIsLoading(false);
     };

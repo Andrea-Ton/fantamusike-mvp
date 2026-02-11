@@ -167,12 +167,17 @@ export default function CuratedRosterPage() {
                                 <Users size={20} className="text-blue-400" />
                                 Current Roster
                             </h3>
-                            <span className="text-sm text-gray-400 bg-white/5 px-3 py-1 rounded-full">
-                                {roster.length} Artists
-                            </span>
+                            <div className="flex gap-2">
+                                <span className="text-[10px] text-yellow-500 bg-yellow-500/10 border border-yellow-500/20 px-3 py-1 rounded-full font-black uppercase tracking-widest">
+                                    {roster.filter(a => featuredIds.has(a.spotify_id)).length} Featured
+                                </span>
+                                <span className="text-[10px] text-blue-400 bg-blue-500/10 border border-blue-500/20 px-3 py-1 rounded-full font-black uppercase tracking-widest">
+                                    {roster.filter(a => !featuredIds.has(a.spotify_id)).length} Suggested
+                                </span>
+                            </div>
                         </div>
 
-                        <div className="space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar">
+                        <div className="space-y-6 max-h-[600px] overflow-y-auto custom-scrollbar">
                             {isLoadingRoster ? (
                                 <div className="flex justify-center py-8">
                                     <Loader2 className="animate-spin text-purple-500" />
@@ -180,51 +185,102 @@ export default function CuratedRosterPage() {
                             ) : roster.length === 0 ? (
                                 <p className="text-gray-500 text-center text-sm py-8">Roster is empty.</p>
                             ) : (
-                                roster.map((artist) => (
-                                    <div key={artist.spotify_id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors group">
-                                        <div className="flex items-center gap-3">
-                                            <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-gray-800">
-                                                {artist.image_url && (
-                                                    <Image src={artist.image_url} alt={artist.name} fill className="object-cover" />
-                                                )}
+                                <div className="space-y-8">
+                                    {/* Featured Section */}
+                                    {roster.some(a => featuredIds.has(a.spotify_id)) && (
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2 px-1">
+                                                <Star size={14} className="text-yellow-500 fill-yellow-500" />
+                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Featured Artists</span>
                                             </div>
-                                            <div>
-                                                <div className="font-bold text-white text-sm">{artist.name}</div>
-                                                <div className="flex gap-2 items-center text-xs text-gray-400">
-                                                    {artist.genre && artist.genre !== 'Unknown' && (
-                                                        <span>{artist.genre}</span>
-                                                    )}
-                                                    <span className="px-1.5 py-0.5 rounded-full bg-white/10 text-[10px]">Pop {artist.popularity}</span>
-                                                </div>
+                                            {roster
+                                                .filter(a => featuredIds.has(a.spotify_id))
+                                                .map((artist) => (
+                                                    <ArtistRow
+                                                        key={artist.spotify_id}
+                                                        artist={artist}
+                                                        isFeatured={true}
+                                                        onToggleFeatured={() => handleToggleFeatured(artist.spotify_id, true)}
+                                                        onRemove={() => handleRemove(artist.spotify_id)}
+                                                    />
+                                                ))}
+                                        </div>
+                                    )}
+
+                                    {/* Suggested Section */}
+                                    {roster.some(a => !featuredIds.has(a.spotify_id)) && (
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2 px-1">
+                                                <Users size={14} className="text-blue-400" />
+                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Suggested Roster</span>
                                             </div>
+                                            {roster
+                                                .filter(a => !featuredIds.has(a.spotify_id))
+                                                .map((artist) => (
+                                                    <ArtistRow
+                                                        key={artist.spotify_id}
+                                                        artist={artist}
+                                                        isFeatured={false}
+                                                        onToggleFeatured={() => handleToggleFeatured(artist.spotify_id, false)}
+                                                        onRemove={() => handleRemove(artist.spotify_id)}
+                                                    />
+                                                ))}
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleToggleFeatured(artist.spotify_id, featuredIds.has(artist.spotify_id))}
-                                                className={`p-2 rounded-lg transition-all ${featuredIds.has(artist.spotify_id)
-                                                    ? 'text-yellow-500 hover:bg-yellow-500/10'
-                                                    : 'text-gray-600 hover:text-yellow-500 hover:bg-yellow-500/10'
-                                                    }`}
-                                                title={featuredIds.has(artist.spotify_id) ? "Remove from Featured" : "Add to Featured"}
-                                            >
-                                                <Star size={16} className={featuredIds.has(artist.spotify_id) ? "fill-yellow-500" : ""} />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRemove(artist.spotify_id)}
-                                                className="p-2 rounded-lg bg-red-500/10 text-red-400 opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:text-white transition-all"
-                                                title="Remove from Roster"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))
+                                    )}
+                                </div>
                             )}
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    );
+}
+
+function ArtistRow({ artist, isFeatured, onToggleFeatured, onRemove }: {
+    artist: ScoutSuggestion;
+    isFeatured: boolean;
+    onToggleFeatured: () => void;
+    onRemove: () => void;
+}) {
+    return (
+        <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group">
+            <div className="flex items-center gap-3">
+                <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-gray-800">
+                    {artist.image_url && (
+                        <Image src={artist.image_url} alt={artist.name} fill className="object-cover" />
+                    )}
+                </div>
+                <div>
+                    <div className="font-bold text-white text-sm">{artist.name}</div>
+                    <div className="flex gap-2 items-center text-xs text-gray-400">
+                        {artist.genre && artist.genre !== 'Unknown' && (
+                            <span>{artist.genre}</span>
+                        )}
+                        <span className="px-1.5 py-0.5 rounded-full bg-white/10 text-[10px]">Pop {artist.popularity}</span>
+                    </div>
+                </div>
+            </div>
+            <div className="flex items-center gap-2">
+                <button
+                    type="button"
+                    onClick={onToggleFeatured}
+                    className={`p-2 rounded-lg transition-all ${isFeatured
+                        ? 'text-yellow-500 hover:bg-yellow-500/10'
+                        : 'text-gray-600 hover:text-yellow-500 hover:bg-yellow-500/10'
+                        }`}
+                    title={isFeatured ? "Remove from Featured" : "Add to Featured"}
+                >
+                    <Star size={16} className={isFeatured ? "fill-yellow-500" : ""} />
+                </button>
+                <button
+                    type="button"
+                    onClick={onRemove}
+                    className="p-2 rounded-lg bg-red-500/10 text-red-400 opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:text-white transition-all"
+                    title="Remove from Roster"
+                >
+                    <Trash2 size={16} />
+                </button>
             </div>
         </div>
     );

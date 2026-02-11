@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     Trophy, Users, Zap, Search, Plus, X, ArrowRight, ArrowLeft,
-    Crown, Sparkles, CheckCircle2, Rocket, Loader2, Star
+    Crown, Sparkles, CheckCircle2, Rocket, Loader2, Star, Gift
 } from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -29,6 +29,7 @@ type OnboardingStep =
     | 'select_newgen'
     | 'select_captain'
     | 'explain_promuovi'
+    | 'explain_rewards'
     | 'summary';
 
 export default function OnboardingModal({ featuredArtists, curatedRoster, username }: OnboardingModalProps) {
@@ -53,7 +54,7 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
     const [nameError, setNameError] = useState<string | null>(null);
 
     // Steps configuration
-    const steps: OnboardingStep[] = ['manager_name', 'welcome', 'select_big', 'select_mid', 'select_newgen', 'select_captain', 'explain_promuovi', 'summary'];
+    const steps: OnboardingStep[] = ['manager_name', 'welcome', 'select_big', 'select_mid', 'select_newgen', 'select_captain', 'explain_promuovi', 'explain_rewards', 'summary'];
     const currentStepIndex = steps.indexOf(step);
 
     const nextStep = () => {
@@ -154,7 +155,9 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
     };
 
     const artistList = useMemo(() => {
-        let baseList = activeTab === 'suggested' ? curatedRoster : activeTab === 'featured' ? featuredArtists : searchResults;
+        let baseList = activeTab === 'suggested'
+            ? curatedRoster.filter(a => !featuredArtists.some(f => f.id === a.id))
+            : activeTab === 'featured' ? featuredArtists : searchResults;
 
         // Filter by popularity based on current step
         if (step === 'select_big') {
@@ -177,6 +180,7 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
         if (step === 'select_newgen') return !!team.slot_4 && !!team.slot_5;
         if (step === 'select_captain') return !!captainId;
         if (step === 'explain_promuovi') return true;
+        if (step === 'explain_rewards') return true;
         if (step === 'summary') return true;
         return false;
     }, [step, team, captainId, managerName, nameError]);
@@ -327,9 +331,9 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
                                                 step === 'select_mid' ? <Users className="text-blue-400" size={16} /> :
                                                     <Zap className="text-green-400" size={16} />}
                                             <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest leading-none">
-                                                {step === 'select_big' ? 'Step 1/3: Headliner' :
-                                                    step === 'select_mid' ? 'Step 2/3: Mid-Tier' :
-                                                        'Step 3/3: Rising Stars'}
+                                                {step === 'select_big' ? 'Step 1/3: Star' :
+                                                    step === 'select_mid' ? 'Step 2/3: Popular' :
+                                                        'Step 3/3: Underdog'}
                                             </span>
                                         </div>
                                         <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter leading-none mb-2">
@@ -485,31 +489,68 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
                                     <div className="w-20 h-20 bg-orange-500/20 rounded-[2rem] border border-orange-500/30 flex items-center justify-center mx-auto mb-6 shadow-inner relative">
                                         <Zap className="text-orange-400" size={40} />
                                         <div className="absolute -top-1 -right-1 bg-orange-500 w-6 h-6 rounded-full flex items-center justify-center animate-pulse">
-                                            <Plus size={14} className="text-black" />
+                                            <Trophy size={14} className="text-black" />
                                         </div>
                                     </div>
                                     <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter leading-none mb-4">
-                                        Aumenta l'Hype: <br /><span className="text-orange-500">Promuovi!</span>
+                                        L'attività <span className="text-orange-500">premia!</span>
                                     </h3>
 
                                     <div className="space-y-4 text-left">
                                         <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 flex gap-4 items-center">
                                             <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center flex-shrink-0">
-                                                <Zap className="text-orange-500" size={20} />
+                                                <Rocket className="text-orange-500" size={20} />
                                             </div>
                                             <div>
-                                                <h4 className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Guadagna Punti Extra</h4>
-                                                <p className="text-[11px] text-gray-500 font-medium">Completa i Daily Task per ogni artista e boosta il punteggio della tua Label.</p>
+                                                <h4 className="text-[12px] font-black text-white uppercase tracking-widest mb-1">Missioni giornaliere</h4>
+                                                <p className="text-[12px] text-gray-400 font-medium">Completa le missioni giornaliere per ogni artista e domina le classifiche settimanali.</p>
                                             </div>
                                         </div>
 
                                         <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 flex gap-4 items-center">
                                             <div className="w-10 h-10 rounded-xl bg-yellow-500/10 flex items-center justify-center flex-shrink-0">
-                                                <Trophy className="text-yellow-500" size={20} />
+                                                <Zap className="text-yellow-500" size={20} />
                                             </div>
                                             <div>
-                                                <h4 className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Accumula MusiCoin</h4>
-                                                <p className="text-[11px] text-gray-500 font-medium">Più promuovi, più MusiCoin guadagni per sbloccare nuovi artisti e bonus esclusivi.</p>
+                                                <h4 className="text-[12px] font-black text-white uppercase tracking-widest mb-1">MusiRewards</h4>
+                                                <p className="text-[12px] text-gray-400 font-medium">Sii costante! Più sei attivo e promuovi i tuoi talenti, più accumuli MusiCoin.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* STEP: EXPLAIN REWARDS */}
+                            {step === 'explain_rewards' && (
+                                <div className="space-y-6 text-center py-4">
+                                    <div className="w-20 h-20 bg-blue-500/20 rounded-[2rem] border border-blue-500/30 flex items-center justify-center mx-auto mb-6 shadow-inner relative">
+                                        <Gift className="text-blue-400" size={40} />
+                                        <div className="absolute -top-1 -right-1 bg-blue-500 w-6 h-6 rounded-full flex items-center justify-center animate-pulse">
+                                            <Sparkles size={14} className="text-white" />
+                                        </div>
+                                    </div>
+                                    <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter leading-none mb-4">
+                                        Ottieni le <br /><span className="text-blue-500">Mystery Box della musica</span>
+                                    </h3>
+
+                                    <div className="space-y-4 text-left">
+                                        <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 flex gap-4 items-center">
+                                            <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+                                                <Search className="text-purple-400" size={20} />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-[12px] font-black text-white uppercase tracking-widest mb-1">MysteryBox Esclusive</h4>
+                                                <p className="text-[12px] text-gray-400 font-medium">Usa i tuoi MusiCoin nel Marketplace: sblocca MysteryBox piene di sorprese uniche.</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 flex gap-4 items-center">
+                                            <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                                                <Star size={20} className="text-green-500 fill-green-500/20" />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-[12px] font-black text-white uppercase tracking-widest mb-1">Vinci sul Serio</h4>
+                                                <p className="text-[12px] text-gray-400 font-medium">Scopri vantaggi digitali e premi fisici della musica che non troveresti da nessun'altra parte.</p>
                                             </div>
                                         </div>
                                     </div>

@@ -6,13 +6,13 @@ export const ARTIST_TIERS = {
     },
     MID: {
         label: 'Popular',
-        min: 41,
+        min: 46,
         max: 75
     },
     NEW_GEN: {
         label: 'Underdog',
         min: 0,
-        max: 40
+        max: 45
     }
 } as const;
 
