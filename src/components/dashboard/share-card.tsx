@@ -7,7 +7,7 @@ interface ShareCardProps {
     rank: number;
     captain: SpotifyArtist | null;
     roster: (SpotifyArtist | null)[];
-    seasonName: string;
+    weekNumber: number;
     percentile?: string;
 }
 
@@ -17,7 +17,7 @@ export default function ShareCard({
     rank,
     captain,
     roster,
-    seasonName,
+    weekNumber,
     percentile
 }: ShareCardProps) {
     // The roster contains all 5 artists, we need to filter out the captain and nulls for the grid
@@ -31,17 +31,27 @@ export default function ShareCard({
                 backgroundImage: 'radial-gradient(circle at 50% 30%, #1a1a2e 0%, #050507 70%)',
             }}
         >
-            {/* Background elements - OPTIMIZED: Gradients instead of Blur */}
-            <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20">
+            {/* Background elements */}
+            <div className="absolute top-0 left-0 w-full h-full pointer-events-none flex justify-center items-center">
+                {/* Purple Orb */}
                 <div
-                    className="absolute -top-[500px] -left-[500px] w-[1000px] h-[1000px] rounded-full"
-                    style={{ backgroundImage: 'radial-gradient(circle, rgba(147, 51, 234, 0.4) 0%, transparent 70%)' }}
+                    className="absolute -top-[500px] -left-[500px] w-[1000px] h-[1000px] rounded-full opacity-20"
+                    style={{ backgroundImage: 'radial-gradient(circle, rgba(168, 85, 247, 0.4) 0%, transparent 70%)' }}
                 ></div>
+                {/* Blue Orb */}
                 <div
-                    className="absolute -bottom-[500px] -right-[500px] w-[1000px] h-[1000px] rounded-full"
+                    className="absolute -bottom-[500px] -right-[500px] w-[1000px] h-[1000px] rounded-full opacity-20"
                     style={{ backgroundImage: 'radial-gradient(circle, rgba(37, 99, 235, 0.4) 0%, transparent 70%)' }}
                 ></div>
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-px bg-purple-500/20"></div>
+
+                {/* Pink Logo Watermark */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1600px] h-[1600px] opacity-10">
+                    <img
+                        src="/logo_pink.png"
+                        alt=""
+                        className="w-full h-full object-contain"
+                    />
+                </div>
             </div>
 
             {/* Header - Horizontal Layout */}
@@ -54,7 +64,7 @@ export default function ShareCard({
                         crossOrigin="anonymous"
                     />
                 </div>
-                <h1 className="text-6xl font-black italic tracking-tighter uppercase leading-none">www.fanta.musike.fm</h1>
+                <h1 className="text-6xl font-black italic tracking-tighter uppercase leading-none">fantamusiké</h1>
             </div>
 
             {/* Captain Section */}

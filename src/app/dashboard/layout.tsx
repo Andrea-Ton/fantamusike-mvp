@@ -22,7 +22,7 @@ export default async function DashboardLayout({
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
     // Prioritize DB profile, fallback to metadata, fallback to nothing
     const avatarUrl = profile?.avatar_url ?? user?.user_metadata?.avatar_url;

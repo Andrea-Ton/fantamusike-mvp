@@ -2,11 +2,12 @@
 
 import React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Search, Trophy, Shield, User } from 'lucide-react';
+import { Home, Search, Trophy, Shield, User, ShoppingBag } from 'lucide-react';
 
 const NAV_ITEMS = [
     { href: '/dashboard', label: 'Dashboard', icon: Home },
     { href: '/dashboard/draft', label: 'Talent Scout', icon: Search },
+    { href: '/dashboard/marketplace', label: 'MusiMarket', icon: ShoppingBag },
     { href: '/dashboard/leaderboard', label: 'Classifica', icon: Trophy },
     { href: '/dashboard/profile', label: 'Profilo', icon: User },
 ];

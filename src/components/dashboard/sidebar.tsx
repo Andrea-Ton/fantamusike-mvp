@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Search, Trophy, LogOut, Shield } from 'lucide-react';
+import { Home, Search, Trophy, LogOut, Shield, ShoppingBag } from 'lucide-react';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -11,6 +11,7 @@ import { User } from '@supabase/supabase-js';
 const NAV_ITEMS = [
     { href: '/dashboard', label: 'Dashboard', icon: Home },
     { href: '/dashboard/draft', label: 'Talent Scout', icon: Search },
+    { href: '/dashboard/marketplace', label: 'MusiMarket', icon: ShoppingBag },
     { href: '/dashboard/leaderboard', label: 'Classifica', icon: Trophy },
 ];
 

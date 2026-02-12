@@ -3,17 +3,19 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, Activity, Users, LayoutDashboard, LogOut, Mail } from 'lucide-react';
+import { Calendar, Activity, Users, LayoutDashboard, LogOut, Mail, Trophy } from 'lucide-react';
 import Image from 'next/image';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
 
     const navItems = [
-        { name: 'Season Management', href: '/admin/season', icon: <Calendar size={20} /> },
-        //{ name: 'Scoring System', href: '/admin/scoring', icon: <Activity size={20} /> },
-        { name: 'Curated Roster', href: '/admin/roster', icon: <Users size={20} /> },
-        { name: 'Email System', href: '/admin/email', icon: <Mail size={20} /> },
+        { name: 'Gestione Classifica', href: '/admin/leaderboard', icon: <Trophy size={20} /> },
+        { name: 'Gestione Artisti', href: '/admin/roster', icon: <Users size={20} /> },
+        { name: 'Gestione Marketplace', href: '/admin/marketplace', icon: <LayoutDashboard size={20} /> },
+        { name: 'Gestione Ordini', href: '/admin/orders', icon: <Activity size={20} /> },
+        { name: 'Email Marketing', href: '/admin/email', icon: <Mail size={20} /> },
+        //{ name: 'Season Management', href: '/admin/season', icon: <Calendar size={20} /> },
     ];
 
     return (

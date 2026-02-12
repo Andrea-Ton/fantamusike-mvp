@@ -33,7 +33,7 @@ export async function getCurrentSeasonAction() {
         .from('seasons')
         .select('*')
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
     if (error) {
         return null;
@@ -49,7 +49,7 @@ export async function createSeasonAction(name: string, startDate: string, endDat
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, message: 'Unauthorized' };
 
-    const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
+    const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
     if (!profile?.is_admin) return { success: false, message: 'Unauthorized' };
 
     const { error } = await supabase.from('seasons').insert({
@@ -75,7 +75,7 @@ export async function startSeasonAction(seasonId: string) {
     // Check if admin
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, message: 'Unauthorized' };
-    const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
+    const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
     if (!profile?.is_admin) return { success: false, message: 'Unauthorized' };
 
     // Deactivate all other seasons
@@ -103,7 +103,7 @@ export async function endSeasonAction(seasonId: string) {
     // Check if admin
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, message: 'Unauthorized' };
-    const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
+    const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
     if (!profile?.is_admin) return { success: false, message: 'Unauthorized' };
 
     // 1. Fetch current leaderboard

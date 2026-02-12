@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Share2, Download, Loader2, X, Sparkles, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ShareCard from './share-card';
@@ -12,9 +13,10 @@ interface ShareButtonProps {
     rank: number;
     captain: SpotifyArtist | null;
     roster: (SpotifyArtist | null)[];
-    seasonName: string;
+    weekNumber: number;
+    seasonName?: string;
     percentile?: string;
-    variant?: 'default' | 'iconOnly';
+    variant?: 'default' | 'iconOnly' | 'primary';
 }
 
 export default function ShareButton({
@@ -23,7 +25,8 @@ export default function ShareButton({
     rank,
     captain,
     roster,
-    seasonName,
+    weekNumber,
+    seasonName = 'Season 1',
     percentile,
     variant = 'default'
 }: ShareButtonProps) {
@@ -122,7 +125,7 @@ export default function ShareButton({
             }, 1000);
             return () => clearTimeout(timer);
         }
-    }, []);
+    }, [username, totalScore, rank, captain, roster, weekNumber, seasonName, percentile]);
 
     // Cleanup object URL
     useEffect(() => {
@@ -166,9 +169,9 @@ export default function ShareButton({
         }
     };
 
-    return (
-        <>
-            {variant === 'iconOnly' ? (
+    const renderTrigger = () => {
+        if (variant === 'iconOnly') {
+            return (
                 <button
                     onClick={() => {
                         setError(null);
@@ -177,7 +180,6 @@ export default function ShareButton({
                     className="relative p-2.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 rounded-xl transition-all group overflow-hidden"
                     title="Condividi Label"
                 >
-                    {/* Pulsing Background Effect */}
                     <motion.div
                         animate={{
                             scale: [1, 1.2, 1],
@@ -190,148 +192,172 @@ export default function ShareButton({
                         }}
                         className="absolute inset-0 bg-purple-500 blur-md pointer-events-none"
                     />
-
                     <div className="relative z-10">
                         <Share2 size={16} className="text-purple-300 group-hover:scale-110 transition-transform" />
                     </div>
-
-                    {/* Subtle outer pulse circle */}
-                    <div className="absolute inset-0 rounded-xl border border-purple-500/50 animate-pulse"></div>
                 </button>
-            ) : (
+            );
+        }
+
+        if (variant === 'primary') {
+            return (
                 <button
                     onClick={() => {
                         setError(null);
                         setShowModal(true);
                     }}
-                    className="px-6 py-3 bg-white/5 border border-white/10 backdrop-blur-md rounded-2xl text-white text-sm font-black uppercase tracking-tighter italic hover:bg-white/10 hover:border-purple-500/50 transition-all shadow-inner flex items-center gap-3 overflow-hidden group h-full"
+                    className="group relative w-full h-16 bg-purple-600 text-white font-black italic uppercase tracking-tighter rounded-2xl shadow-[0_10px_40px_rgba(168,85,247,0.2)] transform hover:-translate-y-1 active:scale-95 transition-all overflow-hidden flex items-center justify-center gap-3 border border-purple-400/30"
                 >
-                    <div className="relative">
-                        <Share2 size={18} className="text-purple-400 group-hover:rotate-12 transition-transform" />
-                    </div>
-                    <span>Condividi&nbsp;Label</span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <Sparkles size={20} className="relative z-10 group-hover:animate-spin-slow" />
+                    <span className="relative z-10">Share Card</span>
                 </button>
-            )}
+            );
+        }
 
-            {/* Preview Modal */}
-            <AnimatePresence mode="wait">
-                {showModal && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setShowModal(false)}
-                            className="absolute inset-0 bg-black/95 backdrop-blur-2xl"
-                        />
+        return (
+            <button
+                onClick={() => {
+                    setError(null);
+                    setShowModal(true);
+                }}
+                className="px-6 py-3 bg-white/5 border border-white/10 backdrop-blur-md rounded-2xl text-white text-sm font-black uppercase tracking-tighter italic hover:bg-white/10 hover:border-purple-500/50 transition-all shadow-inner flex items-center gap-3 overflow-hidden group h-full"
+            >
+                <div className="relative">
+                    <Share2 size={18} className="text-purple-400 group-hover:rotate-12 transition-transform" />
+                </div>
+                <span>Condividi&nbsp;Label</span>
+            </button>
+        );
+    };
 
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            className="relative w-full max-w-md bg-[#0a0a0f] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] flex flex-col max-h-[95vh] z-10"
-                        >
-                            {/* Modal Header */}
-                            <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
-                                <div>
-                                    <h3 className="text-xl font-black italic uppercase tracking-tighter text-white">Share Card</h3>
-                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Condividi la tua Label per ottenere MusiCoins!</p>
-                                </div>
-                                <button
-                                    onClick={() => setShowModal(false)}
-                                    className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 rounded-full text-white z-20"
-                                >
-                                    <X size={20} />
-                                </button>
-                            </div>
+    return (
+        <>
+            {renderTrigger()}
 
-                            {/* Modal Content - LIVE PREVIEW */}
-                            <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center bg-[#050507]">
-                                <div className="relative aspect-[9/16] w-full max-w-[280px] rounded-3xl overflow-hidden shadow-2xl border border-white/10">
-                                    {/* Live React Component Scaled */}
-                                    <div
-                                        className="absolute top-0 left-0 origin-top-left"
-                                        style={{
-                                            width: '1080px',
-                                            height: '1920px',
-                                            transform: `scale(${280 / 1080})`,
-                                            pointerEvents: 'none',
-                                            userSelect: 'none'
-                                        }}
-                                    >
-                                        <ShareCard
-                                            username={username}
-                                            totalScore={totalScore}
-                                            rank={rank}
-                                            captain={captain}
-                                            roster={roster}
-                                            seasonName={seasonName}
-                                            percentile={percentile}
-                                        />
+            {/* Preview Modal - Portaled to Body */}
+            {typeof document !== 'undefined' && createPortal(
+                <AnimatePresence mode="wait">
+                    {showModal && (
+                        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setShowModal(false)}
+                                className="absolute inset-0 bg-black/95 backdrop-blur-2xl"
+                            />
+
+                            <motion.div
+                                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                                animate={{ scale: 1, opacity: 1, y: 0 }}
+                                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                                className="relative w-full max-w-md bg-[#0a0a0f] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] flex flex-col max-h-[95vh] z-10"
+                            >
+                                {/* Modal Header */}
+                                <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+                                    <div>
+                                        <h3 className="text-xl font-black italic uppercase tracking-tighter text-white">Share Card</h3>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Condividi la tua Label e mostra a tutti i tuoi risultati!</p>
                                     </div>
-
-                                    {/* Generation Overlay */}
-                                    <AnimatePresence>
-                                        {isGenerating && (
-                                            <motion.div
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                exit={{ opacity: 0 }}
-                                                className="absolute inset-0 z-10 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center gap-4"
-                                            >
-                                                <div className="relative">
-                                                    <Loader2 size={32} className="text-purple-500 animate-spin" />
-                                                    <div className="absolute inset-0 blur-lg bg-purple-500/20 animate-pulse"></div>
-                                                </div>
-                                                <div className="flex flex-col items-center">
-                                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white animate-pulse">Generazione immagine in corso...</span>
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-
-                                    {/* Error Overlay */}
-                                    {error && !isGenerating && (
-                                        <div className="absolute inset-0 z-20 bg-black/80 flex flex-col items-center justify-center gap-3 p-6 text-center">
-                                            <AlertCircle size={32} className="text-red-500" />
-                                            <span className="text-xs font-bold text-red-500/80 uppercase italic">{error}</span>
-                                            <button
-                                                onClick={() => {
-                                                    setError(null);
-                                                    setDataUrl(null);
-                                                }}
-                                                className="mt-4 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-bold uppercase tracking-widest text-white transition-all"
-                                            >
-                                                Chiudi Errore
-                                            </button>
-                                        </div>
-                                    )}
+                                    <button
+                                        onClick={() => setShowModal(false)}
+                                        className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all flex items-center justify-center"
+                                    >
+                                        <X size={20} />
+                                    </button>
                                 </div>
-                            </div>
 
-                            {/* Modal Footer */}
-                            <div className="p-6 border-t border-white/5 bg-white/[0.03] flex gap-3">
-                                <button
-                                    onClick={handleDownload}
-                                    disabled={isGenerating}
-                                    className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl text-white text-xs font-black uppercase tracking-tighter italic hover:bg-white/10 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <Download size={16} />
-                                    <span>Scarica</span>
-                                </button>
-                                <button
-                                    onClick={handleShare}
-                                    disabled={isGenerating}
-                                    className="flex-[1.5] py-4 bg-white text-black rounded-2xl text-xs font-black uppercase tracking-tighter italic hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_20px_rgba(255,255,255,0.1)]"
-                                >
-                                    <Share2 size={16} />
-                                    <span>Condividi</span>
-                                </button>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+                                {/* Modal Content - LIVE PREVIEW */}
+                                <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center bg-[#050507]">
+                                    <div className="relative aspect-[9/16] w-full max-w-[280px] rounded-3xl overflow-hidden shadow-2xl border border-white/10">
+                                        {/* Live React Component Scaled */}
+                                        <div
+                                            className="absolute top-0 left-0 origin-top-left"
+                                            style={{
+                                                width: '1080px',
+                                                height: '1920px',
+                                                transform: `scale(${280 / 1080})`,
+                                                pointerEvents: 'none',
+                                                userSelect: 'none'
+                                            }}
+                                        >
+                                            <ShareCard
+                                                username={username}
+                                                totalScore={totalScore}
+                                                rank={rank}
+                                                captain={captain}
+                                                roster={roster}
+                                                weekNumber={weekNumber}
+                                                percentile={percentile}
+                                            />
+                                        </div>
+
+                                        {/* Generation Overlay */}
+                                        <AnimatePresence>
+                                            {isGenerating && (
+                                                <motion.div
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    exit={{ opacity: 0 }}
+                                                    className="absolute inset-0 z-10 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center gap-4"
+                                                >
+                                                    <div className="relative">
+                                                        <Loader2 size={32} className="text-purple-500 animate-spin" />
+                                                        <div className="absolute inset-0 blur-lg bg-purple-500/20 animate-pulse"></div>
+                                                    </div>
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white animate-pulse">Generazione immagine in corso...</span>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+
+                                        {/* Error Overlay */}
+                                        {error && !isGenerating && (
+                                            <div className="absolute inset-0 z-20 bg-black/80 flex flex-col items-center justify-center gap-3 p-6 text-center">
+                                                <AlertCircle size={32} className="text-red-500" />
+                                                <span className="text-xs font-bold text-red-500/80 uppercase italic">{error}</span>
+                                                <button
+                                                    onClick={() => {
+                                                        setError(null);
+                                                        setDataUrl(null);
+                                                        generateImage();
+                                                    }}
+                                                    className="mt-4 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-bold uppercase tracking-widest text-white transition-all"
+                                                >
+                                                    Riprova
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Modal Footer */}
+                                <div className="p-6 border-t border-white/5 bg-white/[0.03] flex gap-3 mt-auto">
+                                    <button
+                                        onClick={handleDownload}
+                                        disabled={isGenerating}
+                                        className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl text-white text-xs font-black uppercase tracking-tighter italic hover:bg-white/10 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <Download size={16} />
+                                        <span>Scarica</span>
+                                    </button>
+                                    <button
+                                        onClick={handleShare}
+                                        disabled={isGenerating}
+                                        className="flex-[1.5] py-4 bg-white text-black rounded-2xl text-xs font-black uppercase tracking-tighter italic hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_20px_rgba(255,255,255,0.1)]"
+                                    >
+                                        <Share2 size={16} />
+                                        <span>Condividi</span>
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
         </>
     );
 }

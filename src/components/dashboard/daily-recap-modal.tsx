@@ -108,7 +108,7 @@ export function DailyRecapModal({ logs, onClose }: DailyRecapModalProps) {
 
                                 <div className="relative z-10">
                                     <div className="text-7xl font-black text-white italic tracking-tighter tabular-nums drop-shadow-2xl">
-                                        +<SpringCounter from={0} to={totalPoints} />
+                                        {totalPoints > 0 && '+'}<SpringCounter from={0} to={totalPoints} />
                                     </div>
                                     <div className="text-[10px] font-black text-purple-400 mt-2 tracking-[0.4em] uppercase opacity-70">
                                         Punti Fantamusiké

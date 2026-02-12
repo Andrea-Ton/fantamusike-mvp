@@ -29,21 +29,26 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
         return { success: false, message: 'Unauthorized' };
     }
 
-    // 2. Get Active Season & Previous Team (Moved up for validation context)
-    const currentSeason = await getCurrentSeasonAction();
+    // 2. Get Active Season & Previous Team
+    const GLOBAL_SEASON_ID = '00000000-0000-0000-0000-000000000001';
+    let currentSeason = await getCurrentSeasonAction();
     if (!currentSeason) {
-        return { success: false, message: 'No active season found' };
+        // Fallback to global season if no other is active
+        currentSeason = { id: GLOBAL_SEASON_ID, name: 'Global Season', start_date: '2024-01-01', end_date: '2099-12-31', is_active: true, status: 'active' };
     }
 
-    // Fetch Previous Team (Latest Saved) for Validation & Cost Calculation
-    const { data: previousTeam } = await supabase
+    const { data: previousTeam, error: prevTeamError } = await supabase
         .from('teams')
         .select('*')
         .eq('user_id', user.id)
         .eq('season_id', currentSeason.id)
         .order('week_number', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
+
+    if (prevTeamError) {
+        console.error('Fetch Previous Team Error:', prevTeamError);
+    }
 
     // 3. Validation
     const errors: Record<string, string> = {};
@@ -68,11 +73,11 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
         artists.push(artist);
     };
 
-    validateSlot('slot_1', slots.slot_1, ARTIST_TIERS.BIG.min, ARTIST_TIERS.BIG.max, `${ARTIST_TIERS.BIG.label} (>65)`, previousTeam?.slot_1_id);
-    validateSlot('slot_2', slots.slot_2, ARTIST_TIERS.MID.min, ARTIST_TIERS.MID.max, `${ARTIST_TIERS.MID.label} (${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max})`, previousTeam?.slot_2_id);
-    validateSlot('slot_3', slots.slot_3, ARTIST_TIERS.MID.min, ARTIST_TIERS.MID.max, `${ARTIST_TIERS.MID.label} (${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max})`, previousTeam?.slot_3_id);
-    validateSlot('slot_4', slots.slot_4, ARTIST_TIERS.NEW_GEN.min, ARTIST_TIERS.NEW_GEN.max, `${ARTIST_TIERS.NEW_GEN.label} (<55)`, previousTeam?.slot_4_id);
-    validateSlot('slot_5', slots.slot_5, ARTIST_TIERS.NEW_GEN.min, ARTIST_TIERS.NEW_GEN.max, `${ARTIST_TIERS.NEW_GEN.label} (<55)`, previousTeam?.slot_5_id);
+    validateSlot('slot_1', slots.slot_1, ARTIST_TIERS.BIG.min, ARTIST_TIERS.BIG.max, `${ARTIST_TIERS.BIG.label} (Pop: ${ARTIST_TIERS.BIG.min}-${ARTIST_TIERS.BIG.max})`, previousTeam?.slot_1_id);
+    validateSlot('slot_2', slots.slot_2, ARTIST_TIERS.MID.min, ARTIST_TIERS.MID.max, `${ARTIST_TIERS.MID.label} (Pop: ${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max})`, previousTeam?.slot_2_id);
+    validateSlot('slot_3', slots.slot_3, ARTIST_TIERS.MID.min, ARTIST_TIERS.MID.max, `${ARTIST_TIERS.MID.label} (Pop: ${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max})`, previousTeam?.slot_3_id);
+    validateSlot('slot_4', slots.slot_4, ARTIST_TIERS.NEW_GEN.min, ARTIST_TIERS.NEW_GEN.max, `${ARTIST_TIERS.NEW_GEN.label} (Pop: ${ARTIST_TIERS.NEW_GEN.min}-${ARTIST_TIERS.NEW_GEN.max})`, previousTeam?.slot_4_id);
+    validateSlot('slot_5', slots.slot_5, ARTIST_TIERS.NEW_GEN.min, ARTIST_TIERS.NEW_GEN.max, `${ARTIST_TIERS.NEW_GEN.label} (Pop: ${ARTIST_TIERS.NEW_GEN.min}-${ARTIST_TIERS.NEW_GEN.max})`, previousTeam?.slot_5_id);
 
     // Validate Captain
     if (captainId) {
@@ -88,15 +93,18 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
 
     try {
         // 4. Determine Target Week
-        // Fetch the latest snapshot week to determine current week
-        const { data: latestSnap } = await supabase
+        const { data: latestSnap, error: snapFetchError } = await supabase
             .from('weekly_snapshots')
             .select('week_number')
             .order('week_number', { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
-        const currentWeek = latestSnap?.week_number || 1;
+        if (snapFetchError) {
+            console.error('Fetch Latest Snapshot Error:', snapFetchError);
+        }
+
+        const currentWeek = Number(latestSnap?.week_number || 1);
 
         // Check if user has ANY team for this season
         const { data: existingSeasonTeam } = await supabase
@@ -106,22 +114,22 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
             .eq('season_id', currentSeason.id)
             .limit(1);
 
-        // UX Nuance: If First Team of Season -> Current Week. Else -> Next Week.
+        // UX Nuance: If First Team of Season -> Current Week. Else -> Next Week (currentWeek + 1).
         const targetWeek = (!existingSeasonTeam || existingSeasonTeam.length === 0) ? currentWeek : currentWeek + 1;
 
         // Previous Team is already fetched above
 
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
             .from('profiles')
-            .select('musi_coins, total_score')
+            .select('id, musi_coins, total_score, has_used_free_label')
             .eq('id', user.id)
-            .single();
+            .maybeSingle();
 
-        if (!profile) {
+        if (profileError || !profile) {
+            console.error('Profile Fetch Error:', profileError);
             return { success: false, message: 'Profile not found' };
         }
 
-        // 6. Calculate Cost
         // 6. Calculate Cost
         let cost = 0;
 
@@ -144,20 +152,46 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
                 cost += 10;
             }
         }
+
+        // 5. Cache Artists (Ensures Foreign Keys are met)
+        const artistsToUpsert = artists.map(artist => ({
+            spotify_id: artist.id,
+            name: artist.name,
+            image_url: artist.images[0]?.url || '',
+            current_popularity: artist.popularity,
+            current_followers: artist.followers.total,
+            last_updated: new Date().toISOString()
+        }));
+
+        const { error: cacheError } = await supabase
+            .from('artists_cache')
+            .upsert(artistsToUpsert, { onConflict: 'spotify_id' });
+
+        if (cacheError) {
+            console.error('Cache Error:', cacheError);
+            return { success: false, message: 'Failed to cache artists' };
+        }
+
+        // 6. Apply Free Label Logic
+        const isFreeLabel = !profile.has_used_free_label;
+        if (isFreeLabel) {
+            cost = 0;
+        }
         // If no previousTeam (First team of season), cost remains 0 (Free)
         if (!previousTeam) {
-            // IMMEDIATE SNAPSHOT LOGIC
+            // 1. IMMEDIATE SNAPSHOT LOGIC
             // Ensure selected artists are in the current week's snapshot
             const artistIds = artists.map(a => a.id);
 
             // Check existing snapshots for these artists
             const { data: existingSnapshots } = await supabase
                 .from('weekly_snapshots')
-                .select('artist_id')
+                .select('*')
                 .eq('week_number', currentWeek)
                 .in('artist_id', artistIds);
 
             const existingSnapshotIds = new Set(existingSnapshots?.map(s => s.artist_id) || []);
+            const snapshotMap = Object.fromEntries(existingSnapshots?.map(s => [s.artist_id, s]) || []);
 
             const missingArtists = artists.filter(a => !existingSnapshotIds.has(a.id));
 
@@ -175,42 +209,81 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
 
                 if (snapError) {
                     console.error('Immediate Snapshot Error:', snapError);
-                    // Non-blocking error, but worth logging
                 }
+
+                // Add new snapshots to our map for live calculation
+                newSnapshots.forEach(s => {
+                    snapshotMap[s.artist_id] = s as any;
+                });
             }
 
-            // INSTANT SCORING LOGIC (UX Only)
-            // Use already saved scores for the current week if any
+            // 2. LIVE SCORING LOGIC (UX Only)
+            // We calculate points immediately so the user doesn't see "0" in the dashboard.
+            // We prioritize existing weekly_scores (calculated nightly) and fallback to "live" delta.
             try {
-                const { data: currentScores } = await supabase
+                // Fetch current weekly scores if already calculated for these artists
+                const { data: dbScores } = await supabase
                     .from('weekly_scores')
                     .select('artist_id, total_points')
                     .eq('week_number', currentWeek)
                     .in('artist_id', artistIds);
 
+                const dbScoreMap = new Map(dbScores?.map(s => [s.artist_id, s.total_points]) || []);
+
                 const { data: featured } = await supabase.from('featured_artists').select('spotify_id');
                 const featuredIds = new Set(featured?.map(f => f.spotify_id) || []);
-                const scoreMap = Object.fromEntries(currentScores?.map(s => [s.artist_id, s.total_points]) || []);
 
-                let instantScore = 0;
+                let liveScore = 0;
                 for (const artist of artists) {
-                    let points = scoreMap[artist.id] || 0;
+                    const baseline = snapshotMap[artist.id];
+                    if (!baseline) continue;
 
-                    // Apply Multipliers
+                    // Priority 1: Use DB score if it exists
+                    let points = dbScoreMap.get(artist.id) || 0;
+
+                    // Priority 2: Fallback to "Live" delta calculation
+                    if (points === 0) {
+                        const popDelta = artist.popularity - baseline.popularity;
+                        points = Math.max(0, popDelta * 10);
+                    }
+
+                    // Apply Multipliers (Captain / Featured)
                     if (captainId === artist.id) {
                         points = Math.round(points * (featuredIds.has(artist.id) ? 2 : 1.5));
                     }
-                    instantScore += points;
+                    liveScore += points;
                 }
 
-                if (instantScore > 0) {
-                    await supabase
+                console.log(`[saveTeamAction] Target Week: ${currentWeek}, Calculated Live Score: ${liveScore}`);
+
+                if (liveScore > 0) {
+                    // Update Profile
+                    const { error: profileUpdateError } = await supabase
                         .from('profiles')
-                        .update({ total_score: (profile?.total_score || 0) + instantScore })
+                        .update({ total_score: (profile?.total_score || 0) + liveScore })
                         .eq('id', user.id);
+
+                    if (profileUpdateError) {
+                        console.error('[saveTeamAction] Profile Update Error:', profileUpdateError);
+                    }
+
+                    // IMPORTANT: Log this update to daily_score_logs to prevent nightly Edge Function from double-awarding
+                    const { error: logError } = await supabase
+                        .from('daily_score_logs')
+                        .insert({
+                            user_id: user.id,
+                            points_gained: liveScore,
+                            date: new Date().toISOString().split('T')[0],
+                            seen_by_user: false,
+                            breakdown: { note: "Welcome live points - automated" }
+                        });
+
+                    if (logError) {
+                        console.error('[saveTeamAction] Log Insert Error:', logError);
+                    }
                 }
             } catch (scoringError) {
-                console.error('Instant Scoring Error:', scoringError);
+                console.error('[saveTeamAction] Live Scoring Logic Error:', scoringError);
             }
         }
 
@@ -232,24 +305,14 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
             }
         }
 
-        // 7. Cache Artists
-        const artistsToUpsert = artists.map(artist => ({
-            spotify_id: artist.id,
-            name: artist.name,
-            image_url: artist.images[0]?.url || '',
-            current_popularity: artist.popularity,
-            current_followers: artist.followers.total,
-            last_updated: new Date().toISOString()
-        }));
-
-        const { error: cacheError } = await supabase
-            .from('artists_cache')
-            .upsert(artistsToUpsert, { onConflict: 'spotify_id' });
-
-        if (cacheError) {
-            console.error('Cache Error:', cacheError);
-            return { success: false, message: 'Failed to cache artists' };
+        // 5. Update Free Label Flag if this was the first one
+        if (isFreeLabel) {
+            await supabase
+                .from('profiles')
+                .update({ has_used_free_label: true })
+                .eq('id', user.id);
         }
+
 
         // 8. Save Team (Versioned)
         const teamData = {

@@ -1,17 +1,20 @@
 export const ARTIST_TIERS = {
     BIG: {
-        label: 'Big',
-        min: 66,
+        label: 'Star',
+        min: 76,
         max: 100
     },
     MID: {
-        label: 'Mid Tier',
-        min: 55,
-        max: 65
+        label: 'Popular',
+        min: 46,
+        max: 75
     },
     NEW_GEN: {
-        label: 'New Gen',
+        label: 'Underdog',
         min: 0,
-        max: 54
+        max: 45
     }
 } as const;
+
+export type ArtistTierKey = keyof typeof ARTIST_TIERS;
+export const ARTIST_TIER_KEYS: ArtistTierKey[] = ['BIG', 'MID', 'NEW_GEN'];

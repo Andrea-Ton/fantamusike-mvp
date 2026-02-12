@@ -3,24 +3,27 @@
 import React, { useState } from 'react';
 import { DailyRecapModalWrapper } from './daily-recap-modal-wrapper';
 import { BetResultModalWrapper } from './bet-result-modal-wrapper';
+import { WeeklyRecapModal } from './weekly-recap-modal';
+import { WeeklyRecap } from '@/app/actions/leaderboard';
 
 interface DashboardModalsProps {
     unseenLogs: any[] | null;
     pendingBet: any | null;
+    unseenWeeklyRecap: WeeklyRecap | null;
+    username: string;
 }
 
-export default function DashboardModals({ unseenLogs, pendingBet }: DashboardModalsProps) {
+export default function DashboardModals({ unseenLogs, pendingBet, unseenWeeklyRecap, username }: DashboardModalsProps) {
+    const hasWeekly = !!unseenWeeklyRecap;
     const hasLogs = unseenLogs && unseenLogs.length > 0;
     const hasBet = !!pendingBet;
 
-    // State to track if we've finished the recap and should show the bet
+    // State to track progression
     const [recapFinished, setRecapFinished] = useState(false);
+    const [betFinished, setBetFinished] = useState(false);
 
-    // Logic:
-    // 1. If there are logs and we haven't finished the recap, show the recap modal.
-    // 2. Once the recap modal is closed (onClose called), set recapFinished to true.
-    // 3. If there's a pending bet AND (either recap is finished OR there were no logs to begin with), show the bet modal.
-
+    // Sequence Order:
+    // 1. Daily Recap (Points)
     if (hasLogs && !recapFinished) {
         return (
             <DailyRecapModalWrapper
@@ -30,9 +33,24 @@ export default function DashboardModals({ unseenLogs, pendingBet }: DashboardMod
         );
     }
 
-    if (hasBet && (recapFinished || !hasLogs)) {
+    // 2. Bet Results (only after daily recap or if none)
+    if (hasBet && !betFinished && (recapFinished || !hasLogs)) {
         return (
-            <BetResultModalWrapper result={pendingBet} />
+            <BetResultModalWrapper
+                result={pendingBet}
+                onClose={() => setBetFinished(true)}
+            />
+        );
+    }
+
+    // 3. Weekly Recap (Last in sequence)
+    if (hasWeekly && (betFinished || !hasBet) && (recapFinished || !hasLogs)) {
+        return (
+            <WeeklyRecapModal
+                recap={unseenWeeklyRecap!}
+                username={username}
+                onClose={() => { }} // Last one, no more steps
+            />
         );
     }
 

@@ -10,11 +10,13 @@
     "email": "email dev"
   },
   "dependencies": {
+    "@paypal/react-paypal-js": "^8.9.2",
     "@react-email/render": "^2.0.2",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.84.0",
     "@vercel/og": "^0.8.6",
     "canvas-confetti": "^1.9.4",
+    "date-fns": "^4.1.0",
     "framer-motion": "^12.23.26",
     "html-to-image": "^1.11.13",
     "lucide-react": "^0.554.0",

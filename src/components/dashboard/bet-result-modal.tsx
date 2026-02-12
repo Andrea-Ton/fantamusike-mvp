@@ -69,7 +69,7 @@ export default function BetResultModal({ promoId, betSnapshot, onClose }: BetRes
                 return {
                     title: 'PAREGGIO',
                     subtitle: 'EQUILIBRIO PERFETTO',
-                    desc: 'Incredibile! Entrambi gli artisti hanno performato allo stesso modo. Ti abbiamo restituito i 2 MusiCoins della scommessa!',
+                    desc: 'Incredibile! Entrambi gli artisti hanno performato allo stesso modo. Un pareggio perfetto!',
                     color: 'from-amber-400 to-orange-600',
                     glow: 'bg-amber-500/30',
                     accent: 'text-amber-400',
@@ -148,7 +148,7 @@ export default function BetResultModal({ promoId, betSnapshot, onClose }: BetRes
                                             +<SpringCounter from={0} to={won_points ?? 10} />
                                         </div>
                                         <div className="relative z-10 text-[9px] font-black text-purple-400 tracking-[0.4em] uppercase opacity-70">
-                                            Punti Fantamusiké
+                                            Punti Promo
                                         </div>
                                     </div>
                                 )}

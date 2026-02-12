@@ -2,15 +2,12 @@ import React, { Suspense } from 'react';
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { getUserTeamAction } from '@/app/actions/team';
-import { getCurrentSeasonAction } from '@/app/actions/season';
 import Image from 'next/image';
 import LogoutButton from '@/components/logout-button';
-import InviteButton from '@/components/dashboard/invite-button';
 import { getCurrentWeekAction } from '@/app/actions/game';
 import StatsSection from '@/components/dashboard/stats-section';
 import RosterSection from '@/components/dashboard/roster-section';
-import LeaderboardSection from '@/components/dashboard/leaderboard-section';
-import { StatsSkeleton, RosterSkeleton, LeaderboardSkeleton } from '@/components/dashboard/skeletons';
+import { StatsSkeleton, RosterSkeleton } from '@/components/dashboard/skeletons';
 import { getDashboardMetadataAction } from '@/app/actions/dashboard-init';
 import { getLeaderboardAction } from '@/app/actions/leaderboard';
 import DashboardModals from '@/components/dashboard/dashboard-modals';
@@ -20,6 +17,9 @@ import OnboardingWrapper from '@/components/dashboard/onboarding-wrapper';
 import ShareButton from '@/components/dashboard/share-button';
 import { UserTeamResponse } from '@/app/actions/team';
 import { LeaderboardResponse } from '@/app/actions/leaderboard';
+import { updateLoginStreakAction, getRewardsStateAction } from '@/app/actions/rewards';
+import MusiRewards from '@/components/dashboard/musi-rewards';
+import MusiCoinBalance from '@/components/dashboard/musicoin-balance';
 
 export default async function DashboardPage() {
     const metadata = await getDashboardMetadataAction();
@@ -27,6 +27,10 @@ export default async function DashboardPage() {
     if (!metadata) {
         redirect('/');
     }
+
+    // Update Streak & Fetch Rewards State
+    await updateLoginStreakAction();
+    const { missions } = await getRewardsStateAction();
 
     const {
         user,
@@ -39,7 +43,6 @@ export default async function DashboardPage() {
         featured: featuredArtists
     } = metadata;
 
-    const seasonName = season?.name || 'Season Zero';
     const musiCoins = profile?.musi_coins || 0;
 
     // Background Promises (Non-Blocking)
@@ -86,31 +89,22 @@ export default async function DashboardPage() {
                     </div>
                     <div>
                         <h1 className="text-xl font-black text-white tracking-tighter uppercase italic leading-none">FantaMusiké</h1>
-                        <p className="hidden text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{seasonName}</p>
                     </div>
                 </div>
                 <LogoutButton />
             </div>
 
             {/* Mobile Action Bar */}
-            <div className="md:hidden px-6 mb-6 flex flex-col gap-3">
-                <div className="flex gap-3">
-                    <div className="px-4 py-2.5 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md text-sm font-black text-yellow-400 flex items-center gap-2 flex-1 justify-between shadow-inner">
-                        <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">MusiCoins</span>
-                        <div className="flex items-center gap-1.5">
-                            <span className="text-base">{musiCoins}</span>
-                        </div>
-                    </div>
-                    <div className="flex-1">
-                        <InviteButton referralCode={profile?.referral_code} />
-                    </div>
-                </div>
+            <div className="md:hidden px-6 mb-10 flex flex-col gap-3">
+                <MusiCoinBalance musiCoins={musiCoins} referralCode={profile?.referral_code} />
             </div>
 
-            {/* Sequential Modals: Daily Recap -> MusiBet Results */}
+            {/* Sequential Modals: Weekly Recap -> Daily Recap -> MusiBet Results */}
             <DashboardModals
                 unseenLogs={unseenLogs}
                 pendingBet={pendingBet}
+                unseenWeeklyRecap={metadata.unseenWeeklyRecap}
+                username={profile?.username || 'Manager'}
             />
 
             {/* Content Area */}
@@ -124,26 +118,13 @@ export default async function DashboardPage() {
                         <h1 className="text-5xl font-black text-white italic tracking-tighter uppercase leading-none">Bentornato {profile?.username},</h1>
                         <p className="text-gray-500 mt-3 font-medium text-lg">Controlla la tua Label e scala le classifiche mondiali.</p>
                     </div>
-                    <div className="flex gap-4 items-center h-12">
-                        {/* Status indicators */}
-                        <div className="px-6 py-3 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md text-sm font-black text-yellow-400 flex items-center gap-4 shadow-inner group transition-all hover:bg-white/10 h-full">
-                            <div className="flex flex-col justify-center">
-                                <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold leading-none mb-1">MUSICOINS</span>
-                                <div className='flex justify-center items-center'><span className="text-xl tracking-tighter leading-none">{musiCoins}</span></div>
-                            </div>
-                        </div>
-                        <div className="h-full">
-                            <InviteButton referralCode={profile?.referral_code} />
-                        </div>
-                    </div>
+                    <MusiCoinBalance musiCoins={musiCoins} referralCode={profile?.referral_code} />
                 </header>
 
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-
-                    {/* Left Column: Stats & Info */}
-                    <div className="lg:col-span-5 space-y-6">
-                        {/* Score Card Section */}
+                    {/* 1. Stats Section - Top Left on Desktop, Top on Mobile */}
+                    <div className="lg:col-span-5 order-1">
                         <Suspense fallback={<StatsSkeleton />}>
                             <StatsSection
                                 userId={user.id}
@@ -151,31 +132,29 @@ export default async function DashboardPage() {
                                 totalScore={(profile?.total_score || 0) + (profile?.listen_score || 0)}
                             />
                         </Suspense>
+                    </div>
 
-                        {/* Leaderboard Card - Hidden on Mobile, Visible on Desktop */}
-                        <Suspense fallback={<LeaderboardSkeleton />}>
-                            <LeaderboardSection userId={user.id} leaderboardPromise={leaderboardPromise} />
+                    {/* 2. Roster Section - Right on Desktop, Middle on Mobile */}
+                    <div className="lg:col-span-7 lg:row-span-2 order-2">
+                        <Suspense fallback={<RosterSkeleton />}>
+                            <RosterSection
+                                userTeamPromise={userTeamPromise}
+                                userId={user.id}
+                                featuredArtists={featuredArtists}
+                                dailyPromoState={dailyPromoState}
+                                username={profile?.username || 'Manager'}
+                                totalScore={(profile?.total_score || 0) + (profile?.listen_score || 0)}
+                                seasonName={season?.name || 'Season 1'}
+                                weekNumber={currentWeek}
+                                leaderboardPromise={leaderboardPromise}
+                            />
                         </Suspense>
                     </div>
 
-                    {/* Right Column: Roster */}
-                    <Suspense fallback={<RosterSkeleton />}>
-                        <RosterSection
-                            userTeamPromise={userTeamPromise}
-                            userId={user.id}
-                            featuredArtists={featuredArtists}
-                            dailyPromoState={dailyPromoState}
-                            username={profile?.username || 'Manager'}
-                            totalScore={(profile?.total_score || 0) + (profile?.listen_score || 0)}
-                            leaderboardPromise={leaderboardPromise}
-                            seasonName={seasonName}
-                        />
-                    </Suspense>
-
-                    {/* Leaderboard Card - Visible on Mobile (After Roster), Hidden on Desktop */}
-                    <Suspense fallback={<LeaderboardSkeleton />}>
-                        <LeaderboardSection userId={user.id} isMobile={true} leaderboardPromise={leaderboardPromise} />
-                    </Suspense>
+                    {/* 3. MusiRewards - Below Stats on Desktop, Bottom on Mobile */}
+                    <div className="lg:col-span-5 order-3">
+                        <MusiRewards initialMissions={missions} />
+                    </div>
                 </div>
             </main>
         </>

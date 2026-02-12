@@ -2,10 +2,10 @@
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 
--- 1. Schedule Weekly Snapshots (Mondays 04:00 UTC)
+-- 1. Schedule Weekly Snapshots (Mondays 05:00 UTC)
 select cron.schedule(
   'perform-weekly-snapshot-job',
-  '0 4 * * 1',
+  '0 5 * * 1',
   $$
   select net.http_post(
     url := 'https://<your-project-ref>.supabase.co/functions/v1/perform-weekly-snapshot',
@@ -26,6 +26,19 @@ select cron.schedule(
   $$
 );
 
+-- 3. Schedule Weekly Leaderboard Processing (Mondays 04:00 UTC)
+-- Runs after final weekly scoring and before new weekly snapshot
+select cron.schedule(
+  'process-weekly-leaderboard-job',
+  '0 4 * * 1',
+  $$
+  select net.http_post(
+    url := 'https://<your-project-ref>.supabase.co/functions/v1/process-weekly-leaderboard',
+    headers := '{"Content-Type": "application/json", "Authorization": "Bearer <YOUR_SERVICE_ROLE_KEY>"}'::jsonb
+  ) as request_id;
+  $$
+);
+
 -- 3. PROFILES Table
 create table public.profiles (
   id uuid references auth.users not null primary key,
@@ -39,9 +52,25 @@ create table public.profiles (
   referral_code text unique,
   referred_by uuid references public.profiles(id),
   has_completed_onboarding boolean default false,
+  has_used_free_label boolean default false,
+  last_login_at timestamp with time zone,
+  current_streak integer default 0,
   created_at timestamp with time zone default timezone('utc'::text, now()),
   updated_at timestamp with time zone default timezone('utc'::text, now())
 );
+
+-- 4. CLAIMED REWARDS Table
+create table public.claimed_rewards (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  reward_slug text not null,
+  claimed_at timestamp with time zone default timezone('utc'::text, now()),
+  unique(user_id, reward_slug)
+);
+
+alter table public.claimed_rewards enable row level security;
+create policy "Users can view their own claimed rewards." on public.claimed_rewards for select using ( auth.uid() = user_id );
+create policy "Users can insert their own claimed rewards." on public.claimed_rewards for insert with check ( auth.uid() = user_id );
 
 alter table public.profiles enable row level security;
 
@@ -61,6 +90,8 @@ create table public.artists_cache (
 
 alter table public.artists_cache enable row level security;
 create policy "Artists cache is viewable by everyone." on public.artists_cache for select using ( true );
+create policy "Authenticated users can upsert artists." on public.artists_cache for insert with check ( auth.role() = 'authenticated' );
+create policy "Authenticated users can update artists." on public.artists_cache for update using ( auth.role() = 'authenticated' );
 
 -- 5. SEASONS Table
 create table public.seasons (
@@ -128,6 +159,7 @@ create table public.weekly_snapshots (
 
 alter table public.weekly_snapshots enable row level security;
 create policy "Weekly snapshots are viewable by everyone." on public.weekly_snapshots for select using ( true );
+create policy "Authenticated users can insert snapshots." on public.weekly_snapshots for insert with check ( auth.role() = 'authenticated' );
 create index weekly_snapshots_week_artist_idx on public.weekly_snapshots(week_number, artist_id);
 
 -- 9. SEASON RANKINGS Table
@@ -244,7 +276,37 @@ insert into public.badges (name, description, image_url)
 select 'Pioneer', 'Membro fondatore di FantaMusiké MVP', '/badges/pioneer.png'
 where not exists (select 1 from public.badges where name = 'Pioneer');
 
--- 15. STORAGE SETUP
+-- Seed Biglietto Futuro Badge
+insert into public.badges (name, description, image_url)
+select 'Biglietto Futuro', 'Il tuo pass per il futuro di FantaMusiké', '/badges/biglietto_futuro.png'
+where not exists (select 1 from public.badges where name = 'Biglietto Futuro');
+
+-- 15. LEADERBOARD SYSTEM
+create table public.weekly_leaderboard_history (
+    id uuid default uuid_generate_v4() primary key,
+    user_id uuid references public.profiles(id) on delete cascade not null,
+    week_number integer not null,
+    rank integer not null,
+    score integer not null,
+    reward_musicoins integer not null,
+    is_seen boolean default false,
+    created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+alter table public.weekly_leaderboard_history enable row level security;
+create policy "Users can view their own leaderboard history." on public.weekly_leaderboard_history for select using ( auth.uid() = user_id );
+create policy "Admins can view all leaderboard history." on public.weekly_leaderboard_history for select
+  using ( exists ( select 1 from public.profiles where id = auth.uid() and is_admin = true ) );
+
+create policy "Users can update their own leaderboard history." on public.weekly_leaderboard_history for update 
+  using ( auth.uid() = user_id );
+
+-- Seed a "Global" Season if none exists (Internal use only)
+insert into public.seasons (id, name, start_date, end_date, is_active, status)
+values ('00000000-0000-0000-0000-000000000001', 'Global Season', '2024-01-01', '2099-12-31', true, 'active')
+on conflict (id) do nothing;
+
+-- 16. STORAGE SETUP
 insert into storage.buckets (id, name, public) values ('avatars', 'avatars', true) on conflict (id) do nothing;
 create policy "Avatar images are publicly accessible." on storage.objects for select using ( bucket_id = 'avatars' );
 create policy "Anyone can upload an avatar." on storage.objects for insert with check ( bucket_id = 'avatars' );
@@ -300,7 +362,8 @@ begin
     referral_code,
     referred_by,
     marketing_opt_in,
-    has_completed_onboarding
+    has_completed_onboarding,
+    has_used_free_label
   )
   values (
     new.id,
@@ -310,6 +373,7 @@ begin
     new_referral_code,
     referrer_id,
     coalesce((new.raw_user_meta_data->>'marketing_opt_in')::boolean, false),
+    false,
     false
   );
 
@@ -319,6 +383,10 @@ begin
     set musi_coins = musi_coins + bonus_coins
     where id = referrer_id;
   end if;
+
+  -- Award Biglietto Futuro Badge
+  insert into public.user_badges (user_id, badge_id)
+  select new.id, id from public.badges where name = 'Biglietto Futuro';
 
   return new;
 end;
@@ -343,3 +411,85 @@ begin
   where id = user_id_param;
 end;
 $$ language plpgsql security definer;
+
+-- 17. LEADERBOARD VIEW (Combined Score)
+CREATE OR REPLACE VIEW public.leaderboard_view AS
+SELECT 
+    *,
+    (total_score + listen_score) as combined_score
+FROM public.profiles;
+
+-- 18. MYSTERY BOXES System
+CREATE TABLE public.mystery_boxes (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    image_url TEXT,
+    type TEXT CHECK (type IN ('physical', 'digital')) NOT NULL,
+    price_musicoins INTEGER NOT NULL,
+    total_copies INTEGER, -- NULL for unlimited
+    available_copies INTEGER,
+    max_copies_per_user INTEGER,
+    target_user_goal INTEGER,
+    is_active BOOLEAN DEFAULT TRUE,
+    prizes JSONB NOT NULL DEFAULT '[]'::jsonb, -- Array of { name, type: 'standard'|'musicoins', musicoins_value?, probability, is_certain, image_url? }
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+ALTER TABLE public.mystery_boxes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Mystery boxes viewable by everyone" ON public.mystery_boxes FOR SELECT USING (is_active = true);
+CREATE POLICY "Admins manage mystery boxes" ON public.mystery_boxes FOR ALL 
+  USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true));
+
+CREATE TABLE public.mystery_box_orders (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES public.profiles(id) NOT NULL,
+    box_id UUID REFERENCES public.mystery_boxes(id) NOT NULL,
+    status TEXT CHECK (status IN ('pending', 'shipped', 'completed')) DEFAULT 'pending',
+    prize_won JSONB, -- The specific prize assigned from the box
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+ALTER TABLE public.mystery_box_orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users view own orders" ON public.mystery_box_orders FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Admins manage orders" ON public.mystery_box_orders FOR ALL 
+  USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true));
+
+-- 19. STORAGE POLICIES (Marketplace Bucket)
+-- Assuming the bucket 'marketplace' is created via Supabase Dashboard
+
+-- Allow public access to view images
+CREATE POLICY "Public Access Marketplace" ON storage.objects FOR SELECT 
+USING ( bucket_id = 'marketplace' );
+
+-- Allow admins to upload/manage images
+CREATE POLICY "Admin Manage Marketplace" ON storage.objects FOR ALL
+USING (
+    bucket_id = 'marketplace' AND 
+    (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true))
+)
+WITH CHECK (
+    bucket_id = 'marketplace' AND 
+    (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true))
+);
+
+-- 20. MUSICOIN TRANSACTIONS (PayPal)
+CREATE TABLE public.musicoin_transactions (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES public.profiles(id) NOT NULL,
+    paypal_order_id TEXT UNIQUE NOT NULL,
+    amount_eur NUMERIC(10, 2) NOT NULL,
+    coins_amount INTEGER NOT NULL,
+    package_label TEXT,
+    status TEXT NOT NULL DEFAULT 'PENDING',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+ALTER TABLE public.musicoin_transactions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users view own transactions" 
+ON public.musicoin_transactions FOR SELECT 
+USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own transactions" 
+ON public.musicoin_transactions FOR INSERT 
+WITH CHECK (auth.uid() = user_id);

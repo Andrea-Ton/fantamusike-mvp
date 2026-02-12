@@ -22,8 +22,9 @@ interface RosterSectionProps {
     dailyPromoState?: DailyPromoState;
     username: string;
     totalScore: number;
-    leaderboardPromise: Promise<LeaderboardResponse>;
     seasonName: string;
+    leaderboardPromise: Promise<LeaderboardResponse>;
+    weekNumber: number;
 }
 
 export default async function RosterSection({
@@ -33,8 +34,9 @@ export default async function RosterSection({
     dailyPromoState: initialPromoState,
     username,
     totalScore,
+    seasonName,
     leaderboardPromise,
-    seasonName
+    weekNumber
 }: RosterSectionProps) {
     const [userTeam, leaderboard] = await Promise.all([
         userTeamPromise,
@@ -112,7 +114,7 @@ export default async function RosterSection({
     const teamSlots: Slot[] = [
         {
             id: 1,
-            type: 'Big',
+            type: ARTIST_TIERS.BIG.label,
             label: ARTIST_TIERS.BIG.label,
             requirement: `Popolarità > ${ARTIST_TIERS.BIG.min - 1}`,
             artist: userTeam?.slot_1 ? {
@@ -131,7 +133,7 @@ export default async function RosterSection({
         },
         {
             id: 2,
-            type: 'Mid',
+            type: ARTIST_TIERS.MID.label,
             label: ARTIST_TIERS.MID.label,
             requirement: `Popolarità ${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max}`,
             artist: userTeam?.slot_2 ? {
@@ -150,7 +152,7 @@ export default async function RosterSection({
         },
         {
             id: 3,
-            type: 'Mid',
+            type: ARTIST_TIERS.MID.label,
             label: ARTIST_TIERS.MID.label,
             requirement: `Popolarità ${ARTIST_TIERS.MID.min}-${ARTIST_TIERS.MID.max}`,
             artist: userTeam?.slot_3 ? {
@@ -169,7 +171,7 @@ export default async function RosterSection({
         },
         {
             id: 4,
-            type: 'New Gen',
+            type: ARTIST_TIERS.NEW_GEN.label,
             label: ARTIST_TIERS.NEW_GEN.label,
             requirement: `Popolarità < ${ARTIST_TIERS.NEW_GEN.max + 1}`,
             artist: userTeam?.slot_4 ? {
@@ -188,7 +190,7 @@ export default async function RosterSection({
         },
         {
             id: 5,
-            type: 'New Gen',
+            type: ARTIST_TIERS.NEW_GEN.label,
             label: ARTIST_TIERS.NEW_GEN.label,
             requirement: `Popolarità < ${ARTIST_TIERS.NEW_GEN.max + 1}`,
             artist: userTeam?.slot_5 ? {
@@ -226,10 +228,9 @@ export default async function RosterSection({
 
     let percentile: string | undefined;
     if (leaderboard.userRank && leaderboard.totalCount > 1) {
-        const betterThanCount = leaderboard.totalCount - leaderboard.userRank;
-        const percentage = Math.floor((betterThanCount / leaderboard.totalCount) * 100);
-        if (percentage >= 1) {
-            percentile = `${percentage}%`;
+        const topPercentage = Math.max(1, Math.ceil((leaderboard.userRank / leaderboard.totalCount) * 100));
+        if (topPercentage <= 50) {
+            percentile = `${topPercentage}%`;
         }
     }
 
@@ -259,6 +260,7 @@ export default async function RosterSection({
                                     rank={leaderboard.userRank || 0}
                                     captain={captain}
                                     roster={roster}
+                                    weekNumber={weekNumber}
                                     seasonName={seasonName}
                                     percentile={percentile}
                                     variant="iconOnly"
@@ -296,7 +298,7 @@ export default async function RosterSection({
                         <Trophy className="text-purple-400" size={32} />
                     </div>
                     <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-4">Nessun Team Trovato</h3>
-                    <p className="text-gray-500 mb-8 max-w-sm font-medium">Non hai ancora creato la tua etichetta discografica. Inizia subito a fare scouting per vincere la stagione!</p>
+                    <p className="text-gray-500 mb-8 max-w-sm font-medium">Non hai ancora creato la tua etichetta discografica. Inizia subito a fare scouting per vincere MusiCoins!</p>
                     <Link
                         href="/dashboard/draft"
                         className="group relative px-10 py-4 bg-white text-black font-black uppercase tracking-tighter italic rounded-2xl hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)]"

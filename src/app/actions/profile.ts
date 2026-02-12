@@ -97,7 +97,19 @@ export async function deleteAccountAction() {
             .delete()
             .eq('user_id', userId);
 
-        // 5. Delete Profile
+        // 5. Delete MusiCoin Transactions
+        await supabaseAdmin
+            .from('musicoin_transactions')
+            .delete()
+            .eq('user_id', userId);
+
+        // 6. Delete Mystery Box Orders
+        await supabaseAdmin
+            .from('mystery_box_orders')
+            .delete()
+            .eq('user_id', userId);
+
+        // 7. Delete Profile
         const { error: profileError } = await supabaseAdmin
             .from('profiles')
             .delete()
