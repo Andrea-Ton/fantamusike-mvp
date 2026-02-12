@@ -121,8 +121,8 @@ async function generateImage(data: any) {
                     {/* Pink Logo Watermark */}
                     <div style={{
                         display: 'flex',
-                        width: '800px',
-                        height: '800px',
+                        width: '1000px',
+                        height: '1000px',
                         opacity: 0.10,
                         justifyContent: 'center',
                         alignItems: 'center',

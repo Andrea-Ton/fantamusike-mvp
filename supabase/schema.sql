@@ -276,6 +276,11 @@ insert into public.badges (name, description, image_url)
 select 'Pioneer', 'Membro fondatore di FantaMusiké MVP', '/badges/pioneer.png'
 where not exists (select 1 from public.badges where name = 'Pioneer');
 
+-- Seed Biglietto Futuro Badge
+insert into public.badges (name, description, image_url)
+select 'Biglietto Futuro', 'Il tuo pass per il futuro di FantaMusiké', '/badges/biglietto_futuro.png'
+where not exists (select 1 from public.badges where name = 'Biglietto Futuro');
+
 -- 15. LEADERBOARD SYSTEM
 create table public.weekly_leaderboard_history (
     id uuid default uuid_generate_v4() primary key,
@@ -378,6 +383,10 @@ begin
     set musi_coins = musi_coins + bonus_coins
     where id = referrer_id;
   end if;
+
+  -- Award Biglietto Futuro Badge
+  insert into public.user_badges (user_id, badge_id)
+  select new.id, id from public.badges where name = 'Biglietto Futuro';
 
   return new;
 end;

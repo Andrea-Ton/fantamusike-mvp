@@ -30,6 +30,7 @@ type OnboardingStep =
     | 'select_captain'
     | 'explain_promuovi'
     | 'explain_rewards'
+    | 'biglietto_futuro'
     | 'summary';
 
 export default function OnboardingModal({ featuredArtists, curatedRoster, username }: OnboardingModalProps) {
@@ -54,7 +55,7 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
     const [nameError, setNameError] = useState<string | null>(null);
 
     // Steps configuration
-    const steps: OnboardingStep[] = ['manager_name', 'welcome', 'select_big', 'select_mid', 'select_newgen', 'select_captain', 'explain_promuovi', 'explain_rewards', 'summary'];
+    const steps: OnboardingStep[] = ['manager_name', 'welcome', 'select_big', 'select_mid', 'select_newgen', 'select_captain', 'explain_promuovi', 'explain_rewards', 'biglietto_futuro', 'summary'];
     const currentStepIndex = steps.indexOf(step);
 
     const nextStep = () => {
@@ -181,6 +182,7 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
         if (step === 'select_captain') return !!captainId;
         if (step === 'explain_promuovi') return true;
         if (step === 'explain_rewards') return true;
+        if (step === 'biglietto_futuro') return true;
         if (step === 'summary') return true;
         return false;
     }, [step, team, captainId, managerName, nameError]);
@@ -553,6 +555,90 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
                                                 <p className="text-[12px] text-gray-400 font-medium">Scopri vantaggi digitali e premi fisici della musica che non troveresti da nessun'altra parte.</p>
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* STEP: BIGLIETTO FUTURO */}
+                            {step === 'biglietto_futuro' && (
+                                <div className="text-center py-4 space-y-6">
+                                    <motion.div
+                                        className="relative w-56 h-56 mx-auto"
+                                        initial={{ scale: 0.8, opacity: 0 }}
+                                        animate={{
+                                            scale: [1, 1.05, 1],
+                                            opacity: 1
+                                        }}
+                                        transition={{
+                                            scale: {
+                                                duration: 4,
+                                                repeat: Infinity,
+                                                ease: "easeInOut"
+                                            },
+                                            opacity: { duration: 0.8 }
+                                        }}
+                                    >
+                                        {/* Multi-layered Glow */}
+                                        <div className="absolute inset-0 bg-purple-500/30 rounded-full blur-[60px] animate-pulse" />
+                                        <div className="absolute inset-4 bg-blue-500/20 rounded-full blur-[40px] animate-pulse" style={{ animationDelay: '1s' }} />
+
+                                        <motion.div
+                                            className="relative w-full h-full bg-gradient-to-br from-white/15 to-white/5 rounded-[3rem] border border-white/20 p-2 flex items-center justify-center overflow-hidden group cursor-pointer"
+                                            whileHover={{ scale: 1.1, rotate: 2 }}
+                                            transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                                        >
+                                            {/* Advanced Inner Glow */}
+                                            <div className="absolute -inset-1 bg-gradient-to-tr from-purple-600/40 via-blue-500/40 to-pink-500/40 opacity-20 blur group-hover:opacity-60 transition duration-700" />
+
+                                            <div className="relative w-full h-full flex items-center justify-center">
+                                                <motion.div
+                                                    animate={{
+                                                        y: [0, -8, 0],
+                                                        filter: ["drop-shadow(0 0 10px rgba(168,85,247,0.3))", "drop-shadow(0 0 30px rgba(168,85,247,0.6))", "drop-shadow(0 0 10px rgba(168,85,247,0.3))"]
+                                                    }}
+                                                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                                                >
+                                                    <Image
+                                                        src="/badges/biglietto_futuro.png"
+                                                        alt="Biglietto Futuro"
+                                                        width={220}
+                                                        height={220}
+                                                        className="object-contain"
+                                                        onError={(e) => {
+                                                            const target = e.target as HTMLImageElement;
+                                                            target.style.display = 'none';
+                                                            const parent = target.parentElement;
+                                                            if (parent) {
+                                                                const icon = document.createElement('div');
+                                                                icon.className = 'w-24 h-24 bg-purple-500/20 rounded-3xl flex items-center justify-center border border-purple-500/30';
+                                                                icon.innerHTML = '<svg viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" strokeWidth="2" fill="none" class="text-purple-400"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 24.12 24.12 0 0 1 14.2 0 2 2 0 0 1 1.4 1.4c.5 3.3.5 6.7 0 10a2 2 0 0 1-1.4 1.4 24.12 24.12 0 0 1-14.2 0 2 2 0 0 1-1.4-1.4z"/><path d="M13 10h4"/><path d="M13 14h4"/><path d="m7 9 3 3-3 3"/></svg>';
+                                                                parent.appendChild(icon);
+                                                            }
+                                                        }}
+                                                    />
+                                                </motion.div>
+                                            </div>
+
+                                            {/* Reflection sweep animation */}
+                                            <motion.div
+                                                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent w-[200%] -skew-x-12"
+                                                animate={{ x: ['100%', '-100%'] }}
+                                                transition={{ duration: 3, repeat: Infinity, ease: "linear", repeatDelay: 1 }}
+                                            />
+                                        </motion.div>
+                                    </motion.div>
+
+                                    <div className="space-y-4">
+                                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tight leading-none px-2">
+                                            Hai ottenuto il<br />
+                                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 px-2">
+                                                Biglietto Futuro
+                                            </span>
+                                        </h3>
+
+                                        <p className="text-gray-400 text-sm font-medium max-w-xs mx-auto leading-relaxed">
+                                            Congratulazioni! Come nuovo membro fondatore, hai ricevuto questo badge esclusivo che sbloccherà vantaggi unici nel corso della stagione.
+                                        </p>
                                     </div>
                                 </div>
                             )}

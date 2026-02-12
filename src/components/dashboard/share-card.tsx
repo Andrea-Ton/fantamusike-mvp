@@ -45,7 +45,7 @@ export default function ShareCard({
                 ></div>
 
                 {/* Pink Logo Watermark */}
-                <div className="relative w-[1200px] h-[1200px] opacity-10 flex justify-center items-center">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1600px] h-[1600px] opacity-10">
                     <img
                         src="/logo_pink.png"
                         alt=""
