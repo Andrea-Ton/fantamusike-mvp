@@ -637,7 +637,7 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
                                         </h3>
 
                                         <p className="text-gray-400 text-sm font-medium max-w-xs mx-auto leading-relaxed">
-                                            Congratulazioni! Come nuovo membro fondatore, hai ricevuto questo badge esclusivo che sbloccherà vantaggi unici nel corso della stagione.
+                                            Conservalo gelosamente. Non possiamo ancora dirti cosa apre, ma questo è il tuo pass prioritario per accedere a qualcosa di veramente esclusivo.
                                         </p>
                                     </div>
                                 </div>
