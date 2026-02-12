@@ -38,6 +38,11 @@ export default async function MarketplacePage() {
         }
     }
 
+    // Fetch total platform user count for Community Goals
+    const { count: totalUsers } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+
     return (
         <main className="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full animate-fade-in">
             <header className="mb-12 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
@@ -57,6 +62,7 @@ export default async function MarketplacePage() {
                 initialBoxes={boxes || []}
                 userMusiCoins={profile?.musi_coins || 0}
                 userOrderCounts={userOrderCounts}
+                totalUsers={totalUsers || 0}
             />
         </main>
     );

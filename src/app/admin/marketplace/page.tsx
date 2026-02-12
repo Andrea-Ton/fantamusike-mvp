@@ -32,6 +32,7 @@ interface MysteryBox {
     available_copies: number | null;
     is_active: boolean;
     max_copies_per_user: number | null;
+    target_user_goal: number | null;
     prizes: Prize[];
 }
 
@@ -51,6 +52,7 @@ export default function AdminMarketplacePage() {
         price_musicoins: 100,
         total_copies: null,
         max_copies_per_user: null,
+        target_user_goal: null,
         is_active: true,
         prizes: []
     });
@@ -281,6 +283,17 @@ export default function AdminMarketplacePage() {
                                     disabled={formData.max_copies_per_user === null}
                                     className={`w-full bg-[#0f0f16] border border-white/10 rounded-xl px-4 py-3 text-white focus:border-purple-500 transition-colors ${formData.max_copies_per_user === null ? 'opacity-30 cursor-not-allowed' : ''}`}
                                     placeholder={formData.max_copies_per_user === null ? 'Nessun limite' : 'Max copie per utente...'}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-gray-400 mb-2 uppercase tracking-wider">Obiettivo Community (Target Utenti)</label>
+                                <input
+                                    type="number"
+                                    value={formData.target_user_goal === null ? '' : formData.target_user_goal}
+                                    onChange={(e) => setFormData({ ...formData, target_user_goal: e.target.value ? parseInt(e.target.value) : null })}
+                                    className="w-full bg-[#0f0f16] border border-white/10 rounded-xl px-4 py-3 text-white focus:border-purple-500 transition-colors"
+                                    placeholder="Es: 500 (Lascia vuoto per sblocco immediato)"
                                 />
                             </div>
 

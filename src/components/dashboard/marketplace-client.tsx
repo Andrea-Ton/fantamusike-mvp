@@ -15,6 +15,7 @@ interface MysteryBox {
     price_musicoins: number;
     available_copies: number | null;
     max_copies_per_user: number | null;
+    target_user_goal: number | null;
     prizes: any[];
 }
 
@@ -22,9 +23,10 @@ interface MarketplaceClientProps {
     initialBoxes: MysteryBox[];
     userMusiCoins: number;
     userOrderCounts: Record<string, number>;
+    totalUsers: number;
 }
 
-export default function MarketplaceClient({ initialBoxes, userMusiCoins, userOrderCounts }: MarketplaceClientProps) {
+export default function MarketplaceClient({ initialBoxes, userMusiCoins, userOrderCounts, totalUsers }: MarketplaceClientProps) {
     const [selectedBox, setSelectedBox] = useState<MysteryBox | null>(null);
     const [isBuying, setIsBuying] = useState(false);
     const [wonPrizes, setWonPrizes] = useState<any[] | null>(null);
@@ -76,32 +78,61 @@ export default function MarketplaceClient({ initialBoxes, userMusiCoins, userOrd
                         </div>
 
                         <div className="p-8">
-                            <div className="flex justify-between items-start mb-4">
-                                <div className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${box.type === 'digital' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>
-                                    {box.type === 'digital' ? 'Digital' : 'Fisico'}
+                            {box.target_user_goal && totalUsers < box.target_user_goal ? (
+                                <div className="space-y-4">
+                                    <h3 className="text-2xl font-black text-white italic uppercase tracking-tight mb-2 flex items-center gap-2">
+                                        <Package className="opacity-20" size={20} />
+                                        {box.title}
+                                    </h3>
+                                    <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Obiettivo Community</span>
+                                            <span className="text-[10px] font-black text-gray-500">{totalUsers}/{box.target_user_goal}</span>
+                                        </div>
+                                        <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-gradient-to-r from-purple-600 to-blue-600 transition-all duration-1000"
+                                                style={{ width: `${Math.min(100, (totalUsers / box.target_user_goal) * 100)}%` }}
+                                            />
+                                        </div>
+                                        <p className="text-[10px] text-gray-500 mt-3 font-bold uppercase tracking-tighter leading-tight italic">
+                                            Mancano <span className="text-purple-400">{box.target_user_goal - totalUsers}</span> utenti per sbloccare questa MysteryBox!
+                                        </p>
+                                    </div>
+                                    <div className="w-full bg-black/20 text-gray-600 font-black uppercase tracking-widest text-[11px] py-4 rounded-2xl border border-white/5 flex items-center justify-center gap-2 cursor-not-allowed">
+                                        Contenuto Bloccato
+                                    </div>
                                 </div>
-                                {box.available_copies !== null && (
-                                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                                        Stock: {box.available_copies}
+                            ) : (
+                                <>
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${box.type === 'digital' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                                            {box.type === 'digital' ? 'Digital' : 'Fisico'}
+                                        </div>
+                                        {box.available_copies !== null && (
+                                            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                                                Stock: {box.available_copies}
+                                            </div>
+                                        )}
+                                        {box.max_copies_per_user !== null && (
+                                            <div className={`text-[10px] font-bold uppercase tracking-wider ${(userOrderCounts[box.id] || 0) >= box.max_copies_per_user ? 'text-red-500' : 'text-purple-400'}`}>
+                                                Limite: {userOrderCounts[box.id] || 0}/{box.max_copies_per_user}
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                                {box.max_copies_per_user !== null && (
-                                    <div className={`text-[10px] font-bold uppercase tracking-wider ${(userOrderCounts[box.id] || 0) >= box.max_copies_per_user ? 'text-red-500' : 'text-purple-400'}`}>
-                                        Limite: {userOrderCounts[box.id] || 0}/{box.max_copies_per_user}
-                                    </div>
-                                )}
-                            </div>
 
-                            <h3 className="text-2xl font-black text-white italic uppercase tracking-tight mb-2 group-hover:text-purple-400 transition-colors">{box.title}</h3>
-                            <p className="text-gray-400 text-sm leading-relaxed mb-6 line-clamp-2">{box.description}</p>
+                                    <h3 className="text-2xl font-black text-white italic uppercase tracking-tight mb-2 group-hover:text-purple-400 transition-colors">{box.title}</h3>
+                                    <p className="text-gray-400 text-sm leading-relaxed mb-6 line-clamp-2">{box.description}</p>
 
-                            <button
-                                onClick={() => setSelectedBox(box)}
-                                className="w-full bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-widest text-[11px] py-4 rounded-2xl border border-white/10 transition-all flex items-center justify-center gap-2 group/btn"
-                            >
-                                Scopri di più
-                                <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                            </button>
+                                    <button
+                                        onClick={() => setSelectedBox(box)}
+                                        className="w-full bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-widest text-[11px] py-4 rounded-2xl border border-white/10 transition-all flex items-center justify-center gap-2 group/btn"
+                                    >
+                                        Scopri di più
+                                        <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </div>
                 ))}

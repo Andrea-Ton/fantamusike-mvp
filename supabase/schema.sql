@@ -421,8 +421,9 @@ CREATE TABLE public.mystery_boxes (
     total_copies INTEGER, -- NULL for unlimited
     available_copies INTEGER,
     max_copies_per_user INTEGER,
+    target_user_goal INTEGER,
     is_active BOOLEAN DEFAULT TRUE,
-    prizes JSONB NOT NULL DEFAULT '[]'::jsonb, -- Array of { name, probability, is_certain, image_url? }
+    prizes JSONB NOT NULL DEFAULT '[]'::jsonb, -- Array of { name, type: 'standard'|'musicoins', musicoins_value?, probability, is_certain, image_url? }
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );

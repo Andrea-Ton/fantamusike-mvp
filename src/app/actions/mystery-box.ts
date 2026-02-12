@@ -75,6 +75,22 @@ export async function buyMysteryBoxAction(boxId: string) {
         }
     }
 
+    // 1c. Check Community Goal
+    if (box.target_user_goal !== null) {
+        const { count: totalUsers, error: userCountErr } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true });
+
+        if (userCountErr) {
+            console.error('Error fetching total user count:', userCountErr);
+        } else if (totalUsers !== null && totalUsers < box.target_user_goal) {
+            return {
+                success: false,
+                message: `Questa MysteryBox è ancora bloccata! Obiettivo Community: ${box.target_user_goal} utenti (Attuali: ${totalUsers}).`
+            };
+        }
+    }
+
     // 2. Checks
     if (!box.is_active) return { success: false, message: 'Questa MysteryBox non è più disponibile' };
     if (box.available_copies !== null && box.available_copies <= 0) {
@@ -199,7 +215,8 @@ export async function adminCreateMysteryBoxAction(data: any) {
         .from('mystery_boxes')
         .insert({
             ...data,
-            available_copies: data.total_copies
+            available_copies: data.total_copies,
+            target_user_goal: data.target_user_goal || null
         });
 
     if (error) {
