@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import confetti from 'canvas-confetti';
 import { createPayPalOrderAction, capturePayPalOrderAction } from '@/app/actions/payment';
+import { sendGTMEvent } from '@next/third-parties/google';
 
 interface MusiCoinBalanceProps {
     musiCoins: number;
@@ -36,6 +37,7 @@ export default function MusiCoinBalance({ musiCoins, referralCode }: MusiCoinBal
         if (referralCode) {
             navigator.clipboard.writeText(referralCode);
             setCopied(true);
+            sendGTMEvent({ event: 'referral_code_copy', category: 'engagement', source: 'balance_card' });
             setTimeout(() => setCopied(false), 2000);
         }
     };
@@ -90,7 +92,10 @@ export default function MusiCoinBalance({ musiCoins, referralCode }: MusiCoinBal
                 {/* Recharge Trigger Button */}
                 <div className="h-16">
                     <button
-                        onClick={() => setShowModal(true)}
+                        onClick={() => {
+                            setShowModal(true);
+                            sendGTMEvent({ event: 'musicoin_recharge_click', category: 'engagement' });
+                        }}
                         className="h-full px-5 bg-yellow-500 text-black font-black uppercase tracking-tighter italic transition-all flex items-center gap-2 shadow-[0_5px_20px_rgba(234,179,8,0.3)] hover:scale-[1.05] active:scale-95 rounded-2xl group"
                         title="Ricarica MusiCoins"
                     >
@@ -186,7 +191,16 @@ export default function MusiCoinBalance({ musiCoins, referralCode }: MusiCoinBal
                                                     {packages.map((pkg) => (
                                                         <button
                                                             key={pkg.id}
-                                                            onClick={() => setSelectedPackage(pkg)}
+                                                            onClick={() => {
+                                                                setSelectedPackage(pkg);
+                                                                sendGTMEvent({
+                                                                    event: 'package_select',
+                                                                    category: 'engagement',
+                                                                    package_id: pkg.id,
+                                                                    coins: pkg.coins,
+                                                                    price: pkg.price
+                                                                });
+                                                            }}
                                                             className={`p-4 rounded-3xl border flex flex-row sm:flex-col items-center justify-between sm:justify-center gap-4 sm:gap-2 transition-all group/pkg relative overflow-hidden ${pkg.popular
                                                                 ? 'bg-yellow-500/10 border-yellow-500/30 hover:border-yellow-500/50 sm:h-32'
                                                                 : 'bg-white/5 border-white/10 hover:border-white/20 sm:h-32'

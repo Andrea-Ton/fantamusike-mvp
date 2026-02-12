@@ -6,6 +6,7 @@ import { RewardMission, claimRewardAction } from '@/app/actions/rewards';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { createPortal } from 'react-dom';
+import { sendGTMEvent } from '@next/third-parties/google';
 
 interface MissionItemProps {
     mission: RewardMission;
@@ -170,6 +171,13 @@ export default function MusiRewards({ initialMissions }: MusiRewardsProps) {
                 setMissions(prev => prev.map(m =>
                     m.slug === mission.slug ? { ...m, isClaimed: true, canClaim: false } : m
                 ));
+
+                sendGTMEvent({
+                    event: 'reward_claim_success',
+                    category: 'conversion',
+                    mission_slug: mission.slug,
+                    reward_amount: mission.reward
+                });
             }
         } catch (e) {
             console.error(e);

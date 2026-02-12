@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { signup, signInWithProvider } from '@/app/auth/actions';
 import { Loader2, UserPlus, Eye, EyeOff } from 'lucide-react';
+import { sendGTMEvent } from '@next/third-parties/google';
 
 interface RegisterFormProps {
     onSuccess?: () => void;
@@ -22,6 +23,14 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
     const [referralCode, setReferralCode] = useState('');
     const [acceptTerms, setAcceptTerms] = useState(false);
     const [marketingOptIn, setMarketingOptIn] = useState(false);
+    const [hasEngaged, setHasEngaged] = useState(false);
+
+    const handleEngagement = () => {
+        if (!hasEngaged) {
+            setHasEngaged(true);
+            sendGTMEvent({ event: 'signup_engagement', category: 'auth' });
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -42,9 +51,11 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
         if (result?.error) {
             setError(result.error);
             setIsLoading(false);
+            sendGTMEvent({ event: 'signup_error', category: 'auth', error: result.error });
         } else if (result?.emailVerificationRequired) {
             setSuccess(true);
             setIsLoading(false);
+            sendGTMEvent({ event: 'signup_success', category: 'auth' });
             if (onSuccess) onSuccess();
         }
     };
@@ -97,7 +108,10 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
                         type="email"
                         required
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={(e) => {
+                            setEmail(e.target.value);
+                            handleEngagement();
+                        }}
                         placeholder="nome@esempio.com"
                         className="w-full h-12 bg-[#1a1a24] border border-white/10 rounded-xl px-4 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-colors"
                     />

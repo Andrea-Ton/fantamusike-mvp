@@ -9,6 +9,7 @@ import Image from 'next/image';
 import LogoutButton from '@/components/logout-button';
 import { getCurrentSeasonAction } from '@/app/actions/season';
 import { ShieldCheck, Calendar } from 'lucide-react';
+import ProfileViewTracker from '@/components/profile/profile-view-tracker';
 
 export default async function ProfilePage() {
     const supabase = await createClient();
@@ -35,6 +36,7 @@ export default async function ProfilePage() {
 
     return (
         <>
+            <ProfileViewTracker />
             {/* Mobile Header */}
             <div className="md:hidden pt-12 px-6 flex justify-between items-center mb-4 bg-[#0a0a0e]/80 backdrop-blur-xl border-b border-white/5 pb-4 sticky top-0 z-30">
                 <div className="flex items-center gap-3">

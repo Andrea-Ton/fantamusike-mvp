@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Trophy, Loader2, ChevronRight, Lock, HelpCircle, Target, TrendingUp, CheckCircle, Rocket, Library, Radio, Music2 } from 'lucide-react';
 import { selectDailyArtistAction, PromoActionType, DailyPromoState, ClaimPromoResult } from '@/app/actions/promo';
 import { ArtistCategory, QUIZ_CONFIG, BET_CONFIG } from '@/config/promo';
+import { sendGTMEvent } from '@next/third-parties/google';
 import { Slot } from './artist-card';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence, useSpring, useTransform } from 'framer-motion';
@@ -159,6 +160,12 @@ export default function DailyPromoModal({
                 setSelectedSlot(slot);
                 setViewState('actions');
                 setActiveTab('quiz');
+                sendGTMEvent({
+                    event: 'promo_artist_select',
+                    category: 'engagement',
+                    artist_id: slot.artist.id,
+                    artist_name: slot.artist.name
+                });
             }
         } catch (e) {
             console.error(e);
@@ -190,6 +197,13 @@ export default function DailyPromoModal({
                 setPromoStatus(prev => ({ ...prev, quiz: true }));
                 setQuizResult(res);
                 setQuizSubmitted(true);
+                sendGTMEvent({
+                    event: 'promo_quiz_submit',
+                    category: 'engagement',
+                    artist_id: selectedSlot.artist.id,
+                    success: res.success,
+                    correct: res.musiCoinsAwarded || (res.pointsAwarded && res.pointsAwarded > 1)
+                });
                 // Trigger confetti for correct answer or lucky drop
                 if (res.musiCoinsAwarded || (res.pointsAwarded && res.pointsAwarded > 1)) triggerConfetti();
             }
@@ -241,6 +255,12 @@ export default function DailyPromoModal({
             if (res.success) {
                 setPromoStatus(prev => ({ ...prev, bet: true }));
                 setBetPlaced(true);
+                sendGTMEvent({
+                    event: 'promo_bet_place',
+                    category: 'engagement',
+                    artist_id: selectedSlot.artist.id,
+                    prediction: betPrediction
+                });
                 triggerConfetti(); // Visual feedback for successful bet placement
             }
         } catch (e) {
@@ -278,6 +298,14 @@ export default function DailyPromoModal({
 
             if (result.success) {
                 setPromoResult(result);
+                sendGTMEvent({
+                    event: 'promo_claim_reward',
+                    category: 'conversion',
+                    artist_id: artistId,
+                    boost_id: boostId,
+                    coins: result.musiCoinsAwarded,
+                    points: result.pointsAwarded
+                });
                 if (result.musiCoinsAwarded || result.pointsAwarded) {
                     triggerConfetti();
                 }

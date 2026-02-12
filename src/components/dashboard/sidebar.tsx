@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Home, Search, Trophy, LogOut, Shield, ShoppingBag } from 'lucide-react';
+import { sendGTMEvent } from '@next/third-parties/google';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -62,6 +63,13 @@ export default function Sidebar({ avatarUrl, displayName, seasonName, isAdmin }:
                         <Link
                             key={item.href}
                             href={item.href}
+                            onClick={() => sendGTMEvent({
+                                event: 'navigation_click',
+                                category: 'engagement',
+                                label: item.label,
+                                destination: item.href,
+                                source: 'sidebar'
+                            })}
                             className={`group w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 relative overflow-hidden ${isActive
                                 ? 'bg-white/5 text-white border border-white/10 shadow-inner'
                                 : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]'
@@ -82,6 +90,13 @@ export default function Sidebar({ avatarUrl, displayName, seasonName, isAdmin }:
                         <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] px-4 mb-3">Amministrazione</p>
                         <Link
                             href="/admin"
+                            onClick={() => sendGTMEvent({
+                                event: 'navigation_click',
+                                category: 'engagement',
+                                label: 'Admin Panel',
+                                destination: '/admin',
+                                source: 'sidebar_admin'
+                            })}
                             className={`group w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 relative overflow-hidden ${pathname.startsWith('/admin')
                                 ? 'bg-red-500/10 text-red-500 border border-red-500/20 shadow-inner'
                                 : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]'
