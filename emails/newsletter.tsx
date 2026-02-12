@@ -77,7 +77,7 @@ export const FantaMusikeBetaEmail = ({
                             {/* Logo Section */}
                             <Section className="text-center">
                                 <Img
-                                    src="https://fantamusike-mvp.vercel.app/logo.png"
+                                    src="https://fanta.musike.fm/logo.png"
                                     width="70"
                                     height="70"
                                     alt="FantaMusiké"

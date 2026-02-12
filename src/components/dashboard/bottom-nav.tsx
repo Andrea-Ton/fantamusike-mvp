@@ -3,6 +3,7 @@
 import React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Home, Search, Trophy, Shield, User, ShoppingBag } from 'lucide-react';
+import { sendGTMEvent } from '@next/third-parties/google';
 
 const NAV_ITEMS = [
     { href: '/dashboard', label: 'Dashboard', icon: Home },
@@ -16,7 +17,14 @@ export default function BottomNav({ isAdmin }: { isAdmin?: boolean }) {
     const pathname = usePathname();
     const router = useRouter();
 
-    const handleNavigation = (href: string) => {
+    const handleNavigation = (href: string, label: string) => {
+        sendGTMEvent({
+            event: 'navigation_click',
+            category: 'engagement',
+            label: label,
+            destination: href,
+            source: 'bottom_nav'
+        });
         router.push(href);
     };
 
@@ -31,7 +39,7 @@ export default function BottomNav({ isAdmin }: { isAdmin?: boolean }) {
                     return (
                         <button
                             key={item.href}
-                            onClick={() => handleNavigation(item.href)}
+                            onClick={() => handleNavigation(item.href, item.label)}
                             className={`flex flex-col items-center gap-1.5 transition-all relative outline-none ${isActive ? 'text-white scale-110' : 'text-gray-500 hover:text-gray-300'
                                 }`}
                         >
@@ -46,7 +54,7 @@ export default function BottomNav({ isAdmin }: { isAdmin?: boolean }) {
                 })}
                 {isAdmin && (
                     <button
-                        onClick={() => handleNavigation('/admin')}
+                        onClick={() => handleNavigation('/admin', 'Admin')}
                         className={`flex flex-col items-center gap-1.5 transition-all relative outline-none ${pathname.startsWith('/admin') ? 'text-white scale-110' : 'text-gray-500 hover:text-gray-300'
                             }`}
                     >

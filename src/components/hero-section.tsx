@@ -6,6 +6,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
 import { SpotifyArtist } from '@/lib/spotify';
+import { useState, useEffect, useRef } from 'react';
+import { sendGTMEvent } from '@next/third-parties/google';
 
 export default function HeroSection({
     seasonName = 'Settimana 1',
@@ -16,6 +18,41 @@ export default function HeroSection({
     user?: User | null,
     featuredArtists?: SpotifyArtist[]
 }) {
+    // Engagement Tracking
+    const trackedScroll = useRef<Set<number>>(new Set());
+    const startTime = useRef<number>(Date.now());
+    const trackedTime = useRef<Set<number>>(new Set());
+
+    useEffect(() => {
+        // 1. Scroll Depth Tracking
+        const handleScroll = () => {
+            const scrollPercent = (window.scrollY + window.innerHeight) / document.documentElement.scrollHeight * 100;
+            [25, 50, 75, 100].forEach(depth => {
+                if (scrollPercent >= depth && !trackedScroll.current.has(depth)) {
+                    trackedScroll.current.add(depth);
+                    sendGTMEvent({ event: 'landing_scroll_depth', category: 'engagement', depth: depth });
+                }
+            });
+        };
+
+        // 2. Time Spent Tracking
+        const timeInterval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - startTime.current) / 1000);
+            [30, 60, 120].forEach(seconds => {
+                if (elapsed >= seconds && !trackedTime.current.has(seconds)) {
+                    trackedTime.current.add(seconds);
+                    sendGTMEvent({ event: 'landing_time_on_page', category: 'engagement', seconds: seconds });
+                }
+            });
+        }, 5000); // Check every 5s
+
+        window.addEventListener('scroll', handleScroll);
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            clearInterval(timeInterval);
+        };
+    }, []);
+
     return (
         <section className="relative w-full min-h-[95vh] flex items-center justify-center overflow-hidden bg-[#0a0a0f]">
 

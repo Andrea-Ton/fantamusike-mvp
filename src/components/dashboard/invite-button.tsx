@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Copy, Check, Share2 } from 'lucide-react';
+import { sendGTMEvent } from '@next/third-parties/google';
 
 export default function InviteButton({ referralCode }: { referralCode?: string }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -11,6 +12,7 @@ export default function InviteButton({ referralCode }: { referralCode?: string }
         if (referralCode) {
             navigator.clipboard.writeText(referralCode);
             setCopied(true);
+            sendGTMEvent({ event: 'referral_code_copy', category: 'engagement', source: 'invite_button' });
             setTimeout(() => setCopied(false), 2000);
         }
     };
