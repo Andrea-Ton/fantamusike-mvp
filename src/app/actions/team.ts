@@ -179,18 +179,19 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
         }
         // If no previousTeam (First team of season), cost remains 0 (Free)
         if (!previousTeam) {
-            // IMMEDIATE SNAPSHOT LOGIC
+            // 1. IMMEDIATE SNAPSHOT LOGIC
             // Ensure selected artists are in the current week's snapshot
             const artistIds = artists.map(a => a.id);
 
             // Check existing snapshots for these artists
             const { data: existingSnapshots } = await supabase
                 .from('weekly_snapshots')
-                .select('artist_id')
+                .select('*')
                 .eq('week_number', currentWeek)
                 .in('artist_id', artistIds);
 
             const existingSnapshotIds = new Set(existingSnapshots?.map(s => s.artist_id) || []);
+            const snapshotMap = Object.fromEntries(existingSnapshots?.map(s => [s.artist_id, s]) || []);
 
             const missingArtists = artists.filter(a => !existingSnapshotIds.has(a.id));
 
@@ -208,42 +209,81 @@ export async function saveTeamAction(slots: TeamSlots, captainId: string | null)
 
                 if (snapError) {
                     console.error('Immediate Snapshot Error:', snapError);
-                    // Non-blocking error, but worth logging
                 }
+
+                // Add new snapshots to our map for live calculation
+                newSnapshots.forEach(s => {
+                    snapshotMap[s.artist_id] = s as any;
+                });
             }
 
-            // INSTANT SCORING LOGIC (UX Only)
-            // Use already saved scores for the current week if any
+            // 2. LIVE SCORING LOGIC (UX Only)
+            // We calculate points immediately so the user doesn't see "0" in the dashboard.
+            // We prioritize existing weekly_scores (calculated nightly) and fallback to "live" delta.
             try {
-                const { data: currentScores } = await supabase
+                // Fetch current weekly scores if already calculated for these artists
+                const { data: dbScores } = await supabase
                     .from('weekly_scores')
                     .select('artist_id, total_points')
                     .eq('week_number', currentWeek)
                     .in('artist_id', artistIds);
 
+                const dbScoreMap = new Map(dbScores?.map(s => [s.artist_id, s.total_points]) || []);
+
                 const { data: featured } = await supabase.from('featured_artists').select('spotify_id');
                 const featuredIds = new Set(featured?.map(f => f.spotify_id) || []);
-                const scoreMap = Object.fromEntries(currentScores?.map(s => [s.artist_id, s.total_points]) || []);
 
-                let instantScore = 0;
+                let liveScore = 0;
                 for (const artist of artists) {
-                    let points = scoreMap[artist.id] || 0;
+                    const baseline = snapshotMap[artist.id];
+                    if (!baseline) continue;
 
-                    // Apply Multipliers
+                    // Priority 1: Use DB score if it exists
+                    let points = dbScoreMap.get(artist.id) || 0;
+
+                    // Priority 2: Fallback to "Live" delta calculation
+                    if (points === 0) {
+                        const popDelta = artist.popularity - baseline.popularity;
+                        points = Math.max(0, popDelta * 10);
+                    }
+
+                    // Apply Multipliers (Captain / Featured)
                     if (captainId === artist.id) {
                         points = Math.round(points * (featuredIds.has(artist.id) ? 2 : 1.5));
                     }
-                    instantScore += points;
+                    liveScore += points;
                 }
 
-                if (instantScore > 0) {
-                    await supabase
+                console.log(`[saveTeamAction] Target Week: ${currentWeek}, Calculated Live Score: ${liveScore}`);
+
+                if (liveScore > 0) {
+                    // Update Profile
+                    const { error: profileUpdateError } = await supabase
                         .from('profiles')
-                        .update({ total_score: (profile?.total_score || 0) + instantScore })
+                        .update({ total_score: (profile?.total_score || 0) + liveScore })
                         .eq('id', user.id);
+
+                    if (profileUpdateError) {
+                        console.error('[saveTeamAction] Profile Update Error:', profileUpdateError);
+                    }
+
+                    // IMPORTANT: Log this update to daily_score_logs to prevent nightly Edge Function from double-awarding
+                    const { error: logError } = await supabase
+                        .from('daily_score_logs')
+                        .insert({
+                            user_id: user.id,
+                            points_gained: liveScore,
+                            date: new Date().toISOString().split('T')[0],
+                            seen_by_user: false,
+                            breakdown: { note: "Welcome live points - automated" }
+                        });
+
+                    if (logError) {
+                        console.error('[saveTeamAction] Log Insert Error:', logError);
+                    }
                 }
             } catch (scoringError) {
-                console.error('Instant Scoring Error:', scoringError);
+                console.error('[saveTeamAction] Live Scoring Logic Error:', scoringError);
             }
         }
 
