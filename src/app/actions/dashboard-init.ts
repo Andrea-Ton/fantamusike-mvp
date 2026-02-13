@@ -26,7 +26,8 @@ export async function getDashboardMetadataAction() {
         pendingBet,
         dailyPromoState,
         featured,
-        unseenWeeklyRecap
+        unseenWeeklyRecap,
+        referralCountRes
     ] = await Promise.all([
         getCurrentSeasonAction(),
         getCurrentWeekAction(),
@@ -35,10 +36,12 @@ export async function getDashboardMetadataAction() {
         getPendingBetResultAction(),
         getDailyPromoStateAction(),
         getFeaturedArtistsAction(),
-        getUnseenWeeklyRecapAction()
+        getUnseenWeeklyRecapAction(),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('referred_by', user.id)
     ]);
 
     const profile = profileRes.data;
+    const referralCount = referralCountRes.count || 0;
 
     return {
         user,
@@ -49,6 +52,7 @@ export async function getDashboardMetadataAction() {
         pendingBet,
         dailyPromoState,
         featured,
-        unseenWeeklyRecap
+        unseenWeeklyRecap,
+        referralCount
     };
 }

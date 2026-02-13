@@ -40,7 +40,8 @@ export default async function DashboardPage() {
         unseenLogs,
         pendingBet,
         dailyPromoState,
-        featured: featuredArtists
+        featured: featuredArtists,
+        referralCount
     } = metadata;
 
     const musiCoins = profile?.musi_coins || 0;
@@ -95,8 +96,8 @@ export default async function DashboardPage() {
             </div>
 
             {/* Mobile Action Bar */}
-            <div className="md:hidden px-6 mb-10 flex flex-col gap-3">
-                <MusiCoinBalance musiCoins={musiCoins} referralCode={profile?.referral_code} />
+            <div className="md:hidden px-6 mb-5 flex flex-col gap-3">
+                <MusiCoinBalance musiCoins={musiCoins} referralCode={profile?.referral_code} referralCount={referralCount} />
             </div>
 
             {/* Sequential Modals: Weekly Recap -> Daily Recap -> MusiBet Results */}
@@ -118,7 +119,7 @@ export default async function DashboardPage() {
                         <h1 className="text-5xl font-black text-white italic tracking-tighter uppercase leading-none">Bentornato {profile?.username},</h1>
                         <p className="text-gray-500 mt-3 font-medium text-lg">Controlla la tua Label e scala le classifiche mondiali.</p>
                     </div>
-                    <MusiCoinBalance musiCoins={musiCoins} referralCode={profile?.referral_code} />
+                    <MusiCoinBalance musiCoins={musiCoins} referralCode={profile?.referral_code} referralCount={referralCount} />
                 </header>
 
 

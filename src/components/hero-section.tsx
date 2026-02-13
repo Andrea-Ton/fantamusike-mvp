@@ -54,7 +54,7 @@ export default function HeroSection({
     }, []);
 
     return (
-        <section className="relative w-full min-h-[95vh] flex items-center justify-center overflow-hidden bg-[#0a0a0f]">
+        <section className="relative w-full min-h-screen lg:min-h-[900px] flex items-start justify-center overflow-hidden bg-[#0a0a0f]">
 
             {/* --- BACKGROUND LAYERS --- */}
 
@@ -62,24 +62,24 @@ export default function HeroSection({
             <div className="absolute inset-0 bg-[#0a0a0f] z-0" />
 
             {/* 2. Massive Bloom Effects (Glows) - Exaggerated for "Evident" Glows as requested */}
-            <div className="absolute top-[-10%] left-[-10%] w-[1000px] h-[1000px] bg-purple-600/35 rounded-full blur-[180px] -z-10 animate-pulse-glow" />
-            <div className="absolute bottom-[-10%] right-[-10%] w-[1200px] h-[1200px] bg-blue-600/25 rounded-full blur-[200px] -z-10 delay-1000 animate-pulse-glow" />
+            <div className="absolute top-[-5%] left-[-10%] w-[1000px] h-[1000px] bg-purple-600/35 rounded-full blur-[180px] -z-10 animate-pulse-glow" />
+            <div className="absolute bottom-[-5%] right-[-10%] w-[1200px] h-[1200px] bg-blue-600/25 rounded-full blur-[200px] -z-10 delay-1000 animate-pulse-glow" />
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100%] h-[100%] bg-purple-900/10 rounded-full blur-[200px] -z-10 pointer-events-none" />
             <div className="absolute top-1/3 left-1/4 w-[600px] h-[600px] bg-pink-500/15 rounded-full blur-[150px] -z-10 animate-pulse" />
 
 
             {/* --- CONTENT --- */}
-            <div className="relative z-10 w-full max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center mt-32 lg:mt-0">
+            <div className="relative z-10 w-full max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-start pt-[120px] sm:pt-[160px] lg:pt-[180px] xl:pt-[220px] pb-32">
 
                 {/* Left Column: Typography & CTA */}
-                <div className="flex flex-col items-center lg:items-start text-center lg:text-left space-y-8 lg:space-y-10 animate-fade-in-up pt-10 lg:pt-20 lg:mr-10">
+                <div className="flex flex-col items-center lg:items-start text-center lg:text-left space-y-8 lg:space-y-10 animate-fade-in-up lg:mr-10">
 
                     {/* Headline - High impact glow */}
                     <div className="relative group w-full">
                         {/* Title Specific Glow */}
                         <div className="absolute -inset-10 bg-purple-500/30 blur-[120px] -z-10 opacity-70 pointer-events-none group-hover:opacity-100 transition-opacity duration-1000" />
 
-                        <h1 className="text-4xl sm:text-6xl xl:text-7xl font-black tracking-tighter leading-[0.85] text-white uppercase drop-shadow-2xl">
+                        <h1 className="text-5xl sm:text-7xl xl:text-8xl font-black tracking-tighter leading-[0.85] text-white uppercase drop-shadow-2xl">
                             <span className="block lg:whitespace-nowrap">Crea la</span>
                             <span className="block lg:whitespace-nowrap">Tua Squadra</span>
                             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 drop-shadow-[0_0_20px_rgba(168,85,247,0.4)] sm:drop-shadow-[0_0_40px_rgba(168,85,247,0.6)]">
@@ -95,7 +95,6 @@ export default function HeroSection({
                     <p className="text-base md:text-xl text-gray-400 max-w-lg font-medium leading-relaxed drop-shadow-lg px-4 lg:px-0">
                         Smetti di essere solo un fan.
                         <span className="text-gray-200 font-bold ml-1"> Diventa un Manager.</span>
-                        <span className="block text-gray-400 mt-2 text-sm md:text-base">Scova i talenti emergenti prima dei tuoi amici e vinci le Mystery Box della musica.</span>
                     </p>
 
                     {/* CTA Buttons */}
@@ -156,7 +155,7 @@ export default function HeroSection({
                             <div className="absolute bottom-6 sm:bottom-12 left-0 lg:left-12 z-20 w-full lg:w-auto flex justify-center lg:justify-start px-8 lg:px-0">
                                 <div className="flex flex-col gap-2">
                                     <span className="px-5 py-2 sm:px-4 sm:py-1.5 rounded-full sm:rounded-lg bg-black/60 backdrop-blur-md border border-white/10 text-[10px] sm:text-[11px] font-black tracking-[0.2em] text-white uppercase italic w-fit shadow-xl text-center">
-                                        Explore the collection
+                                        Le Mystery Box della Musica
                                     </span>
                                 </div>
                             </div>

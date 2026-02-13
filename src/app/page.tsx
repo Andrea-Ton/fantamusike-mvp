@@ -49,10 +49,10 @@ export default async function LandingPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col items-center text-center mb-20">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-[10px] font-black uppercase tracking-[0.3em] mb-4">
-              Experience the game
+              Diventa un Talent Scout
             </div>
             <h2 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter leading-none text-white max-w-2xl">
-              DETTA LE REGOLE DELLA <span className="text-purple-500">PROSSIMA SCENA</span>
+              DETTA LE REGOLE DELLA <span className="text-purple-500">PROSSIMA SCENA MUSICALE</span>
             </h2>
           </div>
 
@@ -60,7 +60,7 @@ export default async function LandingPage() {
             {[
               { icon: Search, title: "SCOVA I TALENTI", desc: "Facile con il mainstream. La vera gloria è nell'Underground: punta tutto sugli artisti emergenti." },
               { icon: Music, title: "CREA LA TUA LABEL", desc: "Sei tu il Manager. Usa i MusiCoin per ingaggiare le promesse e scambiarle al momento giusto." },
-              { icon: Trophy, title: "SBLOCCA I PREMI", desc: "Il tuo orecchio vale oro. Domina le classifiche e vinci Mystery Box esclusive." }
+              { icon: Trophy, title: "SBLOCCA I PREMI", desc: "Il tuo orecchio vale oro. Domina le classifiche e ottieni Mystery Box esclusive." }
             ].map((f, i) => (
               <FeatureCard key={i} icon={f.icon} title={f.title} desc={f.desc} />
             ))}

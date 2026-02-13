@@ -334,6 +334,8 @@ returns trigger as $$
 declare
   new_referral_code text;
   referrer_id uuid;
+  referral_count int;
+  referral_limit int := 10;
   bonus_coins int := 30;
   default_coins int := 50;
   used_code text;
@@ -351,6 +353,11 @@ begin
   referrer_id := null;
   if used_code is not null then
     select id into referrer_id from public.profiles where referral_code = used_code;
+  end if;
+
+  -- Count existing referrals for the referrer
+  if referrer_id is not null then
+    select count(*) into referral_count from public.profiles where referred_by = referrer_id;
   end if;
 
   -- Insert profile
@@ -377,8 +384,8 @@ begin
     false
   );
 
-  -- Award bonus to referrer
-  if referrer_id is not null then
+  -- Award bonus to referrer ONLY if under limit
+  if referrer_id is not null and (referral_count < referral_limit) then
     update public.profiles
     set musi_coins = musi_coins + bonus_coins
     where id = referrer_id;

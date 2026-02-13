@@ -32,10 +32,10 @@ async function generateAccessToken() {
 // Create Order (Called by Frontend)
 export async function createPayPalOrderAction(packageId: string) {
     const packages = {
-        '50': { price: '0.99', coins: 50, label: 'Starter' },
-        '120': { price: '1.99', coins: 120, label: 'Popular' },
-        '350': { price: '4.99', coins: 350, label: 'Pro' },
-        '1000': { price: '9.99', coins: 1000, label: 'Legend' },
+        '100': { price: '0.99', coins: 100, label: 'Starter' },
+        '220': { price: '1.99', coins: 220, label: 'Popular' },
+        '600': { price: '4.99', coins: 600, label: 'Pro' },
+        '1350': { price: '9.99', coins: 1350, label: 'Legend' },
     };
 
     const pkg = packages[packageId as keyof typeof packages];
@@ -129,10 +129,10 @@ export async function capturePayPalOrderAction(orderID: string) {
 
         // Logic to Map Amount -> Coins (Secure)
         switch (capturedAmount) {
-            case '0.99': coinsToAdd = 50; packageLabel = 'Starter'; break;
-            case '1.99': coinsToAdd = 120; packageLabel = 'Popular'; break;
-            case '4.99': coinsToAdd = 350; packageLabel = 'Pro'; break;
-            case '9.99': coinsToAdd = 1000; packageLabel = 'Legend'; break;
+            case '0.99': coinsToAdd = 100; packageLabel = 'Starter'; break;
+            case '1.99': coinsToAdd = 220; packageLabel = 'Popular'; break;
+            case '4.99': coinsToAdd = 600; packageLabel = 'Pro'; break;
+            case '9.99': coinsToAdd = 1350; packageLabel = 'Legend'; break;
             default: throw new Error("Invalid Amount Captured");
         }
 

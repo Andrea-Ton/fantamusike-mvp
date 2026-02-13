@@ -34,20 +34,30 @@ export default function TermsPage() {
                             </p>
                             <ul className="list-disc list-inside text-xs text-gray-500 space-y-2 font-medium">
                                 <li>Potrebbero verificarsi bug, crash o interruzioni del servizio.</li>
-                                <li>I dati di gioco, i punteggi, le classifiche e i MusiCoins potrebbero subire reset totali o parziali durante gli aggiornamenti, senza diritto ad alcun rimborso o indennizzo.</li>
+                                <li>I dati di gioco, i punteggi e le classifiche potrebbero subire reset totali o parziali durante gli aggiornamenti. In caso di reset dei MusiCoins, Musiké SRL si impegna a ripristinare i pacchetti acquistati regolarmente tramite Euro qualora non ancora utilizzati.</li>
                             </ul>
                         </div>
                     </section>
 
                     <section>
-                        <h2 className="text-2xl font-black uppercase italic tracking-tighter text-white border-b border-white/10 pb-4 mb-6">3. Valuta Virtuale (MusiCoins) e Fair Play</h2>
+                        <h2 className="text-2xl font-black uppercase italic tracking-tighter text-white border-b border-white/10 pb-4 mb-6">3. MusiCoins (Punti Fedeltà) e Acquisti</h2>
                         <div className="space-y-4">
                             <p className="text-gray-400 leading-relaxed font-medium">
-                                I "MusiCoins" sono punti virtuali funzionali esclusivamente alle meccaniche di gioco.
+                                I "MusiCoins" sono punti fedeltà virtuali funzionali esclusivamente alle meccaniche di gioco di FantaMusiké.
                             </p>
-                            <ul className="list-disc list-inside text-sm text-gray-500 space-y-2 font-medium">
-                                <li><strong>Nessun Valore Economico:</strong> Non hanno valore monetario, non sono criptovalute, non possono essere convertiti in Euro/Dollari né venduti a terzi.</li>
-                                <li><strong>Divieto di Abusi:</strong> È vietato utilizzare bot, script automatici o sfruttare bug del sistema per alterare i punteggi. FantaMusiké si riserva il diritto di sospendere o cancellare senza preavviso gli account che violano questa norma.</li>
+                            <ul className="list-disc list-inside text-sm text-gray-500 space-y-3 font-medium">
+                                <li>
+                                    <strong>Acquisizione:</strong> I MusiCoins possono essere accumulati gratuitamente tramite le attività di gioco o acquistati tramite pacchetti dedicati in Euro (EUR).
+                                </li>
+                                <li>
+                                    <strong>Natura della Valuta:</strong> I MusiCoins non hanno valore monetario reale, non sono criptovalute e non possono essere riconvertiti in denaro reale. Una volta acquistati o guadagnati, non sono rimborsabili e non possono essere venduti o scambiati al di fuori della piattaforma.
+                                </li>
+                                <li>
+                                    <strong>Diritto di Recesso:</strong> Trattandosi di contenuto digitale fornito mediante supporto non materiale, l'utente accetta che l'esecuzione dell'acquisto inizi immediatamente e che di conseguenza decada il diritto di recesso una volta completata la transazione.
+                                </li>
+                                <li>
+                                    <strong>Divieto di Abusi:</strong> È vietato l'utilizzo di bot, script o lo sfruttamento di bug per alterare il saldo MusiCoins o i punteggi. FantaMusiké si riserva il diritto di sospendere gli account che violano le regole di Fair Play.
+                                </li>
                             </ul>
                         </div>
                     </section>

@@ -7,15 +7,17 @@ import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import confetti from 'canvas-confetti';
 import { createPayPalOrderAction, capturePayPalOrderAction } from '@/app/actions/payment';
 import { sendGTMEvent } from '@next/third-parties/google';
+import { REFERRAL_LIMIT, REFERRAL_BONUS } from '@/config/game';
 
 interface MusiCoinBalanceProps {
     musiCoins: number;
     referralCode?: string;
+    referralCount?: number;
 }
 
 const PAYPAL_CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "sb"; // Fallback to sandbox
 
-export default function MusiCoinBalance({ musiCoins, referralCode }: MusiCoinBalanceProps) {
+export default function MusiCoinBalance({ musiCoins, referralCode, referralCount = 0 }: MusiCoinBalanceProps) {
     const [showModal, setShowModal] = useState(false);
     const [copied, setCopied] = useState(false);
 
@@ -26,10 +28,10 @@ export default function MusiCoinBalance({ musiCoins, referralCode }: MusiCoinBal
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     const packages = [
-        { id: '50', coins: 50, price: '0.99', label: 'Starter' },
-        { id: '120', coins: 120, price: '1.99', label: 'Popular', popular: true },
-        { id: '350', coins: 350, price: '4.99', label: 'Pro' },
-        { id: '1000', coins: 1000, price: '9.99', label: 'Legend' },
+        { id: '100', coins: 100, price: '0.99', label: 'Starter' },
+        { id: '220', coins: 220, price: '1.99', label: 'Popular', popular: true },
+        { id: '600', coins: 600, price: '4.99', label: 'Pro' },
+        { id: '1350', coins: 1350, price: '9.99', label: 'Legend' },
     ];
 
     const handleCopy = (e: React.MouseEvent) => {
@@ -162,10 +164,21 @@ export default function MusiCoinBalance({ musiCoins, referralCode }: MusiCoinBal
                                                                 </div>
                                                                 <div>
                                                                     <h5 className="font-black text-white uppercase tracking-tight leading-none mb-1 text-sm sm:text-base">Invita un Amico</h5>
-                                                                    <p className="text-[10px] text-gray-500 font-medium">Entrambi riceverete 30 MC</p>
+                                                                    <p className="text-[10px] text-gray-500 font-medium">
+                                                                        {referralCount >= REFERRAL_LIMIT
+                                                                            ? "Limite raggiunto: hai già invitato 10 amici!"
+                                                                            : `Entrambi riceverete ${REFERRAL_BONUS} MC`}
+                                                                    </p>
                                                                 </div>
                                                             </div>
-                                                            <div className="text-[10px] sm:text-xs font-black text-purple-400 bg-purple-400/10 px-2 sm:px-3 py-1 rounded-full whitespace-nowrap">+30 MC</div>
+                                                            <div className="flex flex-col items-end gap-1">
+                                                                <div className="text-[10px] sm:text-xs font-black text-purple-400 bg-purple-400/10 px-2 sm:px-3 py-1 rounded-full whitespace-nowrap">
+                                                                    {referralCount >= REFERRAL_LIMIT ? "0 MC" : `+${REFERRAL_BONUS} MC`}
+                                                                </div>
+                                                                <div className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">
+                                                                    {referralCount}/{REFERRAL_LIMIT} Amici
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                         <div className="flex items-center gap-2 bg-black/40 rounded-2xl p-2 sm:p-3 border border-white/5">
                                                             <code className="flex-1 text-center font-black italic text-purple-400 tracking-tighter text-base sm:text-lg uppercase truncate">

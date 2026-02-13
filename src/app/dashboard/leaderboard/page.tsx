@@ -88,7 +88,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                         {/* Weekly Reset Countdown */}
                         <div className={`flex items-center justify-between px-6 py-3 rounded-2xl border ${isResetSoon ? 'bg-red-500/10 border-red-500/20' : 'bg-purple-500/10 border-purple-500/20'} backdrop-blur-xl shadow-inner group transition-all hover:bg-white/10`}>
                             <div className="flex flex-col">
-                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Reset Classifica</span>
+                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Termine Classifica</span>
                                 <span className={`text-lg font-black italic uppercase tracking-tighter leading-none ${isResetSoon ? 'text-red-400 animate-pulse' : 'text-purple-400'}`}>
                                     {daysLeft > 0 ? `${daysLeft}d ${hoursLeft}h` : `${hoursLeft} ore`}
                                 </span>

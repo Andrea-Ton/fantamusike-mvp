@@ -44,7 +44,7 @@ export default function PrivacySettings({ initialOptIn }: { initialOptIn: boolea
                             <Sparkles size={14} className="text-yellow-400 animate-pulse" />
                         </h4>
                         <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-relaxed max-w-sm group-hover:text-gray-400 transition-colors">
-                            Ricevi notifiche su nuove funzionalità, sondaggi esclusivi e promozioni speciali. Nessuno spam.
+                            Ricevi notifiche su nuove funzionalità, eventi esclusivi e promozioni speciali. Nessuno spam.
                         </p>
                     </div>
                 </div>

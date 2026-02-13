@@ -59,14 +59,14 @@ export default async function ProfilePage() {
 
             <main className="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full animate-fade-in pb-40 lg:pb-10">
                 {/* Header Section */}
-                <header className="mb-12 relative">
+                <header className="mb-6 relative">
                     <div className="absolute top-0 left-0 w-3/4 md:w-[500px] h-[300px] md:h-[500px] bg-purple-600/20 rounded-full blur-[80px] md:blur-[120px] -z-10 pointer-events-none mix-blend-screen opacity-50"></div>
 
                     <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 pb-2">
                         <div>
                             <div className="flex items-center gap-2 mb-2">
                                 <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></div>
-                                <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">Manager Profile</p>
+                                <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">Profilo Manager</p>
                             </div>
                             <h1 className="text-4xl md:text-5xl font-black text-white italic uppercase tracking-tighter leading-none mb-3">Impostazioni</h1>
                             <p className="text-gray-500 text-sm font-medium">Gestisci le tue informazioni personali e personalizza la tua identità.</p>

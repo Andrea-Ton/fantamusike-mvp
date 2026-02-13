@@ -137,7 +137,7 @@ export async function buyMysteryBoxAction(boxId: string) {
     if (wonPrizes.length === 0) {
         return {
             success: true,
-            message: 'Questa volta non hai vinto nulla... ma non hai speso MusiCoins!',
+            message: 'Questa volta non hai trovato nulla... ma non hai speso MusiCoins!',
             data: { wonPrizes: [], totalWonCoins: 0, hasNonCoinPrize: false, isNoWin: true }
         };
     }
@@ -196,8 +196,8 @@ export async function buyMysteryBoxAction(boxId: string) {
     return {
         success: true,
         message: totalWonCoins > 0 && !hasNonCoinPrize
-            ? `Hai vinto ${totalWonCoins} MusiCoins!`
-            : 'Ouverture completata!',
+            ? `Hai ottenuto ${totalWonCoins} MusiCoins!`
+            : 'Apertura completata!',
         data: { wonPrizes, totalWonCoins, hasNonCoinPrize }
     };
 }
