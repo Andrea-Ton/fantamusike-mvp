@@ -3,8 +3,9 @@
 import React, { useState } from 'react';
 import { Copy, Check, Share2 } from 'lucide-react';
 import { sendGTMEvent } from '@next/third-parties/google';
+import { REFERRAL_LIMIT, REFERRAL_BONUS } from '@/config/game';
 
-export default function InviteButton({ referralCode }: { referralCode?: string }) {
+export default function InviteButton({ referralCode, referralCount = 0 }: { referralCode?: string, referralCount?: number }) {
     const [isOpen, setIsOpen] = useState(false);
     const [copied, setCopied] = useState(false);
 
@@ -35,7 +36,15 @@ export default function InviteButton({ referralCode }: { referralCode?: string }
                             <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></div>
                             <h4 className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Invita un amico</h4>
                         </div>
-                        <p className="text-xs text-gray-500 mb-4 font-medium">Condividi il tuo codice. Entrambi riceverete <span className="text-yellow-400 font-black">30 MusiCoins</span>!</p>
+                        <p className="text-xs text-gray-500 mb-4 font-medium">
+                            {referralCount >= REFERRAL_LIMIT
+                                ? `Hai raggiunto il limite di ${REFERRAL_LIMIT} amici. Grazie per aver supportato FantaMusiké!`
+                                : <>Condividi il tuo codice. Entrambi riceverete <span className="text-yellow-400 font-black">{REFERRAL_BONUS} MusiCoins</span>!</>}
+                        </p>
+                        <div className="flex items-center justify-between gap-2 mb-4">
+                            <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Progressi</span>
+                            <span className="text-[10px] font-black text-purple-400 italic">{referralCount}/{REFERRAL_LIMIT} Amici</span>
+                        </div>
 
                         <div className="flex items-center gap-2 bg-white/5 rounded-2xl p-3 border border-white/10 shadow-inner group">
                             <code className="flex-1 text-center font-black italic text-purple-400 text-xl tracking-tighter">

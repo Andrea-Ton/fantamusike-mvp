@@ -313,7 +313,7 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
                                         Benvenuto,<br /><span className="text-purple-500">{managerName}</span>
                                     </h2>
                                     <p className="text-gray-400 font-medium leading-relaxed max-w-xs mx-auto mb-8">
-                                        Stai per avviare la tua carriera da Manager. Crea la tua Etichetta Discografica, scala le classifiche e vinci premi esclusivi.
+                                        Stai per avviare la tua carriera da Manager. Crea la tua Etichetta Discografica, scala le classifiche e ottieni premi esclusivi.
                                     </p>
                                     <button
                                         onClick={nextStep}

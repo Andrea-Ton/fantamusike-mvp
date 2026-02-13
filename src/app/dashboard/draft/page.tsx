@@ -72,6 +72,7 @@ export default function TalentScoutPage() {
     const [isNewSeasonEntry, setIsNewSeasonEntry] = useState(false);
     const [musiCoins, setMusiCoins] = useState(0);
     const [referralCode, setReferralCode] = useState<string | undefined>(undefined);
+    const [referralCount, setReferralCount] = useState<number>(0);
 
     const [currentWeek, setCurrentWeek] = useState<number>(1);
 
@@ -93,6 +94,7 @@ export default function TalentScoutPage() {
                 setMusiCoins(data.profile.musi_coins);
                 setReferralCode(data.profile.referral_code);
             }
+            setReferralCount(data.referralCount || 0);
 
             // 3. Set Featured Artists (Set for quick lookup)
             setFeaturedArtists(new Set(data.featured.map(a => a.id)));
@@ -513,7 +515,7 @@ export default function TalentScoutPage() {
                                             <p className="text-white text-[10px] font-black uppercase tracking-widest mb-3 flex items-center gap-2">
                                                 <Users size={12} className="text-blue-400" /> Invitando Amici
                                             </p>
-                                            <InviteButton referralCode={referralCode} />
+                                            <InviteButton referralCode={referralCode} referralCount={referralCount} />
                                         </div>
                                         <button
                                             onClick={() => router.push('/dashboard')}

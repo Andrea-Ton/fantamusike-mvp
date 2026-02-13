@@ -28,14 +28,22 @@ export async function getDraftInitialDataAction() {
     ]);
 
     const user = userRes.data.user;
+    let referralCount = 0;
     let profile = null;
     if (user) {
-        const { data } = await supabase
-            .from('profiles')
-            .select('musi_coins, referral_code')
-            .eq('id', user.id)
-            .maybeSingle();
-        profile = data;
+        const [profileRes, countRes] = await Promise.all([
+            supabase
+                .from('profiles')
+                .select('musi_coins, referral_code')
+                .eq('id', user.id)
+                .maybeSingle(),
+            supabase
+                .from('profiles')
+                .select('*', { count: 'exact', head: true })
+                .eq('referred_by', user.id)
+        ]);
+        profile = profileRes.data;
+        referralCount = countRes.count || 0;
     }
 
     return {
@@ -45,6 +53,7 @@ export async function getDraftInitialDataAction() {
         featured,
         suggested,
         dbTeam,
-        user
+        user,
+        referralCount
     };
 }

@@ -18,3 +18,6 @@ export const ARTIST_TIERS = {
 
 export type ArtistTierKey = keyof typeof ARTIST_TIERS;
 export const ARTIST_TIER_KEYS: ArtistTierKey[] = ['BIG', 'MID', 'NEW_GEN'];
+
+export const REFERRAL_LIMIT = 10;
+export const REFERRAL_BONUS = 30;

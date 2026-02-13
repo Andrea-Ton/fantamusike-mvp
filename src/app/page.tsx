@@ -60,7 +60,7 @@ export default async function LandingPage() {
             {[
               { icon: Search, title: "SCOVA I TALENTI", desc: "Facile con il mainstream. La vera gloria è nell'Underground: punta tutto sugli artisti emergenti." },
               { icon: Music, title: "CREA LA TUA LABEL", desc: "Sei tu il Manager. Usa i MusiCoin per ingaggiare le promesse e scambiarle al momento giusto." },
-              { icon: Trophy, title: "SBLOCCA I PREMI", desc: "Il tuo orecchio vale oro. Domina le classifiche e vinci Mystery Box esclusive." }
+              { icon: Trophy, title: "SBLOCCA I PREMI", desc: "Il tuo orecchio vale oro. Domina le classifiche e ottieni Mystery Box esclusive." }
             ].map((f, i) => (
               <FeatureCard key={i} icon={f.icon} title={f.title} desc={f.desc} />
             ))}
