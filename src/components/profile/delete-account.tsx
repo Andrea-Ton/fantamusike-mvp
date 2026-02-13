@@ -69,7 +69,7 @@ export default function DeleteAccount() {
                     <div className="text-center md:text-left">
                         <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-3 leading-none">Azione Irreversibile</h3>
                         <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] leading-relaxed max-w-xl">
-                            Tutti i dati, i team creati, i punteggi storici e le impostazioni verranno <span className="text-red-500 underline decoration-red-500/30 underline-offset-4">eliminati permanentemente</span> dal Metaverso.
+                            Tutti i dati, i team creati, i punteggi storici e le transazioni verranno <span className="text-red-500 underline decoration-red-500/30 underline-offset-4">eliminati permanentemente</span> dal Metaverso.
                         </p>
                     </div>
                 </div>

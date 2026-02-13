@@ -28,10 +28,10 @@ export default function MusiCoinBalance({ musiCoins, referralCode, referralCount
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     const packages = [
-        { id: '50', coins: 50, price: '0.99', label: 'Starter' },
-        { id: '120', coins: 120, price: '1.99', label: 'Popular', popular: true },
-        { id: '350', coins: 350, price: '4.99', label: 'Pro' },
-        { id: '1000', coins: 1000, price: '9.99', label: 'Legend' },
+        { id: '100', coins: 100, price: '0.99', label: 'Starter' },
+        { id: '220', coins: 220, price: '1.99', label: 'Popular', popular: true },
+        { id: '600', coins: 600, price: '4.99', label: 'Pro' },
+        { id: '1350', coins: 1350, price: '9.99', label: 'Legend' },
     ];
 
     const handleCopy = (e: React.MouseEvent) => {

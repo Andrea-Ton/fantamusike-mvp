@@ -96,7 +96,7 @@ export default async function DashboardPage() {
             </div>
 
             {/* Mobile Action Bar */}
-            <div className="md:hidden px-6 mb-10 flex flex-col gap-3">
+            <div className="md:hidden px-6 mb-5 flex flex-col gap-3">
                 <MusiCoinBalance musiCoins={musiCoins} referralCode={profile?.referral_code} referralCount={referralCount} />
             </div>
 

@@ -56,7 +56,7 @@ export default async function StatsSection({ userId, userTeamPromise, totalScore
 
                     {/* Minimal Timer Badge */}
                     <div className="flex flex-col items-end gap-1.5 opacity-80 hover:opacity-100 transition-opacity">
-                        <span className="text-[8px] text-gray-500 font-black uppercase tracking-widest leading-none">Prossimo Update</span>
+                        <span className="text-[8px] text-gray-500 font-black uppercase tracking-widest leading-none" style={{ textAlign: 'end' }}>Prossima Assegnazione</span>
                         <CountdownTimer
                             targetHour={3}
                             showScoringStatus={true}

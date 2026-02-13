@@ -109,10 +109,6 @@ export default function AvatarUpload({ currentAvatarUrl, username }: AvatarUploa
                     <div className="bg-white/[0.02] border border-white/10 rounded-[3rem] p-10 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-[0_0_100px_rgba(0,0,0,0.5)] relative animate-fade-in-up ring-1 ring-white/5">
                         <div className="flex items-center justify-between mb-10 pb-6 border-b border-white/5">
                             <div>
-                                <div className="flex items-center gap-2 mb-2">
-                                    <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                                    <h3 className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">Selection Lab</h3>
-                                </div>
                                 <h1 className="text-3xl font-black text-white italic uppercase tracking-tighter">Scegli il tuo Avatar</h1>
                             </div>
                             <button

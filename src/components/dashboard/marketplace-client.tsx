@@ -148,7 +148,7 @@ export default function MarketplaceClient({ initialBoxes, userMusiCoins, userOrd
                             <div className="p-10 text-center space-y-8 py-16 animate-in zoom-in duration-500 max-h-[90vh] overflow-y-auto custom-scrollbar">
                                 <div className="space-y-2">
                                     <h2 className="text-sm font-black text-purple-400 uppercase tracking-[0.3em]">Complimenti!</h2>
-                                    <h3 className="text-4xl font-black text-white italic uppercase tracking-tighter">Hai Vinto:</h3>
+                                    <h3 className="text-4xl font-black text-white italic uppercase tracking-tighter">Hai ottenuto:</h3>
                                 </div>
 
                                 <div className="grid grid-cols-1 gap-4 max-w-sm mx-auto">
@@ -240,7 +240,7 @@ export default function MarketplaceClient({ initialBoxes, userMusiCoins, userOrd
 
                                     <div className="space-y-6 mb-10">
                                         <div>
-                                            <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4">Potresti vincere:</h4>
+                                            <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4">Contiene:</h4>
                                             <div className="space-y-3">
                                                 {selectedBox.prizes.map((prize: any, i: number) => (
                                                     <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 group hover:bg-white/10 transition-all">

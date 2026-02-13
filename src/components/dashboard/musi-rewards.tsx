@@ -29,17 +29,21 @@ function MissionItem({ mission, claiming, onClaim }: MissionItemProps) {
                 }`}
         >
             {/* Mission Icon Compact */}
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-colors ${mission.isClaimed
-                ? 'bg-gray-500/5 text-gray-500 border-gray-500/10'
-                : isClaimable
-                    ? 'bg-yellow-500/15 text-yellow-400 border-yellow-500/20'
-                    : 'bg-white/5 text-gray-500 border-white/5'
-                }`}>
+            <button
+                onClick={() => setIsDescOpen(!isDescOpen)}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-colors hover:scale-105 active:scale-95 ${mission.isClaimed
+                    ? 'bg-gray-500/5 text-gray-500 border-gray-500/10'
+                    : isClaimable
+                        ? 'bg-yellow-500/15 text-yellow-400 border-yellow-500/20'
+                        : 'bg-white/5 text-gray-500 border-white/5 hover:bg-white/10 hover:border-white/20'
+                    }`}
+                title="Vedi dettagli missione"
+            >
                 {mission.slug.includes('streak') && <Flame size={20} />}
                 {mission.slug.includes('sweep') && <Zap size={20} />}
                 {mission.slug.includes('weekly') && <Award size={20} />}
                 {mission.slug.includes('milestone') && <Star size={20} />}
-            </div>
+            </button>
 
             <div className="flex-1 min-w-0">
                 <div className="flex flex-col mb-2">
@@ -198,7 +202,6 @@ export default function MusiRewards({ initialMissions }: MusiRewardsProps) {
                     </div>
                     <div>
                         <h2 className="text-xl font-black text-white italic tracking-tighter uppercase leading-none">MusiRewards</h2>
-                        <p className="text-[9px] text-gray-500 font-black uppercase tracking-[0.2em] leading-none mt-1">Loyalty Program</p>
                     </div>
                 </div>
             </div>

@@ -485,9 +485,9 @@ export default function TalentScoutPage() {
                         <div className="relative z-10">
                             <div className="flex items-center gap-2 mb-4">
                                 <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></div>
-                                <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">Transaction Security</p>
+                                <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">Transazione in corso</p>
                             </div>
-                            <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-6">Confirm Changes</h3>
+                            <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-6">Conferma Modifiche</h3>
 
                             <div className="space-y-4 mb-8">
                                 <div className="flex justify-between items-center py-3 border-b border-white/5">
