@@ -39,7 +39,7 @@ export async function adminGetAllOrdersAction() {
     const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
     if (!profile?.is_admin) return { success: false, message: 'Non autorizzato' };
 
-    const { data, error } = await supabase
+    const { data: orders, error } = await supabase
         .from('mystery_box_orders')
         .select(`
             *,
@@ -59,7 +59,34 @@ export async function adminGetAllOrdersAction() {
         return { success: false, message: 'Errore durante il recupero degli ordini' };
     }
 
-    return { success: true, data };
+    // Fetch emails from Auth (Service Role required)
+    try {
+        const { createClient: createSupabaseAdmin } = await import('@supabase/supabase-js');
+        const adminSupabase = createSupabaseAdmin(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            {
+                auth: {
+                    autoRefreshToken: false,
+                    persistSession: false
+                }
+            }
+        );
+
+        const { data: { users }, error: authError } = await adminSupabase.auth.admin.listUsers();
+        if (!authError && users) {
+            const emailMap = new Map(users.map(u => [u.id, u.email]));
+            const ordersWithEmail = orders.map(order => ({
+                ...order,
+                email: emailMap.get(order.user_id) || 'N/A'
+            }));
+            return { success: true, data: ordersWithEmail };
+        }
+    } catch (e) {
+        console.error('Error fetching auth emails:', e);
+    }
+
+    return { success: true, data: orders };
 }
 
 export async function adminUpdateOrderStatusAction(orderId: string, status: 'pending' | 'shipped' | 'completed') {

@@ -31,7 +31,23 @@ export default function MarketplaceClient({ initialBoxes, userMusiCoins, userOrd
     const [isBuying, setIsBuying] = useState(false);
     const [wonPrizes, setWonPrizes] = useState<any[] | null>(null);
     const [isNoWin, setIsNoWin] = useState(false);
+    const [userEmail, setUserEmail] = useState<string | null>(null);
+    const [hasNonCoinPrize, setHasNonCoinPrize] = useState(false);
     const router = useRouter();
+
+    // Sorting: Available first, then Unavailable (limit reached or out of stock)
+    const sortedBoxes = React.useMemo(() => {
+        return [...initialBoxes].sort((a, b) => {
+            const isAvailableA = (a.available_copies === null || a.available_copies > 0) &&
+                (a.max_copies_per_user === null || (userOrderCounts[a.id] || 0) < a.max_copies_per_user);
+            const isAvailableB = (b.available_copies === null || b.available_copies > 0) &&
+                (b.max_copies_per_user === null || (userOrderCounts[b.id] || 0) < b.max_copies_per_user);
+
+            if (isAvailableA && !isAvailableB) return -1;
+            if (!isAvailableA && isAvailableB) return 1;
+            return 0;
+        });
+    }, [initialBoxes, userOrderCounts]);
 
     const handleBuy = async (boxId: string) => {
         setIsBuying(true);
@@ -41,6 +57,8 @@ export default function MarketplaceClient({ initialBoxes, userMusiCoins, userOrd
                 setIsNoWin(true);
             } else {
                 setWonPrizes(res.data.wonPrizes);
+                setUserEmail(res.data.userEmail || null);
+                setHasNonCoinPrize(res.data.hasNonCoinPrize || false);
             }
             router.refresh();
         } else {
@@ -53,89 +71,102 @@ export default function MarketplaceClient({ initialBoxes, userMusiCoins, userOrd
     return (
         <div className="space-y-12">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {initialBoxes.map((box) => (
-                    <div
-                        key={box.id}
-                        className="group relative bg-[#12121a]/80 backdrop-blur-xl border border-white/5 rounded-[2.5rem] overflow-hidden hover:border-purple-500/50 transition-all duration-500 hover:translate-y-[-4px] shadow-2xl"
-                    >
-                        {/* Box Image / Visual Placeholder */}
-                        <div className="relative h-48 bg-gradient-to-br from-purple-900/40 to-black flex items-center justify-center overflow-hidden">
-                            <div className="absolute inset-0 bg-[#0b0b10]/20" />
-                            {box.image_url ? (
-                                <Image
-                                    src={box.image_url}
-                                    alt={box.title}
-                                    fill
-                                    className="object-cover group-hover:scale-110 transition-transform duration-700"
-                                />
-                            ) : (
-                                <Package size={80} className="text-purple-500/40 transform group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700" />
-                            )}
-                            <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-1.5">
-                                <Coins size={12} className="text-yellow-400" />
-                                <span className="text-xs font-black text-white uppercase tracking-tighter">{box.price_musicoins}</span>
+                {sortedBoxes.map((box) => {
+                    const isLimitReached = box.max_copies_per_user !== null && (userOrderCounts[box.id] || 0) >= box.max_copies_per_user;
+                    const isOutOfStock = box.available_copies !== null && box.available_copies <= 0;
+                    const isUnavailable = isLimitReached || isOutOfStock;
+                    const isCommunityLocked = box.target_user_goal !== null && totalUsers < box.target_user_goal;
+
+                    return (
+                        <div
+                            key={box.id}
+                            className={`group relative bg-[#12121a]/80 backdrop-blur-xl border border-white/5 rounded-[2.5rem] overflow-hidden hover:border-purple-500/50 transition-all duration-500 hover:translate-y-[-4px] shadow-2xl ${isUnavailable ? 'opacity-50 grayscale-[0.5]' : ''
+                                }`}
+                        >
+                            {/* Box Image / Visual Placeholder */}
+                            <div className={`relative h-48 bg-gradient-to-br from-purple-900/40 to-black flex items-center justify-center overflow-hidden ${isUnavailable ? 'blur-[1px]' : ''}`}>
+                                <div className="absolute inset-0 bg-[#0b0b10]/20" />
+                                {box.image_url ? (
+                                    <Image
+                                        src={box.image_url}
+                                        alt={box.title}
+                                        fill
+                                        className="object-cover group-hover:scale-110 transition-transform duration-700"
+                                    />
+                                ) : (
+                                    <Package size={80} className="text-purple-500/40 transform group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700" />
+                                )}
+                                <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-1.5">
+                                    <Coins size={12} className={`text-yellow-400 ${box.price_musicoins === 0 ? 'hidden' : ''}`} />
+                                    <span className={`text-xs font-black text-white uppercase tracking-tighter ${box.price_musicoins === 0 ? 'text-green-400' : ''}`}>
+                                        {box.price_musicoins === 0 ? 'FREE' : box.price_musicoins}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="p-8">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${box.type === 'digital' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                                        {box.type === 'digital' ? 'Digital' : 'Fisico'}
+                                    </div>
+                                    {box.available_copies !== null && (
+                                        <div className={`text-[10px] font-bold uppercase tracking-wider ${isOutOfStock ? 'text-red-500' : 'text-gray-500'}`}>
+                                            Stock: {box.available_copies}
+                                        </div>
+                                    )}
+                                    {box.max_copies_per_user !== null && (
+                                        <div className={`text-[10px] font-bold uppercase tracking-wider ${isLimitReached ? 'text-red-500' : 'text-purple-400'}`}>
+                                            Limite: {userOrderCounts[box.id] || 0}/{box.max_copies_per_user}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {isCommunityLocked ? (
+                                    <div className="space-y-4">
+                                        <h3 className="text-2xl font-black text-white italic uppercase tracking-tight mb-2 flex items-center gap-2 break-all">
+                                            <Package className="opacity-20" size={20} />
+                                            {box.title}
+                                        </h3>
+                                        <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Obiettivo Community</span>
+                                                <span className="text-[10px] font-black text-gray-500">{totalUsers}/{box.target_user_goal}</span>
+                                            </div>
+                                            <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-gradient-to-r from-purple-600 to-blue-600 transition-all duration-1000"
+                                                    style={{ width: `${Math.min(100, (totalUsers / (box.target_user_goal || 1)) * 100)}%` }}
+                                                />
+                                            </div>
+                                            <p className="text-[10px] text-gray-500 mt-3 font-bold uppercase tracking-tighter leading-tight italic">
+                                                Mancano <span className="text-purple-400">{(box.target_user_goal || 0) - totalUsers}</span> utenti per sbloccare questa MysteryBox!
+                                            </p>
+                                        </div>
+                                        <div className="w-full bg-black/20 text-gray-600 font-black uppercase tracking-widest text-[11px] py-4 rounded-2xl border border-white/5 flex items-center justify-center gap-2 cursor-not-allowed">
+                                            Contenuto Bloccato
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <h3 className="text-2xl font-black text-white italic uppercase tracking-tight mb-2 group-hover:text-purple-400 transition-colors break-all">{box.title}</h3>
+                                        <p className="text-gray-400 text-sm leading-relaxed mb-6 line-clamp-2">{box.description}</p>
+
+                                        <button
+                                            onClick={() => setSelectedBox(box)}
+                                            className={`w-full font-black uppercase tracking-widest text-[11px] py-4 rounded-2xl border transition-all flex items-center justify-center gap-2 group/btn ${isUnavailable
+                                                ? 'bg-black/20 text-gray-600 border-white/5 cursor-not-allowed'
+                                                : 'bg-white/5 hover:bg-white/10 text-white border-white/10'
+                                                }`}
+                                        >
+                                            {isUnavailable ? 'Non disponibile' : 'Scopri di più'}
+                                            {!isUnavailable && <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />}
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </div>
-
-                        <div className="p-8">
-                            {box.target_user_goal && totalUsers < box.target_user_goal ? (
-                                <div className="space-y-4">
-                                    <h3 className="text-2xl font-black text-white italic uppercase tracking-tight mb-2 flex items-center gap-2">
-                                        <Package className="opacity-20" size={20} />
-                                        {box.title}
-                                    </h3>
-                                    <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Obiettivo Community</span>
-                                            <span className="text-[10px] font-black text-gray-500">{totalUsers}/{box.target_user_goal}</span>
-                                        </div>
-                                        <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-gradient-to-r from-purple-600 to-blue-600 transition-all duration-1000"
-                                                style={{ width: `${Math.min(100, (totalUsers / box.target_user_goal) * 100)}%` }}
-                                            />
-                                        </div>
-                                        <p className="text-[10px] text-gray-500 mt-3 font-bold uppercase tracking-tighter leading-tight italic">
-                                            Mancano <span className="text-purple-400">{box.target_user_goal - totalUsers}</span> utenti per sbloccare questa MysteryBox!
-                                        </p>
-                                    </div>
-                                    <div className="w-full bg-black/20 text-gray-600 font-black uppercase tracking-widest text-[11px] py-4 rounded-2xl border border-white/5 flex items-center justify-center gap-2 cursor-not-allowed">
-                                        Contenuto Bloccato
-                                    </div>
-                                </div>
-                            ) : (
-                                <>
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${box.type === 'digital' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>
-                                            {box.type === 'digital' ? 'Digital' : 'Fisico'}
-                                        </div>
-                                        {box.available_copies !== null && (
-                                            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                                                Stock: {box.available_copies}
-                                            </div>
-                                        )}
-                                        {box.max_copies_per_user !== null && (
-                                            <div className={`text-[10px] font-bold uppercase tracking-wider ${(userOrderCounts[box.id] || 0) >= box.max_copies_per_user ? 'text-red-500' : 'text-purple-400'}`}>
-                                                Limite: {userOrderCounts[box.id] || 0}/{box.max_copies_per_user}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <h3 className="text-2xl font-black text-white italic uppercase tracking-tight mb-2 group-hover:text-purple-400 transition-colors">{box.title}</h3>
-                                    <p className="text-gray-400 text-sm leading-relaxed mb-6 line-clamp-2">{box.description}</p>
-
-                                    <button
-                                        onClick={() => setSelectedBox(box)}
-                                        className="w-full bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-widest text-[11px] py-4 rounded-2xl border border-white/10 transition-all flex items-center justify-center gap-2 group/btn"
-                                    >
-                                        Scopri di più
-                                        <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             {/* Selection/Open Modal */}
@@ -158,7 +189,7 @@ export default function MarketplaceClient({ initialBoxes, userMusiCoins, userOrd
                                                 {prize.type === 'musicoins' ? <Coins size={24} /> : <Gift size={24} />}
                                             </div>
                                             <div className="text-left">
-                                                <p className="text-lg font-black text-white leading-tight uppercase italic">{prize.name}</p>
+                                                <p className="text-lg font-black text-white leading-tight uppercase italic break-all">{prize.name}</p>
                                                 {prize.type === 'musicoins' ? (
                                                     <p className="text-[10px] font-bold text-yellow-500 uppercase tracking-widest mt-1">Accreditati</p>
                                                 ) : (
@@ -168,6 +199,18 @@ export default function MarketplaceClient({ initialBoxes, userMusiCoins, userOrd
                                         </div>
                                     ))}
                                 </div>
+
+                                {hasNonCoinPrize && userEmail && (
+                                    <div className="bg-purple-500/10 border border-purple-500/20 rounded-[2.5rem] p-8 md:p-10 max-w-md mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 shadow-[0_0_50px_rgba(168,85,247,0.1)] mb-4">
+                                        <p className="text-sm font-black uppercase tracking-[0.2em] text-purple-400 italic mb-2">
+                                            Grazie per l'acquisto! ✨
+                                        </p>
+                                        <p className="text-sm text-gray-400 font-medium leading-relaxed">
+                                            Verrai contattato al più presto all'indirizzo:<br />
+                                            <span className="text-white font-bold text-lg md:text-xl block mt-1 break-all">{userEmail}</span>
+                                        </p>
+                                    </div>
+                                )}
 
                                 <div className="pt-8 px-8">
                                     <button

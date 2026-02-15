@@ -11,6 +11,7 @@ interface Order {
     created_at: string;
     status: 'pending' | 'shipped' | 'completed';
     user_id: string;
+    email?: string;
     box_id: string;
     prize_won: any;
     mystery_boxes: {
@@ -111,9 +112,14 @@ export default function AdminOrdersPage() {
                                                     <div className="w-7 h-7 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 border border-purple-500/20">
                                                         <User size={14} />
                                                     </div>
-                                                    <span className="text-sm font-bold text-white group-hover:text-purple-400 transition-colors">
-                                                        {order.profiles.username}
-                                                    </span>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-sm font-bold text-white group-hover:text-purple-400 transition-colors">
+                                                            {order.profiles.username}
+                                                        </span>
+                                                        <span className="text-[10px] text-gray-500 font-medium">
+                                                            {order.email}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-5">
