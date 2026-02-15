@@ -35,15 +35,41 @@ export default function AdminOrdersPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
 
+    // Filter & Pagination States
+    const [page, setPage] = useState(1);
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [typeFilter, setTypeFilter] = useState('all');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [pagination, setPagination] = useState({ totalPages: 0, totalCount: 0 });
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+            setPage(1); // Reset to first page on search
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
     useEffect(() => {
         fetchOrders();
-    }, []);
+    }, [page, statusFilter, typeFilter, debouncedSearch]);
 
     const fetchOrders = async () => {
         setIsLoading(true);
-        const res = await adminGetAllOrdersAction();
+        const res = await adminGetAllOrdersAction({
+            page,
+            pageSize: 20,
+            status: statusFilter,
+            type: typeFilter,
+            search: debouncedSearch
+        });
         if (res.success && res.data) {
             setOrders(res.data as Order[]);
+            setPagination({
+                totalPages: res.totalPages || 0,
+                totalCount: res.totalCount || 0
+            });
         }
         setIsLoading(false);
     };
@@ -61,9 +87,71 @@ export default function AdminOrdersPage() {
 
     return (
         <div className="space-y-8">
-            <div>
-                <h1 className="text-3xl font-bold text-white">Gestione Ordini</h1>
-                <p className="text-gray-400 mt-1">Monitora e gestisci le MysteryBox acquistate dagli utenti.</p>
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-white">Gestione Ordini</h1>
+                    <p className="text-gray-400 mt-1">Monitora e gestisci le MysteryBox acquistate dagli utenti.</p>
+                </div>
+
+                <div className="text-right">
+                    <div className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-1">Totale Risultati</div>
+                    <div className="text-2xl font-black text-white italic">{pagination.totalCount}</div>
+                </div>
+            </div>
+
+            {/* Filter Bar */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white/5 p-6 rounded-3xl border border-white/5">
+                <div className="space-y-1.5 font-bold uppercase tracking-widest text-[10px] text-gray-500">
+                    <label>Cerca Utente</label>
+                    <input
+                        type="text"
+                        placeholder="Username..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-purple-500/50 transition-colors outline-none"
+                    />
+                </div>
+
+                <div className="space-y-1.5 font-bold uppercase tracking-widest text-[10px] text-gray-500">
+                    <label>Stato Ordine</label>
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-purple-500/50 transition-colors outline-none appearance-none"
+                    >
+                        <option value="all">Tutti gli stati</option>
+                        <option value="pending">Da Evadere</option>
+                        <option value="shipped">Spediti</option>
+                        <option value="completed">Completati</option>
+                    </select>
+                </div>
+
+                <div className="space-y-1.5 font-bold uppercase tracking-widest text-[10px] text-gray-500">
+                    <label>Tipo Box</label>
+                    <select
+                        value={typeFilter}
+                        onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-purple-500/50 transition-colors outline-none appearance-none"
+                    >
+                        <option value="all">Tutti i tipi</option>
+                        <option value="physical">Fisiche</option>
+                        <option value="digital">Digitali</option>
+                    </select>
+                </div>
+
+                <div className="flex items-end">
+                    <button
+                        onClick={() => {
+                            setSearchQuery('');
+                            setStatusFilter('all');
+                            setTypeFilter('all');
+                            setPage(1);
+                        }}
+                        className="w-full bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-white transition-all"
+                    >
+                        Reset Filtri
+                    </button>
+                </div>
             </div>
 
             <div className="bg-[#1a1a24]/80 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
@@ -191,6 +279,31 @@ export default function AdminOrdersPage() {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination Controls */}
+                {pagination.totalPages > 1 && (
+                    <div className="px-6 py-4 bg-white/5 border-t border-white/5 flex items-center justify-between">
+                        <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                            Pagina {page} di {pagination.totalPages}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setPage(prev => Math.max(1, prev - 1))}
+                                disabled={page === 1 || isLoading}
+                                className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-all"
+                            >
+                                Precedente
+                            </button>
+                            <button
+                                onClick={() => setPage(prev => Math.min(pagination.totalPages, prev + 1))}
+                                disabled={page === pagination.totalPages || isLoading}
+                                className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-all"
+                            >
+                                Successivo
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
