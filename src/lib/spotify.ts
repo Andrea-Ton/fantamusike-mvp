@@ -86,7 +86,7 @@ export async function searchArtists(query: string): Promise<SpotifyArtist[]> {
 
     try {
         const response = await fetchWithRetry(
-            `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist&limit=10`,
+            `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist&limit=20`,
             {
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -100,7 +100,30 @@ export async function searchArtists(query: string): Promise<SpotifyArtist[]> {
         }
 
         const data: SearchArtistsResponse = await response.json();
-        return data.artists.items;
+        const items = data.artists.items || [];
+
+        // Smart Sorting: Prioritize exact matches and partial matches starting with query
+        const lowercaseQuery = query.toLowerCase().trim();
+        
+        return items.sort((a, b) => {
+            const nameA = a.name.toLowerCase();
+            const nameB = b.name.toLowerCase();
+
+            // 1. Exact Match Priority
+            const isExactA = nameA === lowercaseQuery;
+            const isExactB = nameB === lowercaseQuery;
+            if (isExactA && !isExactB) return -1;
+            if (!isExactA && isExactB) return 1;
+
+            // 2. "Starts With" Priority
+            const startsWithA = nameA.startsWith(lowercaseQuery);
+            const startsWithB = nameB.startsWith(lowercaseQuery);
+            if (startsWithA && !startsWithB) return -1;
+            if (!startsWithA && startsWithB) return 1;
+
+            // 3. Fallback to Popularity
+            return b.popularity - a.popularity;
+        });
     } catch (error) {
         console.error('Error in searchArtists:', error);
         return [];
