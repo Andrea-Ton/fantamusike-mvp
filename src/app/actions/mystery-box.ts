@@ -198,7 +198,7 @@ export async function buyMysteryBoxAction(boxId: string) {
         message: totalWonCoins > 0 && !hasNonCoinPrize
             ? `Hai ottenuto ${totalWonCoins} MusiCoins!`
             : 'Apertura completata!',
-        data: { wonPrizes, totalWonCoins, hasNonCoinPrize }
+        data: { wonPrizes, totalWonCoins, hasNonCoinPrize, userEmail: user.email }
     };
 }
 
