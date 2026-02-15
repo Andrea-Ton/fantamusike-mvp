@@ -15,6 +15,9 @@ export default function CookieBanner() {
         if (!choice) {
             const timer = setTimeout(() => setIsVisible(true), 1500);
             return () => clearTimeout(timer);
+        } else if (choice === 'accepted') {
+            // Apply existing consent on mount
+            updateGTMConsent(true);
         }
 
         // Listen for manual trigger
@@ -23,13 +26,26 @@ export default function CookieBanner() {
         return () => window.removeEventListener('show-cookie-banner', handleShow);
     }, []);
 
+    const updateGTMConsent = (accepted: boolean) => {
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+            (window as any).gtag('consent', 'update', {
+                'ad_storage': accepted ? 'granted' : 'denied',
+                'ad_user_data': accepted ? 'granted' : 'denied',
+                'ad_personalization': accepted ? 'granted' : 'denied',
+                'analytics_storage': accepted ? 'granted' : 'denied'
+            });
+        }
+    };
+
     const handleAccept = () => {
         localStorage.setItem('cookie-choice', 'accepted');
+        updateGTMConsent(true);
         setIsVisible(false);
     };
 
     const handleDecline = () => {
         localStorage.setItem('cookie-choice', 'declined');
+        updateGTMConsent(false);
         setIsVisible(false);
     };
 
