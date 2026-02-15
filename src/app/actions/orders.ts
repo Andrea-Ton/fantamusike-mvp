@@ -30,7 +30,17 @@ export async function getUserOrdersAction() {
     return { success: true, data };
 }
 
-export async function adminGetAllOrdersAction() {
+export async function adminGetAllOrdersAction(options: {
+    page?: number;
+    pageSize?: number;
+    status?: string;
+    type?: string;
+    search?: string;
+} = {}) {
+    const { page = 1, pageSize = 20, status, type, search } = options;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
     const supabase = await createClient();
 
     // Admin Check
@@ -39,20 +49,35 @@ export async function adminGetAllOrdersAction() {
     const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
     if (!profile?.is_admin) return { success: false, message: 'Non autorizzato' };
 
-    const { data: orders, error } = await supabase
+    let query = supabase
         .from('mystery_box_orders')
         .select(`
             *,
-            mystery_boxes (
+            mystery_boxes!inner (
                 title,
                 type
             ),
-            profiles (
+            profiles!inner (
                 username,
                 id
             )
-        `)
-        .order('created_at', { ascending: false });
+        `, { count: 'exact' });
+
+    if (status && status !== 'all') {
+        query = query.eq('status', status);
+    }
+
+    if (type && type !== 'all') {
+        query = query.eq('mystery_boxes.type', type);
+    }
+
+    if (search) {
+        query = query.ilike('profiles.username', `%${search}%`);
+    }
+
+    const { data: orders, error, count } = await query
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
     if (error) {
         console.error('Error fetching all orders:', error);
@@ -73,20 +98,35 @@ export async function adminGetAllOrdersAction() {
             }
         );
 
-        const { data: { users }, error: authError } = await adminSupabase.auth.admin.listUsers();
-        if (!authError && users) {
-            const emailMap = new Map(users.map(u => [u.id, u.email]));
+        // Fetch specifically for the users in the current page to be more efficient
+        const userIds = Array.from(new Set(orders.map(o => o.user_id)));
+        const { data: authUsers, error: authError } = await adminSupabase.auth.admin.listUsers();
+
+        if (!authError && authUsers?.users) {
+            const emailMap = new Map(authUsers.users.map(u => [u.id, u.email]));
             const ordersWithEmail = orders.map(order => ({
                 ...order,
                 email: emailMap.get(order.user_id) || 'N/A'
             }));
-            return { success: true, data: ordersWithEmail };
+            return {
+                success: true,
+                data: ordersWithEmail,
+                totalCount: count || 0,
+                totalPages: Math.ceil((count || 0) / pageSize),
+                currentPage: page
+            };
         }
     } catch (e) {
         console.error('Error fetching auth emails:', e);
     }
 
-    return { success: true, data: orders };
+    return {
+        success: true,
+        data: orders,
+        totalCount: count || 0,
+        totalPages: Math.ceil((count || 0) / pageSize),
+        currentPage: page
+    };
 }
 
 export async function adminUpdateOrderStatusAction(orderId: string, status: 'pending' | 'shipped' | 'completed') {
