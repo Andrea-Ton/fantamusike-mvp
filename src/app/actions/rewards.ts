@@ -106,16 +106,33 @@ export async function getRewardsStateAction(): Promise<{ success: boolean; missi
     };
 
     // 3. Weekly Commitment (3 promos for 5 days in last 7 days)
-    const last7DaysPromos = allPromos.filter(p => {
-        const pDate = new Date(p.date);
-        const diff = (new Date().getTime() - pDate.getTime()) / (1000 * 3600 * 24);
-        return diff <= 7;
-    });
-    const daysFullyCompleted = last7DaysPromos.filter(p => p.quiz_done && p.bet_done && p.boost_done).length;
+    // Anchor to Monday 5:00 AM UTC
+    const getGamingWeekStart = () => {
+        const d = new Date();
+        const day = d.getUTCDay(); // 0: Sun, 1: Mon, ..., 6: Sat
+        const diff = (day === 0 ? 6 : day - 1); // Days since last Monday
 
-    // Weekly slug changes every week
-    const currentWeek = Math.floor(new Date().getTime() / (1000 * 3600 * 24 * 7));
-    const weeklySlug = `weekly-commitment-${currentWeek}`;
+        const start = new Date(d);
+        start.setUTCDate(d.getUTCDate() - diff);
+        start.setUTCHours(5, 0, 0, 0);
+
+        // If it's Monday but before 5 AM, go back 7 days
+        if (d < start) {
+            start.setUTCDate(start.getUTCDate() - 7);
+        }
+        return start;
+    };
+
+    const weekStart = getGamingWeekStart();
+    const currentWeekPromos = allPromos.filter(p => {
+        const pDate = new Date(p.date); // daily_promos.date is just a date string, so it represents the start of the day
+        return pDate >= new Date(weekStart.toISOString().split('T')[0]);
+    });
+
+    const daysFullyCompleted = currentWeekPromos.filter(p => p.quiz_done && p.bet_done && p.boost_done).length;
+
+    // Weekly slug changes every Monday 5 AM
+    const weeklySlug = `weekly-commitment-${weekStart.getTime()}`;
 
     const weeklyMission: RewardMission = {
         slug: weeklySlug,
