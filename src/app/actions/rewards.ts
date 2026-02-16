@@ -63,7 +63,7 @@ export async function getRewardsStateAction(): Promise<{ success: boolean; missi
 
     // Fetch Profile, Daily Promos (for Clean Sweep / Commitment), and Claimed Rewards
     const [profileRes, promosRes, claimedRes] = await Promise.all([
-        supabase.from('profiles').select('current_streak').eq('id', user.id).single(),
+        supabase.from('profiles').select('current_streak, last_login_at').eq('id', user.id).single(),
         supabase.from('daily_promos').select('*').eq('user_id', user.id).order('date', { ascending: false }),
         supabase.from('claimed_rewards').select('reward_slug').eq('user_id', user.id)
     ]);
@@ -72,16 +72,40 @@ export async function getRewardsStateAction(): Promise<{ success: boolean; missi
     const allPromos = promosRes.data || [];
     const claimedSlugs = new Set(claimedRes.data?.map(c => c.reward_slug) || []);
 
-    // 1. Daily Streak (5 days)
+    // 1. Daily Streak (Repeatable every 5 days)
+    const currentStreak = profile?.current_streak || 0;
+    const lastLoginStr = profile?.last_login_at || new Date().toISOString();
+    const lastLoginDate = new Date(lastLoginStr);
+
+    // Estimate current streak start date to differentiate between different streak attempts
+    const streakStartDate = new Date(lastLoginDate);
+    streakStartDate.setDate(streakStartDate.getDate() - (currentStreak - 1));
+    const streakKey = streakStartDate.toISOString().split('T')[0];
+
+    // Identify the milestone (5, 10, 15...) the user has reached
+    const milestoneReached = Math.floor(currentStreak / 5) * 5;
+    const currentMilestoneSlug = `daily-streak-5-at-${streakKey}-${milestoneReached}`;
+    const hasClaimedCurrent = milestoneReached > 0 && claimedSlugs.has(currentMilestoneSlug);
+
+    // If the user just claimed the milestone and is still at that exact streak count, show "Claimed"
+    const showAsClaimed = hasClaimedCurrent && (currentStreak === milestoneReached);
+
+    // The "active" milestone is either the one they just reached (if not claimed) or the next one
+    const activeMilestone = showAsClaimed ? milestoneReached : (hasClaimedCurrent ? milestoneReached + 5 : (milestoneReached || 5));
+    const activeSlug = `daily-streak-5-at-${streakKey}-${activeMilestone}`;
+
+    let streakProgress = currentStreak % 5;
+    if (streakProgress === 0 && currentStreak > 0) streakProgress = 5;
+
     const streakMission: RewardMission = {
-        slug: 'daily-streak-5',
+        slug: activeSlug,
         title: 'Daily Streak',
         description: 'Accedi al Fantamusiké per 5 giorni consecutivi',
         reward: 15,
         goal: 5,
-        current: profile?.current_streak || 0,
-        isClaimed: claimedSlugs.has('daily-streak-5'),
-        canClaim: (profile?.current_streak || 0) >= 5 && !claimedSlugs.has('daily-streak-5')
+        current: streakProgress,
+        isClaimed: showAsClaimed,
+        canClaim: currentStreak >= activeMilestone && !claimedSlugs.has(activeSlug)
     };
 
     // 2. Clean Sweep (Complete all 3 today)
