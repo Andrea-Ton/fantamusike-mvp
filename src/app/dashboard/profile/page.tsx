@@ -10,6 +10,7 @@ import LogoutButton from '@/components/logout-button';
 import { getCurrentSeasonAction } from '@/app/actions/season';
 import { ShieldCheck, Calendar } from 'lucide-react';
 import ProfileViewTracker from '@/components/profile/profile-view-tracker';
+import TutorialSettings from '@/components/profile/tutorial-settings';
 
 export default async function ProfilePage() {
     const supabase = await createClient();
@@ -130,6 +131,9 @@ export default async function ProfilePage() {
                                 />
                             </div>
                         </div>
+
+                        {/* Tutorial Settings */}
+                        <TutorialSettings />
 
                         {/* Danger Zone */}
                         <DeleteAccount />
