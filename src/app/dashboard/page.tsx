@@ -20,6 +20,7 @@ import { LeaderboardResponse } from '@/app/actions/leaderboard';
 import { updateLoginStreakAction, getRewardsStateAction } from '@/app/actions/rewards';
 import MusiRewards from '@/components/dashboard/musi-rewards';
 import MusiCoinBalance from '@/components/dashboard/musicoin-balance';
+import FeatureTour from '@/components/dashboard/feature-tour';
 
 export default async function DashboardPage() {
     const metadata = await getDashboardMetadataAction();
@@ -75,6 +76,10 @@ export default async function DashboardPage() {
                 curatedRoster={mappedCuratedRoster}
                 username={profile?.username || 'Gamer'}
             />
+
+            {!profile?.has_completed_tutorial && (
+                <FeatureTour />
+            )}
 
             {/* Mobile Header */}
             <div className="md:hidden pt-12 px-6 flex justify-between items-center mb-4 bg-[#0a0a0e]/80 backdrop-blur-xl border-b border-white/5 pb-4 sticky top-0 z-30">

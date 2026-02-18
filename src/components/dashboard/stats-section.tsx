@@ -49,7 +49,7 @@ export default async function StatsSection({ userId, userTeamPromise, totalScore
                             <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></div>
                             <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em]">Punteggio Totale</p>
                         </div>
-                        <h2 className="text-6xl md:text-7xl font-black tracking-tighter italic uppercase text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 leading-tight py-4 px-8 -ml-8 -my-2 drop-shadow-[0_0_20px_rgba(168,85,247,0.4)]">
+                        <h2 id="tour-total-score" className="text-6xl md:text-7xl font-black tracking-tighter italic uppercase text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 leading-tight py-4 px-8 -ml-8 -my-2 drop-shadow-[0_0_20px_rgba(168,85,247,0.4)]">
                             {totalScore}
                         </h2>
                     </div>

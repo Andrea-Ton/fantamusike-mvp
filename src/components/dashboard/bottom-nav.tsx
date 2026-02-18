@@ -39,6 +39,7 @@ export default function BottomNav({ isAdmin }: { isAdmin?: boolean }) {
                     return (
                         <button
                             key={item.href}
+                            id={item.label === 'Talent Scout' ? 'tour-talent-scout-mobile' : undefined}
                             onClick={() => handleNavigation(item.href, item.label)}
                             className={`flex flex-col items-center gap-1.5 transition-all relative outline-none ${isActive ? 'text-white scale-110' : 'text-gray-500 hover:text-gray-300'
                                 }`}

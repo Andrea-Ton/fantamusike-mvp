@@ -62,6 +62,7 @@ export default function Sidebar({ avatarUrl, displayName, seasonName, isAdmin }:
                     return (
                         <Link
                             key={item.href}
+                            id={item.label === 'Talent Scout' ? 'tour-talent-scout-desktop' : undefined}
                             href={item.href}
                             onClick={() => sendGTMEvent({
                                 event: 'navigation_click',

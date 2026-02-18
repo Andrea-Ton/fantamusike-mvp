@@ -173,6 +173,7 @@ export default function ShareButton({
         if (variant === 'iconOnly') {
             return (
                 <button
+                    id="tour-share-button"
                     onClick={() => {
                         setError(null);
                         setShowModal(true);
@@ -202,6 +203,7 @@ export default function ShareButton({
         if (variant === 'primary') {
             return (
                 <button
+                    id="tour-share-button"
                     onClick={() => {
                         setError(null);
                         setShowModal(true);
@@ -217,6 +219,7 @@ export default function ShareButton({
 
         return (
             <button
+                id="tour-share-button"
                 onClick={() => {
                     setError(null);
                     setShowModal(true);

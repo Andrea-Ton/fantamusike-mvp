@@ -30,6 +30,7 @@ export default function DailyPromoFeature({
     return (
         <>
             <button
+                id="tour-promo-button"
                 onClick={() => setIsModalOpen(true)}
                 className={`group relative flex items-center justify-between w-full md:w-auto md:min-w-[240px] px-6 py-4 rounded-2xl font-black uppercase tracking-tighter italic transition-all shadow-xl hover:-translate-y-0.5 active:translate-y-0 overflow-hidden ${allActionsDone
                     ? 'bg-white/5 border border-green-500/50 text-green-400'

@@ -52,6 +52,7 @@ create table public.profiles (
   referral_code text unique,
   referred_by uuid references public.profiles(id),
   has_completed_onboarding boolean default false,
+  has_completed_tutorial boolean default false,
   has_used_free_label boolean default false,
   last_login_at timestamp with time zone,
   current_streak integer default 0,

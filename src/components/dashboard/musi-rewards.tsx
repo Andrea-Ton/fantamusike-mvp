@@ -191,7 +191,7 @@ export default function MusiRewards({ initialMissions }: MusiRewardsProps) {
     };
 
     return (
-        <section className="bg-white/5 rounded-[2.5rem] border border-white/5 p-6 relative overflow-hidden group">
+        <section id="tour-musirewards" className="bg-white/5 rounded-[2.5rem] border border-white/5 p-6 relative overflow-hidden group">
             {/* Background Glows */}
             <div className="absolute top-0 right-0 w-48 h-48 bg-yellow-500/[0.02] blur-[80px] -mr-24 -mt-24 transition-colors group-hover:bg-yellow-500/[0.04]"></div>
 
