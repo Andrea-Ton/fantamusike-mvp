@@ -500,3 +500,22 @@ USING (auth.uid() = user_id);
 CREATE POLICY "Users insert own transactions" 
 ON public.musicoin_transactions FOR INSERT 
 WITH CHECK (auth.uid() = user_id);
+
+-- 21. SYSTEM NOTIFICATIONS Table
+CREATE TABLE public.system_notifications (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    content TEXT NOT NULL DEFAULT '',
+    is_active BOOLEAN NOT NULL DEFAULT false,
+    style TEXT NOT NULL DEFAULT 'warning',
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.system_notifications ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "System notifications are viewable by everyone." ON public.system_notifications FOR SELECT USING ( true );
+CREATE POLICY "Admins can manage system notifications." ON public.system_notifications FOR ALL 
+  USING ( EXISTS ( SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true ) );
+
+-- Insert a default record if none exists
+INSERT INTO public.system_notifications (content, is_active)
+SELECT 'Manutenzione in corso, ci scusiamo per il disagio.', false
+WHERE NOT EXISTS (SELECT 1 FROM public.system_notifications LIMIT 1);

@@ -5,6 +5,8 @@ import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 
 import { getCurrentSeasonAction } from '@/app/actions/season';
+import { getSystemNotificationAction } from '@/app/actions/system';
+import NotificationBar from '@/components/dashboard/notification-bar';
 
 export default async function DashboardLayout({
     children,
@@ -33,6 +35,9 @@ export default async function DashboardLayout({
     const currentSeason = await getCurrentSeasonAction();
     const seasonName = currentSeason?.name || 'Season Zero';
 
+    // Fetch System Notification
+    const { data: notification } = await getSystemNotificationAction();
+
     return (
         <div className="flex min-h-screen bg-[#0b0b10] font-sans text-white">
             {/* Sidebar for Desktop */}
@@ -40,6 +45,10 @@ export default async function DashboardLayout({
 
             {/* Main Content Wrapper */}
             <div className="flex-1 flex flex-col md:ml-64 mb-20 md:mb-0 transition-all duration-300">
+                <NotificationBar
+                    message={notification?.content || ''}
+                    isActive={notification?.is_active || false}
+                />
                 {children}
             </div>
 

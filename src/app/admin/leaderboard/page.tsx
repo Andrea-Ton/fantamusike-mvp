@@ -14,8 +14,14 @@ import {
     ShieldCheck,
     AlertTriangle,
     RefreshCw,
-    Play
+    Play,
+    Megaphone,
+    Save
 } from 'lucide-react';
+import {
+    getSystemNotificationAction,
+    updateSystemNotificationAction
+} from '@/app/actions/system';
 import {
     triggerWeeklyLeaderboardAction,
     triggerDailyScoringAction,
@@ -25,6 +31,39 @@ import {
 export default function AdminLeaderboardPage() {
     const [processing, setProcessing] = useState<string | null>(null);
     const [logs, setLogs] = useState<string[]>([]);
+
+    // System Notification State
+    const [systemMsg, setSystemMsg] = useState('');
+    const [isSystemActive, setIsSystemActive] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+
+    React.useEffect(() => {
+        async function loadSettings() {
+            const res = await getSystemNotificationAction();
+            if (res.success && res.data) {
+                setSystemMsg(res.data.content);
+                setIsSystemActive(res.data.is_active);
+            }
+        }
+        loadSettings();
+    }, []);
+
+    const handleSaveSystem = async () => {
+        setIsSaving(true);
+        addLog('💾 [SYSTEM] Updating communication protocol...', 'info');
+        try {
+            const res = await updateSystemNotificationAction(systemMsg, isSystemActive);
+            if (res.success) {
+                addLog(`✅ [SUCCESS] ${res.message}`, 'success');
+            } else {
+                addLog(`❌ [ERROR] ${res.message}`, 'error');
+            }
+        } catch (err) {
+            addLog('❌ [FATAL] Error updating system communication', 'error');
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     const handleTrigger = async (type: 'scoring' | 'ranking' | 'snapshot') => {
         const labels = {
@@ -193,16 +232,62 @@ export default function AdminLeaderboardPage() {
                                 </motion.div>
                             ))}
 
-                            {/* Manual Alert/Status Card */}
-                            <div className="bg-white/[0.02] border border-white/5 rounded-[2rem] p-6 flex flex-col justify-center items-center text-center space-y-4 group">
-                                <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-500 border border-yellow-500/20 group-hover:scale-110 transition-transform">
-                                    <AlertTriangle size={20} />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Warning</p>
-                                    <p className="text-xs font-medium text-gray-400 leading-tight italic">
-                                        L'esecuzione manuale bypassa i controlli schedulati. Procedere con cautela.
-                                    </p>
+                        </div>
+
+                        {/* System Communication Section */}
+                        <div className="space-y-6 pt-8 border-t border-white/5">
+                            <div className="flex items-center gap-2">
+                                <Megaphone className="text-yellow-400" size={20} />
+                                <h2 className="text-xl font-bold text-white uppercase italic tracking-tighter">Comunicazione di Sistema</h2>
+                            </div>
+
+                            <div className="relative group p-8 rounded-[2rem] bg-white/[0.02] border border-white/10 backdrop-blur-xl overflow-hidden transition-all">
+                                <div className="relative z-10 space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+                                        <div className="md:col-span-8 space-y-2">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Messaggio Barra (Marquee)</label>
+                                            <input
+                                                type="text"
+                                                value={systemMsg}
+                                                onChange={(e) => setSystemMsg(e.target.value)}
+                                                placeholder="Esempio: Manutenzione programmata dalle 14:00 alle 16:00..."
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white focus:outline-none focus:border-yellow-500/50 transition-colors placeholder:text-gray-700"
+                                            />
+                                        </div>
+
+                                        <div className="md:col-span-2 space-y-2">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 text-center block">Status</label>
+                                            <button
+                                                onClick={() => setIsSystemActive(!isSystemActive)}
+                                                className={`w-full py-4 rounded-2xl border transition-all font-black uppercase text-[10px] tracking-widest ${isSystemActive
+                                                    ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-500 shadow-[0_0_20px_rgba(234,179,8,0.1)]'
+                                                    : 'bg-white/5 border-white/10 text-gray-500'
+                                                    }`}
+                                            >
+                                                {isSystemActive ? 'Active' : 'Disabled'}
+                                            </button>
+                                        </div>
+
+                                        <div className="md:col-span-2">
+                                            <button
+                                                onClick={handleSaveSystem}
+                                                disabled={isSaving}
+                                                className="w-full h-[58px] bg-white text-black rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] flex items-center justify-center gap-2 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] transition-all disabled:opacity-50"
+                                            >
+                                                {isSaving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+                                                {isSaving ? 'Updating' : 'Update'}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-4 px-4 py-3 bg-white/5 rounded-2xl border border-white/5">
+                                        <div className={`w-2 h-2 rounded-full ${isSystemActive ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                                        <p className="text-[10px] font-medium text-gray-400">
+                                            {isSystemActive
+                                                ? 'La barra è attualmente visibile a tutti gli utenti collegati.'
+                                                : 'La barra è nascosta. Gli utenti non vedranno alcun messaggio di sistema.'}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
