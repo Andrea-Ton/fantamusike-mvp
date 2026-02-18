@@ -24,6 +24,13 @@ export type LeaderboardEntry = {
     rank: number;
 };
 
+export type HallOfFameEntry = {
+    id: string;
+    username: string;
+    avatar_url: string;
+    wins_count: number;
+};
+
 export type LeaderboardResponse = {
     podium: LeaderboardEntry[];
     entries: LeaderboardEntry[];
@@ -168,6 +175,52 @@ export async function getLeaderboardAction(userId?: string, page: number = 1): P
         currentWeek,
         userRank
     };
+}
+
+export async function getHallOfFameAction(): Promise<HallOfFameEntry[]> {
+    const supabase = await createClient();
+
+    // Fetch users who achieved rank 1 at least once
+    // We group by user_id to count how many times they reached 1st place
+    const { data, error } = await supabase
+        .from('weekly_leaderboard_history')
+        .select(`
+            user_id,
+            profiles:user_id (
+                username,
+                avatar_url
+            )
+        `)
+        .eq('rank', 1);
+
+    if (error || !data) {
+        console.error('Error fetching Hall of Fame:', error);
+        return [];
+    }
+
+    // Count wins per user
+    const winsMap: Record<string, { username: string; avatar_url: string; wins_count: number }> = {};
+
+    data.forEach((entry: any) => {
+        const userId = entry.user_id;
+        const profile = entry.profiles;
+        if (!winsMap[userId]) {
+            winsMap[userId] = {
+                username: profile?.username || 'Unknown',
+                avatar_url: profile?.avatar_url || '',
+                wins_count: 0
+            };
+        }
+        winsMap[userId].wins_count += 1;
+    });
+
+    const winners = Object.entries(winsMap).map(([id, info]) => ({
+        id,
+        ...info
+    }));
+
+    // Sort by wins_count DESC
+    return winners.sort((a, b) => b.wins_count - a.wins_count);
 }
 
 export async function triggerWeeklyLeaderboardAction() {
