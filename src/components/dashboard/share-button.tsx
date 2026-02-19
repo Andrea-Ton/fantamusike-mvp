@@ -261,7 +261,7 @@ export default function ShareButton({
                                 <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                                     <div>
                                         <h3 className="text-xl font-black italic uppercase tracking-tighter text-white">Share Card</h3>
-                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Condividi la tua Label e mostra a tutti i tuoi risultati!</p>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Ottieni ogni settimana <span className="text-amber-400">40 Musicoin</span> extra condividendo la tua label sui social e taggando <span className="text-amber-400">FantaMusiké</span></p>
                                     </div>
                                     <button
                                         onClick={() => setShowModal(false)}

@@ -17,25 +17,41 @@ export default function SpotlightOverlay({ targetId, padding = 8 }: SpotlightOve
             return;
         }
 
+        let resizeObserver: ResizeObserver | null = null;
+
         const updateRect = () => {
             let effectiveTargetId = targetId;
-            if (effectiveTargetId === 'tour-talent-scout') {
-                effectiveTargetId = window.innerWidth < 768 ? 'tour-talent-scout-mobile' : 'tour-talent-scout-desktop';
-            }
 
             const element = document.getElementById(effectiveTargetId);
             if (element) {
-                setRect(element.getBoundingClientRect());
+                const newRect = element.getBoundingClientRect();
+                setRect(newRect);
+
+                // If we don't have an observer yet, create one for this element
+                if (!resizeObserver) {
+                    resizeObserver = new ResizeObserver(() => {
+                        setRect(element.getBoundingClientRect());
+                    });
+                    resizeObserver.observe(element);
+                }
             }
         };
 
         updateRect();
+
+        // Extra sync for the first 2 seconds to catch any late layout shifts/animations
+        const syncInterval = setInterval(updateRect, 100);
+        const syncTimeout = setTimeout(() => clearInterval(syncInterval), 2000);
+
         window.addEventListener('resize', updateRect);
         window.addEventListener('scroll', updateRect);
 
         return () => {
+            clearInterval(syncInterval);
+            clearTimeout(syncTimeout);
             window.removeEventListener('resize', updateRect);
             window.removeEventListener('scroll', updateRect);
+            if (resizeObserver) resizeObserver.disconnect();
         };
     }, [targetId]);
 

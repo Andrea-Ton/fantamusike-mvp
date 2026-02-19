@@ -32,46 +32,17 @@ const STEPS: Step[] = [
         targetId: 'tour-musirewards',
         title: 'MusiRewards',
         description: 'Accedi ogni giorno e fai attività nel FantaMusiké per ottenere MusiCoin.'
-    },
-    {
-        targetId: 'tour-talent-scout', // Logic in component will choose mobile/desktop
-        title: 'Talent Scout',
-        description: 'Nella sezione Talent Scout puoi cambiare la tua squadra di artisti.'
     }
 ];
 
 export default function FeatureTour({ onComplete }: { onComplete?: () => void }) {
     const [currentStep, setCurrentStep] = useState(0);
     const [isVisible, setIsVisible] = useState(true);
-    const [isReady, setIsReady] = useState(false);
 
     const step = STEPS[currentStep];
 
-    // 1. Wait for first element to be ready in DOM
     useEffect(() => {
-        if (!isVisible || isReady) return;
-
-        const checkElement = () => {
-            const firstStep = STEPS[0];
-            if (firstStep.targetId && document.getElementById(firstStep.targetId)) {
-                setIsReady(true);
-                return true;
-            }
-            return false;
-        };
-
-        if (checkElement()) return;
-
-        const interval = setInterval(() => {
-            if (checkElement()) clearInterval(interval);
-        }, 100);
-
-        return () => clearInterval(interval);
-    }, [isVisible, isReady]);
-
-    // 2. Manage Scroll Lock
-    useEffect(() => {
-        if (isVisible && isReady) {
+        if (isVisible) {
             document.body.style.overflow = 'hidden';
             document.body.style.touchAction = 'none'; // Extra safety for mobile
         } else {
@@ -83,16 +54,12 @@ export default function FeatureTour({ onComplete }: { onComplete?: () => void })
             document.body.style.overflow = '';
             document.body.style.touchAction = '';
         };
-    }, [isVisible, isReady]);
+    }, [isVisible]);
 
-    // 3. Scroll to target element
     useEffect(() => {
-        if (!isVisible || !isReady) return;
+        if (!isVisible) return;
 
         let effectiveTargetId = step.targetId;
-        if (effectiveTargetId === 'tour-talent-scout') {
-            effectiveTargetId = window.innerWidth < 768 ? 'tour-talent-scout-mobile' : 'tour-talent-scout-desktop';
-        }
 
         if (effectiveTargetId) {
             const element = document.getElementById(effectiveTargetId);
@@ -135,14 +102,10 @@ export default function FeatureTour({ onComplete }: { onComplete?: () => void })
         if (onComplete) onComplete();
     };
 
-    if (!isVisible || !isReady) return null;
+    if (!isVisible) return null;
 
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-        >
+        <>
             <SpotlightOverlay targetId={step.targetId} />
 
             <div className="fixed inset-x-0 bottom-0 z-[110] p-4 flex justify-center pointer-events-none">
@@ -221,6 +184,6 @@ export default function FeatureTour({ onComplete }: { onComplete?: () => void })
                     </motion.div>
                 </AnimatePresence>
             </div>
-        </motion.div >
+        </>
     );
 }
