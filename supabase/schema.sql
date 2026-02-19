@@ -295,9 +295,7 @@ create table public.weekly_leaderboard_history (
 );
 
 alter table public.weekly_leaderboard_history enable row level security;
-create policy "Users can view their own leaderboard history." on public.weekly_leaderboard_history for select using ( auth.uid() = user_id );
-create policy "Admins can view all leaderboard history." on public.weekly_leaderboard_history for select
-  using ( exists ( select 1 from public.profiles where id = auth.uid() and is_admin = true ) );
+create policy "Weekly leaderboard history is viewable by everyone." on public.weekly_leaderboard_history for select using ( true );
 
 create policy "Users can update their own leaderboard history." on public.weekly_leaderboard_history for update 
   using ( auth.uid() = user_id );

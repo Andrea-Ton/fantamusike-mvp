@@ -556,7 +556,10 @@ export default function TalentScoutPage() {
                 </div>
             )}
             {/* Mobile Header */}
-            <div className="md:hidden pt-12 px-6 flex justify-between items-center mb-4 bg-[#0a0a0e]/80 backdrop-blur-xl border-b border-white/5 pb-4 sticky top-0 z-30">
+            <div
+                className="md:hidden pt-12 px-6 flex justify-between items-center mb-4 bg-[#0a0a0e]/80 backdrop-blur-xl border-b border-white/5 pb-4 sticky z-30 transition-all duration-300"
+                style={{ top: 'var(--notification-height, 0px)' }}
+            >
                 <div className="flex items-center gap-3">
                     <div className="relative w-10 h-10 flex-shrink-0">
                         <Image
@@ -576,7 +579,6 @@ export default function TalentScoutPage() {
                                 </span>
                             )}
                         </div>
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{seasonName}</p>
                     </div>
                 </div>
                 <LogoutButton />
