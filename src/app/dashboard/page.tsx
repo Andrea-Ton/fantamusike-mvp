@@ -77,7 +77,7 @@ export default async function DashboardPage() {
                 username={profile?.username || 'Gamer'}
             />
 
-            {!profile?.has_completed_tutorial && (
+            {profile?.has_completed_onboarding && !profile?.has_completed_tutorial && (
                 <FeatureTour />
             )}
 
