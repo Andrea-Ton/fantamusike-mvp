@@ -138,6 +138,7 @@ export default async function DashboardPage() {
                             <StatsSection
                                 userId={user.id}
                                 userTeamPromise={userTeamPromise}
+                                leaderboardPromise={leaderboardPromise}
                                 totalScore={(profile?.total_score || 0) + (profile?.listen_score || 0)}
                             />
                         </Suspense>
