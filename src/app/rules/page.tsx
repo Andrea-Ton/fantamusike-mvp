@@ -100,7 +100,7 @@ export default function RulesPage() {
                                     <Target size={18} className="text-blue-400" />
                                     MusiBet
                                 </h3>
-                                <p className="text-sm text-gray-400 leading-relaxed">Sfida un rivale di mercato. Scommetti su chi otterrà la crescita migliore nelle prossime 24 ore.</p>
+                                <p className="text-sm text-gray-400 leading-relaxed">Sfida un rivale di mercato. Scegli chi otterrà la crescita migliore nelle prossime 24 ore.</p>
                             </div>
                             <div className="bg-white/5 border border-white/10 p-6 rounded-3xl relative overflow-hidden group">
                                 <h3 className="font-bold mb-2 flex items-center gap-2">

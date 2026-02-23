@@ -44,10 +44,7 @@ export default async function DashboardLayout({
             <Sidebar avatarUrl={avatarUrl} displayName={displayName} seasonName={seasonName} isAdmin={isAdmin} />
 
             {/* Main Content Wrapper */}
-            <div
-                className="flex-1 flex flex-col md:ml-64 mb-20 md:mb-0 transition-all duration-300"
-                style={{ '--notification-height': notification?.is_active ? '40px' : '0px' } as React.CSSProperties}
-            >
+            <div className="flex-1 flex flex-col md:ml-64 mb-20 md:mb-0 transition-all duration-300">
                 <NotificationBar
                     message={notification?.content || ''}
                     isActive={notification?.is_active || false}

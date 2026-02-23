@@ -518,3 +518,6 @@ CREATE POLICY "Admins can manage system notifications." ON public.system_notific
 INSERT INTO public.system_notifications (content, is_active)
 SELECT 'Manutenzione in corso, ci scusiamo per il disagio.', false
 WHERE NOT EXISTS (SELECT 1 FROM public.system_notifications LIMIT 1);
+
+-- Enable Realtime for system_notifications
+ALTER PUBLICATION supabase_realtime ADD TABLE public.system_notifications;
