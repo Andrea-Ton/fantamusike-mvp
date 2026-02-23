@@ -83,7 +83,7 @@ export default async function DashboardPage() {
 
             {/* Mobile Header - Shifted down if notification bar is active using CSS variable */}
             <div
-                className="md:hidden pt-12 px-6 flex justify-between items-center mb-4 bg-[#0a0a0e]/80 backdrop-blur-xl border-b border-white/5 pb-4 sticky z-30 transition-all duration-300"
+                className="md:hidden pt-4 px-6 flex justify-between items-center mb-4 bg-[#0a0a0e]/80 backdrop-blur-xl border-b border-white/5 pb-4 sticky z-30 transition-all duration-300"
                 style={{ top: 'var(--notification-height, 0px)' }}
             >
                 <div className="flex items-center gap-3">
