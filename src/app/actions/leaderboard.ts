@@ -119,23 +119,21 @@ export async function getLeaderboardAction(userId?: string, page: number = 1): P
     // 2. Fetch Podium (Top 3)
     const { data: podiumData } = await supabase
         .from('leaderboard_view')
-        .select('id, username, avatar_url, total_score, listen_score, combined_score')
-        .order('combined_score', { ascending: false })
-        .order('listen_score', { ascending: false })
+        .select('id, username, avatar_url, total_score, listen_score, combined_score, rank')
+        .order('rank', { ascending: true })
         .limit(3);
 
-    const podium = (podiumData || []).map((p, i) => ({ ...p, rank: i + 1 }));
+    const podium = podiumData || [];
 
     // 3. Fetch Paginated Entries
     const from = (page - 1) * pageSize;
     const { data: entriesData } = await supabase
         .from('leaderboard_view')
-        .select('id, username, avatar_url, total_score, listen_score, combined_score')
-        .order('combined_score', { ascending: false })
-        .order('listen_score', { ascending: false })
+        .select('id, username, avatar_url, total_score, listen_score, combined_score, rank')
+        .order('rank', { ascending: true })
         .range(from, from + pageSize - 1);
 
-    const entries = (entriesData || []).map((e, i) => ({ ...e, rank: from + i + 1 }));
+    const entries = entriesData || [];
 
     // NEW: Fetch current game week
     const { data: latestSnap } = await supabase
@@ -152,17 +150,12 @@ export async function getLeaderboardAction(userId?: string, page: number = 1): P
     if (userId) {
         const { data: userEntry } = await supabase
             .from('leaderboard_view')
-            .select('id, combined_score')
+            .select('rank')
             .eq('id', userId)
             .maybeSingle();
 
         if (userEntry) {
-            const { count: rankCount } = await supabase
-                .from('leaderboard_view')
-                .select('*', { count: 'exact', head: true })
-                .gt('combined_score', userEntry.combined_score);
-
-            userRank = (rankCount || 0) + 1;
+            userRank = userEntry.rank;
         }
     }
 

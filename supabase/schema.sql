@@ -418,11 +418,18 @@ begin
 end;
 $$ language plpgsql security definer;
 
--- 17. LEADERBOARD VIEW (Combined Score)
+-- 17. LEADERBOARD VIEW (Combined Score with Tie-breaking)
 CREATE OR REPLACE VIEW public.leaderboard_view AS
 SELECT 
     *,
-    (total_score + listen_score) as combined_score
+    (total_score + listen_score) as combined_score,
+    ROW_NUMBER() OVER (
+        ORDER BY 
+            (total_score + listen_score) DESC, 
+            total_score DESC, 
+            listen_score DESC, 
+            created_at ASC
+    ) as rank
 FROM public.profiles;
 
 -- 18. MYSTERY BOXES System

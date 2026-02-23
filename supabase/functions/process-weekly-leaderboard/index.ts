@@ -38,16 +38,20 @@ Deno.serve(async (_req: Request) => {
         console.log("Starting Weekly Leaderboard Processing...");
 
         // 1. Fetch Current Standing
-        // We order by (total_score + listen_score) DESC
-        const players = await fetchAll(supabaseClient, 'profiles', 'id, total_score, listen_score, musi_coins', (q: any) =>
+        const players = await fetchAll(supabaseClient, 'profiles', 'id, total_score, listen_score, musi_coins, created_at', (q: any) =>
             q.or('total_score.gt.0,listen_score.gt.0')
         );
 
-        // Calculate combined score and sort manually to be 100% sure
+        // Calculate combined score and sort manually to be 100% sure with tie-breaking
         const sortedPlayers = players
             .map(p => ({ ...p, combined_score: (p.total_score || 0) + (p.listen_score || 0) }))
             .filter(p => p.combined_score > 0)
-            .sort((a, b) => b.combined_score - a.combined_score || b.listen_score - a.listen_score);
+            .sort((a, b) =>
+                b.combined_score - a.combined_score ||
+                b.total_score - a.total_score ||
+                b.listen_score - a.listen_score ||
+                new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+            );
 
         console.log(`Processing ${sortedPlayers.length} active players...`);
 
