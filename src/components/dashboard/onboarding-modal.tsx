@@ -12,7 +12,7 @@ import { ARTIST_TIERS } from '@/config/game';
 import { searchArtistsAction } from '@/app/actions/spotify';
 import { saveTeamAction, TeamSlots } from '@/app/actions/team';
 import { completeOnboardingAction } from '@/app/actions/onboarding';
-import { updateProfileAction } from '@/app/actions/profile';
+import { updateProfileAction, checkUsernameAvailabilityAction } from '@/app/actions/profile';
 import { validateUsername } from '@/utils/validation';
 
 interface OnboardingModalProps {
@@ -23,7 +23,7 @@ interface OnboardingModalProps {
 
 type OnboardingStep =
     | 'manager_name'
-    | 'welcome'
+    | 'explain_fantamusike'
     | 'select_big'
     | 'select_mid'
     | 'select_newgen'
@@ -32,6 +32,20 @@ type OnboardingStep =
     | 'explain_rewards'
     | 'biglietto_futuro'
     | 'summary';
+
+// Helper to debounce internally since useDebounce might not be globally available
+function useLocalDebounce<T>(value: T, delay: number): T {
+    const [debouncedValue, setDebouncedValue] = useState<T>(value);
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedValue(value);
+        }, delay);
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [value, delay]);
+    return debouncedValue;
+}
 
 export default function OnboardingModal({ featuredArtists, curatedRoster, username }: OnboardingModalProps) {
     const [step, setStep] = useState<OnboardingStep>('manager_name');
@@ -52,11 +66,43 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
     const [activeTab, setActiveTab] = useState<'suggested' | 'featured' | 'search'>('suggested');
 
     const [managerName, setManagerName] = useState(username);
+    const debouncedManagerName = useLocalDebounce(managerName, 500);
     const [nameError, setNameError] = useState<string | null>(null);
+    const [isValidatingName, setIsValidatingName] = useState(false);
 
     // Steps configuration
-    const steps: OnboardingStep[] = ['manager_name', 'welcome', 'select_big', 'select_mid', 'select_newgen', 'select_captain', 'explain_promuovi', 'explain_rewards', 'biglietto_futuro', 'summary'];
+    const steps: OnboardingStep[] = ['manager_name', 'explain_fantamusike', 'select_big', 'select_mid', 'select_newgen', 'select_captain', 'explain_promuovi', 'explain_rewards', 'biglietto_futuro', 'summary'];
     const currentStepIndex = steps.indexOf(step);
+
+    useEffect(() => {
+        const checkName = async () => {
+            if (debouncedManagerName.length < 3) return;
+            // Also no need to check if it hasn't changed from original valid username
+            if (debouncedManagerName === username) {
+                setNameError(null);
+                return;
+            }
+
+            setIsValidatingName(true);
+            const val = validateUsername(debouncedManagerName);
+            if (!val.valid) {
+                setNameError(val.error || 'Nome non valido');
+                setIsValidatingName(false);
+                return;
+            }
+
+            const res = await checkUsernameAvailabilityAction(debouncedManagerName);
+            if (!res.available) {
+                setNameError(res.message || 'Nome non disponibile');
+            } else {
+                setNameError(null);
+            }
+            setIsValidatingName(false);
+        };
+
+        checkName();
+    }, [debouncedManagerName, username]);
+
 
     const nextStep = () => {
         if (currentStepIndex < steps.length - 1) {
@@ -119,7 +165,7 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
         setIsSaving(true);
         try {
             // 1. Update Profile Name if changed
-            if (managerName !== username) {
+            if (managerName !== username && !nameError) {
                 const formData = new FormData();
                 formData.append('username', managerName);
                 const nameRes = await updateProfileAction(formData);
@@ -173,9 +219,9 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
 
     const isStepComplete = useMemo(() => {
         if (step === 'manager_name') {
-            return managerName.length >= 3 && !nameError;
+            return managerName.length >= 3 && !nameError && !isValidatingName;
         }
-        if (step === 'welcome') return true;
+        if (step === 'explain_fantamusike') return true;
         if (step === 'select_big') return !!team.slot_1;
         if (step === 'select_mid') return !!team.slot_2 && !!team.slot_3;
         if (step === 'select_newgen') return !!team.slot_4 && !!team.slot_5;
@@ -185,7 +231,7 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
         if (step === 'biglietto_futuro') return true;
         if (step === 'summary') return true;
         return false;
-    }, [step, team, captainId, managerName, nameError]);
+    }, [step, team, captainId, managerName, nameError, isValidatingName]);
 
     const renderArtistCard = (artist: SpotifyArtist) => {
         const isSelected = Object.values(team).some(s => s?.id === artist.id);
@@ -298,29 +344,42 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
                                         disabled={!isStepComplete}
                                         className="w-full h-16 bg-white text-black font-black uppercase tracking-tighter italic rounded-2xl flex items-center justify-center gap-3 hover:scale-[1.02] transition-all shadow-[0_10px_30px_rgba(255,255,255,0.1)] disabled:opacity-50"
                                     >
-                                        Conferma Nome <ArrowRight size={20} />
+                                        {isValidatingName ? <><Loader2 className="animate-spin" size={20} /> Verifica...</> : <>Conferma Nome <ArrowRight size={20} /></>}
                                     </button>
                                 </div>
                             )}
 
-                            {/* STEP: WELCOME */}
-                            {step === 'welcome' && (
-                                <div className="text-center py-10">
-                                    <div className="w-20 h-20 bg-purple-500/20 rounded-[2rem] border border-purple-500/30 flex items-center justify-center mx-auto mb-8 shadow-inner">
+                            {/* STEP: EXPLAIN FANTAMUSIKE (MERGED WELCOME) */}
+                            {step === 'explain_fantamusike' && (
+                                <div className="text-center py-4 space-y-6">
+                                    <div className="w-20 h-20 bg-purple-500/20 rounded-[2rem] border border-purple-500/30 flex items-center justify-center mx-auto mb-6 shadow-inner relative">
                                         <Rocket className="text-purple-400" size={40} />
                                     </div>
                                     <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter mb-4 leading-none">
                                         Benvenuto,<br /><span className="text-purple-500">{managerName}</span>
                                     </h2>
-                                    <p className="text-gray-400 font-medium leading-relaxed max-w-xs mx-auto mb-8">
-                                        Stai per avviare la tua carriera da Manager. Crea la tua Etichetta Discografica, scala le classifiche e ottieni premi esclusivi.
-                                    </p>
-                                    <button
-                                        onClick={nextStep}
-                                        className="w-full h-16 bg-white text-black font-black uppercase tracking-tighter italic rounded-2xl flex items-center justify-center gap-3 hover:scale-[1.02] transition-all shadow-[0_10px_30px_rgba(255,255,255,0.1)]"
-                                    >
-                                        Iniziamo lo Scouting <ArrowRight size={20} />
-                                    </button>
+
+                                    <div className="space-y-3 text-left">
+                                        <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 flex gap-4 items-start">
+                                            <div className="w-8 h-8 rounded-xl bg-purple-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                <Star className="text-purple-500" size={16} />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-[12px] font-black text-white uppercase tracking-widest mb-1">Come si gioca</h4>
+                                                <p className="text-[12px] text-gray-400 font-medium leading-relaxed">Il FantaMusiké è il fantacalcio della musica. Ogni giorno i tuoi artisti guadagnano o perdono punti in base a: <span className="text-white font-bold">Hype</span>, <span className="text-white font-bold">Attività di stream e nei social</span>, e <span className="text-white font-bold">Nuove uscite</span>.</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 flex gap-4 items-start">
+                                            <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                <Zap className="text-blue-500" size={16} />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-[12px] font-black text-white uppercase tracking-widest mb-1">Classifica e punteggio si resettano ogni settimana</h4>
+                                                <p className="text-[12px] text-gray-400 font-medium leading-relaxed">Le modifiche alla tua squadra saranno attive dalla settimana successiva.</p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 
@@ -339,7 +398,7 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
                                             </span>
                                         </div>
                                         <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter leading-none mb-2">
-                                            {step === 'select_big' ? `Scegli il tuo ${ARTIST_TIERS.BIG.label}` :
+                                            {step === 'select_big' ? `Scegli la tua ${ARTIST_TIERS.BIG.label}` :
                                                 step === 'select_mid' ? `Scegli 2 ${ARTIST_TIERS.MID.label}` :
                                                     `Scegli 2 ${ARTIST_TIERS.NEW_GEN.label}`}
                                         </h3>
@@ -349,14 +408,12 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
                                                     `Talenti emergenti sotto i ${ARTIST_TIERS.NEW_GEN.max} di popolarità.`}
                                         </p>
 
-                                        {step === 'select_big' && (
-                                            <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex items-start gap-3">
-                                                <Star className="text-yellow-500 flex-shrink-0 mt-0.5" size={14} />
-                                                <p className="text-[10px] text-yellow-500/80 font-medium leading-tight">
-                                                    <span className="font-bold uppercase">Consiglio Pro:</span> Gli artisti <span className="text-yellow-500 font-bold uppercase tracking-tighter italic whitespace-nowrap">Featured (Icona 👑)</span> scelti come Capitano raddoppiano i punti (<span className="text-white font-black italic">x2.0</span>), mentre i capitani normali ottengono <span className="text-white font-black italic">x1.5</span>.
-                                                </p>
-                                            </div>
-                                        )}
+                                        <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex items-start gap-3">
+                                            <Star className="text-yellow-500 flex-shrink-0 mt-0.5" size={14} />
+                                            <p className="text-[10px] text-yellow-500/80 font-medium leading-tight">
+                                                <span className="font-bold uppercase">Consiglio Pro:</span> Gli artisti <span className="text-yellow-500 font-bold uppercase tracking-tighter italic whitespace-nowrap">Featured (Icona 👑)</span> scelti come Capitano raddoppiano i punti (<span className="text-white font-black italic">x2.0</span>), mentre i capitani normali ottengono <span className="text-white font-black italic">x1.5</span>.
+                                            </p>
+                                        </div>
                                     </div>
 
                                     {/* Selection Progress */}
@@ -436,7 +493,7 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
                                         <div className="flex items-center gap-2 mb-2">
                                             <Star className="text-yellow-500" size={16} />
                                             <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest leading-none">
-                                                Fase Finale: Leader della Label
+                                                Fase Finale: Scegli il tuo leader
                                             </span>
                                         </div>
                                         <p className="text-gray-500 text-xs font-medium">
@@ -495,17 +552,17 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
                                         </div>
                                     </div>
                                     <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter leading-none mb-4">
-                                        L'attività <span className="text-orange-500">premia!</span>
+                                        Utilizzo dei <span className="text-orange-500">Musicoin</span>
                                     </h3>
 
                                     <div className="space-y-4 text-left">
                                         <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 flex gap-4 items-center">
                                             <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center flex-shrink-0">
-                                                <Rocket className="text-orange-500" size={20} />
+                                                <Star className="text-orange-500" size={20} />
                                             </div>
                                             <div>
-                                                <h4 className="text-[12px] font-black text-white uppercase tracking-widest mb-1">Missioni giornaliere</h4>
-                                                <p className="text-[12px] text-gray-400 font-medium">Completa le missioni giornaliere per ogni artista e domina le classifiche settimanali.</p>
+                                                <h4 className="text-[12px] font-black text-white uppercase tracking-widest mb-1">1. Guadagnarli</h4>
+                                                <p className="text-[12px] text-gray-400 font-medium">Completando le MusiRewards, invitando amici, o condividendo la Share card sui social.</p>
                                             </div>
                                         </div>
 
@@ -514,8 +571,8 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
                                                 <Zap className="text-yellow-500" size={20} />
                                             </div>
                                             <div>
-                                                <h4 className="text-[12px] font-black text-white uppercase tracking-widest mb-1">MusiRewards</h4>
-                                                <p className="text-[12px] text-gray-400 font-medium">Sii costante! Più sei attivo e promuovi i tuoi talenti, più accumuli MusiCoin.</p>
+                                                <h4 className="text-[12px] font-black text-white uppercase tracking-widest mb-1">2. Spenderli</h4>
+                                                <p className="text-[12px] text-gray-400 font-medium">Usa i Musicoin per effettuare cambi artisti nella tua squadra o per acquistare mystery box esclusive.</p>
                                             </div>
                                         </div>
                                     </div>
@@ -541,8 +598,8 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
                                                 <Search className="text-purple-400" size={20} />
                                             </div>
                                             <div>
-                                                <h4 className="text-[12px] font-black text-white uppercase tracking-widest mb-1">MysteryBox Esclusive</h4>
-                                                <p className="text-[12px] text-gray-400 font-medium">Usa i tuoi MusiCoin nel MusiMarket: sblocca MysteryBox piene di sorprese uniche.</p>
+                                                <h4 className="text-[12px] font-black text-white uppercase tracking-widest mb-1">Mystery Box Esclusive</h4>
+                                                <p className="text-[12px] text-gray-400 font-medium">Usa i tuoi MusiCoin nel MusiMarket: sblocca Mystery Box piene di sorprese uniche.</p>
                                             </div>
                                         </div>
 
@@ -659,7 +716,7 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
                                             <span className="text-xl font-black text-yellow-500 italic">50 <span className="text-[10px] not-italic opacity-60">MusiCoin</span></span>
                                         </div>
                                         <p className="text-gray-400 text-xs leading-relaxed">
-                                            Ogni giorno guadagnerai punti in base alle performance dei tuoi artisti. Usa i MusiCoin per cambiare roster o puntare su nuovi talenti.
+                                            Ogni giorno guadagnerai punti in base alle performance dei tuoi artisti. Puoi usare i MusiCoin per cambiare artisti della tua squadra e prepararti per la prossima settimana.
                                         </p>
                                     </div>
 
@@ -678,7 +735,7 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
 
                 {/* Footer Controls */}
                 <div className="p-8 pt-4 flex gap-4 relative z-10">
-                    {currentStepIndex > 1 && currentStepIndex < steps.length - 1 && (
+                    {currentStepIndex > 0 && currentStepIndex < steps.length - 1 && (
                         <button
                             onClick={prevStep}
                             className="flex-1 h-14 bg-white/5 hover:bg-white/10 text-gray-400 rounded-2xl text-[11px] font-black uppercase tracking-widest border border-white/5 transition-all flex items-center justify-center gap-2"
@@ -686,7 +743,7 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
                             <ArrowLeft size={16} /> Back
                         </button>
                     )}
-                    {currentStepIndex > 1 && currentStepIndex < steps.length - 1 && (
+                    {currentStepIndex > 0 && currentStepIndex < steps.length - 1 && (
                         <button
                             onClick={nextStep}
                             disabled={!isStepComplete}
