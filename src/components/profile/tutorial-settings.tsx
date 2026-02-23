@@ -41,7 +41,7 @@ export default function TutorialSettings() {
                     <div className="max-w-md">
                         <h4 className="text-white font-black uppercase tracking-widest text-[11px] mb-2">Riavvia Tutorial</h4>
                         <p className="text-gray-500 text-sm font-medium">
-                            Vuoi rivedere la panoramica iniziale delle funzionalità? Clicca sul tasto a destra per riavviare il tour guidato.
+                            Vuoi rivedere la panoramica iniziale delle funzionalità? Clicca sul tasto dedicato per riavviare il tour guidato.
                         </p>
                     </div>
 
@@ -49,8 +49,8 @@ export default function TutorialSettings() {
                         onClick={handleReset}
                         disabled={isResetting || isSuccess}
                         className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black uppercase tracking-tighter italic transition-all shadow-xl hover:-translate-y-0.5 active:translate-y-0 min-w-[200px] justify-center ${isSuccess
-                                ? 'bg-green-500 text-white shadow-green-500/20'
-                                : 'bg-gradient-to-br from-purple-500 to-blue-600 text-white shadow-purple-500/20'
+                            ? 'bg-green-500 text-white shadow-green-500/20'
+                            : 'bg-gradient-to-br from-purple-500 to-blue-600 text-white shadow-purple-500/20'
                             }`}
                     >
                         {isResetting ? (

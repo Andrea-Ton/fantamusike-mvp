@@ -16,22 +16,27 @@ const STEPS: Step[] = [
     {
         targetId: 'tour-total-score',
         title: 'Punteggio Totale',
-        description: 'Questo è il punteggio della tua squadra, viene aggiornato ogni notte.'
+        description: 'Questo è il punteggio della tua squadra, viene aggiornato ogni notte. Si resetta ogni inizio settimana.'
     },
     {
         targetId: 'tour-promo-button',
         title: 'Promuovi Artista',
-        description: 'Completa ogni giorno le missioni promo per un artista a tua scelta per ottenere i punti promo.'
+        description: 'Completa ogni giorno le missioni promo per ottenere i punti Promo e scalare le classifiche!'
     },
     {
         targetId: 'tour-share-button',
         title: 'Condividi Label',
-        description: 'Condividi i tuoi traguardi sui social per ricevere MusiCoin extra.'
+        description: 'Condividi i tuoi traguardi sui social per ricevere MusiCoin extra e tagga quell’amico che ha fatto sicuramente peggio di te!'
     },
     {
         targetId: 'tour-musirewards',
         title: 'MusiRewards',
         description: 'Accedi ogni giorno e fai attività nel FantaMusiké per ottenere MusiCoin.'
+    },
+    {
+        targetId: 'nav-draft-mobile,nav-draft-desktop', // Support both mobile and desktop navs
+        title: 'Talentscout',
+        description: 'Qui puoi cambiare la tua squadra, ricordati che la nuova squadra avrà effetto dalla prossima settimana di FantaMusiké.'
     }
 ];
 
@@ -57,22 +62,31 @@ export default function FeatureTour({ onComplete }: { onComplete?: () => void })
     }, [isVisible]);
 
     useEffect(() => {
-        if (!isVisible) return;
+        if (!isVisible || !step.targetId) return;
 
-        let effectiveTargetId = step.targetId;
+        const ids = step.targetId.split(',');
+        let targetElement: HTMLElement | null = null;
 
-        if (effectiveTargetId) {
-            const element = document.getElementById(effectiveTargetId);
-            if (element) {
-                // Scroll to element but keep some space for the bottom bar
-                const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
-                const offsetPosition = elementPosition - (window.innerHeight / 3);
-
-                window.scrollTo({
-                    top: offsetPosition,
-                    behavior: 'smooth'
-                });
+        for (const id of ids) {
+            const el = document.getElementById(id.trim());
+            if (el) {
+                const rect = el.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0) {
+                    targetElement = el;
+                    break;
+                }
             }
+        }
+
+        if (targetElement) {
+            // Scroll to element but keep some space for the bottom bar
+            const elementPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
+            const offsetPosition = elementPosition - (window.innerHeight / 3);
+
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+            });
         }
     }, [currentStep, isVisible, step.targetId]);
 
@@ -170,7 +184,7 @@ export default function FeatureTour({ onComplete }: { onComplete?: () => void })
                             >
                                 {currentStep === STEPS.length - 1 ? (
                                     <>
-                                        <span>Fine</span>
+                                        <span>Ho Capito!</span>
                                         <Check size={18} />
                                     </>
                                 ) : (

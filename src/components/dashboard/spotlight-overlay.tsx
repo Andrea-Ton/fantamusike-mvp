@@ -20,9 +20,23 @@ export default function SpotlightOverlay({ targetId, padding = 8 }: SpotlightOve
         let resizeObserver: ResizeObserver | null = null;
 
         const updateRect = () => {
-            let effectiveTargetId = targetId;
+            if (!targetId) return;
 
-            const element = document.getElementById(effectiveTargetId);
+            const ids = targetId.split(',');
+            let element: HTMLElement | null = null;
+
+            for (const id of ids) {
+                const el = document.getElementById(id.trim());
+                if (el) {
+                    const r = el.getBoundingClientRect();
+                    // Check if element is visible
+                    if (r.width > 0 && r.height > 0) {
+                        element = el;
+                        break;
+                    }
+                }
+            }
+
             if (element) {
                 const newRect = element.getBoundingClientRect();
                 setRect(newRect);
