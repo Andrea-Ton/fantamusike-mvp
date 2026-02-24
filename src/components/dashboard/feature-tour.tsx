@@ -107,7 +107,7 @@ export default function FeatureTour({ onComplete }: { onComplete?: () => void })
 
             let offsetPercentage = isMobile ? 0.15 : 0.33;
             if (isMobile && currentStep === 0) {
-                offsetPercentage = 0.05;
+                offsetPercentage = 0.10;
             }
 
             const offsetPosition = elementPosition - (vh * offsetPercentage);
@@ -153,15 +153,15 @@ export default function FeatureTour({ onComplete }: { onComplete?: () => void })
         <>
             <SpotlightOverlay targetId={step.targetId} />
 
-            <div className={`fixed inset-x-0 ${cardPosition === 'top' ? 'top-0 pt-24 md:pt-10' : 'bottom-0 pb-20 md:pb-6'} z-[110] p-4 flex justify-center pointer-events-none`}>
+            <div className="fixed inset-0 z-[110] p-4 pointer-events-none">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={currentStep}
-                        initial={{ opacity: 0, y: cardPosition === 'top' ? -100 : 100 }}
+                        initial={{ opacity: 0, y: cardPosition === 'top' ? -50 : 50 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: cardPosition === 'top' ? -100 : 100 }}
+                        exit={{ opacity: 0, y: cardPosition === 'top' ? -50 : 50 }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="w-full max-w-[500px] bg-[#0a0a0f]/95 border border-white/10 rounded-[2.5rem] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] pointer-events-auto backdrop-blur-2xl will-change-transform"
+                        className={`w-full max-w-[500px] bg-[#0a0a0f]/95 border border-white/10 rounded-[2.5rem] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] pointer-events-auto backdrop-blur-2xl absolute left-1/2 -translate-x-1/2 ${cardPosition === 'top' ? 'top-24 md:top-10' : 'bottom-20 md:bottom-6'}`}
                         style={{ willChange: 'transform, opacity' }}
                     >
                         {/* Header */}
