@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, Activity, Users, LayoutDashboard, LogOut, Mail, Trophy } from 'lucide-react';
+import { Calendar, Activity, Users, LayoutDashboard, LogOut, Mail, Trophy, LineChart } from 'lucide-react';
 import Image from 'next/image';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -15,6 +15,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { name: 'Gestione Marketplace', href: '/admin/marketplace', icon: <LayoutDashboard size={20} /> },
         { name: 'Gestione Ordini', href: '/admin/orders', icon: <Activity size={20} /> },
         { name: 'Email Marketing', href: '/admin/email', icon: <Mail size={20} /> },
+        { name: 'Monitoraggio', href: '/admin/monitor', icon: <LineChart size={20} /> },
         //{ name: 'Season Management', href: '/admin/season', icon: <Calendar size={20} /> },
     ];
 
