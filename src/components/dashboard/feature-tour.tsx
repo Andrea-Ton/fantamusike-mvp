@@ -92,14 +92,26 @@ export default function FeatureTour({ onComplete }: { onComplete?: () => void })
                 const vh = window.innerHeight;
 
                 // Determine if card should be at top or bottom
-                // If element is in the bottom half of the screen, move card to top
-                const isSlowlyInBottom = rect.top > vh * 0.5;
-                setCardPosition(isSlowlyInBottom ? 'top' : 'bottom');
+                if (isMobile) {
+                    // On mobile, force bottom for top elements and top for bottom elements
+                    // Step index 0, 1, 2 are in the top/middle area -> Tooltip Bottom
+                    // Step index 3, 4 are stickers/nav items at the bottom -> Tooltip Top
+                    setCardPosition(currentStep <= 2 ? 'bottom' : 'top');
+                } else {
+                    // Desktop: auto-calculate based on position
+                    const isSlowlyInBottom = rect.top > vh * 0.5;
+                    setCardPosition(isSlowlyInBottom ? 'top' : 'bottom');
+                }
 
                 // Scroll logic
                 const elementPosition = rect.top + window.pageYOffset;
-                // On mobile we use a smaller offset (15%) to keep elements higher
-                const offsetPercentage = isMobile ? 0.15 : 0.33;
+
+                // Specific offset for the score feature to keep it very high on mobile
+                let offsetPercentage = isMobile ? 0.15 : 0.33;
+                if (isMobile && currentStep === 0) {
+                    offsetPercentage = 0.05; // Move "Punteggio Totale" almost to the top
+                }
+
                 const offsetPosition = elementPosition - (vh * offsetPercentage);
 
                 window.scrollTo({
