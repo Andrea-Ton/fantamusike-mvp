@@ -43,10 +43,16 @@ const STEPS: Step[] = [
 export default function FeatureTour({ onComplete }: { onComplete?: () => void }) {
     const [currentStep, setCurrentStep] = useState(0);
     const [isVisible, setIsVisible] = useState(true);
+    const [cardPosition, setCardPosition] = useState<'top' | 'bottom'>('bottom');
+    const [isMobile, setIsMobile] = useState(false);
 
     const step = STEPS[currentStep];
 
     useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+
         if (isVisible) {
             document.body.style.overflow = 'hidden';
             document.body.style.touchAction = 'none'; // Extra safety for mobile
@@ -56,6 +62,7 @@ export default function FeatureTour({ onComplete }: { onComplete?: () => void })
         }
 
         return () => {
+            window.removeEventListener('resize', checkMobile);
             document.body.style.overflow = '';
             document.body.style.touchAction = '';
         };
@@ -64,31 +71,46 @@ export default function FeatureTour({ onComplete }: { onComplete?: () => void })
     useEffect(() => {
         if (!isVisible || !step.targetId) return;
 
-        const ids = step.targetId.split(',');
-        let targetElement: HTMLElement | null = null;
+        // Small delay to ensure layout is stable
+        const timer = setTimeout(() => {
+            const ids = step.targetId!.split(',');
+            let targetElement: HTMLElement | null = null;
 
-        for (const id of ids) {
-            const el = document.getElementById(id.trim());
-            if (el) {
-                const rect = el.getBoundingClientRect();
-                if (rect.width > 0 && rect.height > 0) {
-                    targetElement = el;
-                    break;
+            for (const id of ids) {
+                const el = document.getElementById(id.trim());
+                if (el) {
+                    const rect = el.getBoundingClientRect();
+                    if (rect.width > 0 && rect.height > 0) {
+                        targetElement = el;
+                        break;
+                    }
                 }
             }
-        }
 
-        if (targetElement) {
-            // Scroll to element but keep some space for the bottom bar
-            const elementPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
-            const offsetPosition = elementPosition - (window.innerHeight / 3);
+            if (targetElement) {
+                const rect = targetElement.getBoundingClientRect();
+                const vh = window.innerHeight;
 
-            window.scrollTo({
-                top: offsetPosition,
-                behavior: 'smooth'
-            });
-        }
-    }, [currentStep, isVisible, step.targetId]);
+                // Determine if card should be at top or bottom
+                // If element is in the bottom half of the screen, move card to top
+                const isSlowlyInBottom = rect.top > vh * 0.5;
+                setCardPosition(isSlowlyInBottom ? 'top' : 'bottom');
+
+                // Scroll logic
+                const elementPosition = rect.top + window.pageYOffset;
+                // On mobile we use a smaller offset (15%) to keep elements higher
+                const offsetPercentage = isMobile ? 0.15 : 0.33;
+                const offsetPosition = elementPosition - (vh * offsetPercentage);
+
+                window.scrollTo({
+                    top: offsetPosition,
+                    behavior: 'smooth'
+                });
+            }
+        }, 100);
+
+        return () => clearTimeout(timer);
+    }, [currentStep, isVisible, step.targetId, isMobile]);
 
     const handleNext = () => {
         if (currentStep < STEPS.length - 1) {
@@ -122,16 +144,15 @@ export default function FeatureTour({ onComplete }: { onComplete?: () => void })
         <>
             <SpotlightOverlay targetId={step.targetId} />
 
-            <div className="fixed inset-x-0 bottom-0 z-[110] p-4 flex justify-center pointer-events-none">
+            <div className={`fixed inset-x-0 ${cardPosition === 'top' ? 'top-0 pt-24 md:pt-10' : 'bottom-0 pb-20 md:pb-6'} z-[110] p-4 flex justify-center pointer-events-none transition-all duration-500`}>
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={currentStep}
-                        initial={{ opacity: 0, y: 100 }}
+                        initial={{ opacity: 0, y: cardPosition === 'top' ? -100 : 100 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 100 }}
+                        exit={{ opacity: 0, y: cardPosition === 'top' ? -100 : 100 }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        // mb-20 to stay above common bottom nav height on mobile
-                        className="w-full max-w-[500px] bg-[#0a0a0f]/90 border border-white/10 rounded-[2.5rem] p-6 shadow-[0_-10px_50px_rgba(0,0,0,0.5)] pointer-events-auto backdrop-blur-2xl mb-20 md:mb-6"
+                        className="w-full max-w-[500px] bg-[#0a0a0f]/95 border border-white/10 rounded-[2.5rem] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] pointer-events-auto backdrop-blur-2xl"
                     >
                         {/* Header */}
                         <div className="flex justify-between items-start mb-4">
