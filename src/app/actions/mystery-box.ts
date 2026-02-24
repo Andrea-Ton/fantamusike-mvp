@@ -17,7 +17,25 @@ export async function getMysteryBoxesAction() {
         return { success: false, message: 'Errore durante il recupero delle MysteryBox' };
     }
 
-    return { success: true, data };
+    // Custom sorting: FREE boxes first, then paid boxes in descending order of price
+    const sortedData = data ? [...data].sort((a, b) => {
+        const priceA = a.price_musicoins || 0;
+        const priceB = b.price_musicoins || 0;
+
+        // 1. FREE (0 coins) sempre per primi
+        if (priceA === 0 && priceB !== 0) return -1;
+        if (priceB === 0 && priceA !== 0) return 1;
+
+        // 2. Tra quelli a pagamento (o entrambi free), ordina per prezzo decrescente
+        if (priceA !== priceB) {
+            return priceB - priceA;
+        }
+
+        // 3. A parità di prezzo, mantiene l'ordine temporale (più recenti prima)
+        return 0;
+    }) : [];
+
+    return { success: true, data: sortedData };
 }
 
 export async function adminGetAllMysteryBoxesAction() {

@@ -16,6 +16,7 @@ interface ShareButtonProps {
     weekNumber: number;
     seasonName?: string;
     percentile?: string;
+    hallOfFameWins?: number;
     variant?: 'default' | 'iconOnly' | 'primary';
 }
 
@@ -28,6 +29,7 @@ export default function ShareButton({
     weekNumber,
     seasonName = 'Season 1',
     percentile,
+    hallOfFameWins,
     variant = 'default'
 }: ShareButtonProps) {
     const [showModal, setShowModal] = useState(false);
@@ -67,6 +69,7 @@ export default function ShareButton({
                 rank: rank.toString(),
                 seasonName,
                 percentile,
+                hallOfFameWins,
                 roster: []
             };
 
@@ -125,7 +128,7 @@ export default function ShareButton({
             }, 1000);
             return () => clearTimeout(timer);
         }
-    }, [username, totalScore, rank, captain, roster, weekNumber, seasonName, percentile]);
+    }, [username, totalScore, rank, captain, roster, weekNumber, seasonName, percentile, hallOfFameWins]);
 
     // Cleanup object URL
     useEffect(() => {
@@ -283,6 +286,7 @@ export default function ShareButton({
                                                 roster={roster}
                                                 weekNumber={weekNumber}
                                                 percentile={percentile}
+                                                hallOfFameWins={hallOfFameWins}
                                             />
                                         </div>
 

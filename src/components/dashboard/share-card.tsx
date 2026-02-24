@@ -9,6 +9,7 @@ interface ShareCardProps {
     roster: (SpotifyArtist | null)[];
     weekNumber: number;
     percentile?: string;
+    hallOfFameWins?: number;
 }
 
 export default function ShareCard({
@@ -18,7 +19,8 @@ export default function ShareCard({
     captain,
     roster,
     weekNumber,
-    percentile
+    percentile,
+    hallOfFameWins
 }: ShareCardProps) {
     // The roster contains all 5 artists, we need to filter out the captain and nulls for the grid
     // Actually, it's easier if we pass them explicitly or filter here.
@@ -133,9 +135,23 @@ export default function ShareCard({
                 })}
             </div>
 
+            {/* Golden Badge for Hall of Fame (Moved for perfect centering) */}
+            {hallOfFameWins && hallOfFameWins > 0 ? (
+                <div className="flex justify-center w-full -mb-8 z-30 relative">
+                    <div className="flex items-center gap-3 bg-amber-500 px-10 py-3 rounded-full border-[4px] border-[#050507] shadow-2xl">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                            <path d="m2 4 3 12h14l3-12-6 7-4-11-4 11-6-7z" />
+                            <path d="M5 20h14" />
+                        </svg>
+                        <span className="text-white font-black uppercase tracking-widest text-[22px] italic">HALL OF FAME | {hallOfFameWins}</span>
+                    </div>
+                </div>
+            ) : null}
+
             {/* Manager Name Hero Section */}
-            <div className="w-[920px] bg-purple-500/15 border border-purple-500/30 py-10 px-20 rounded-[2.5rem] mb-10 z-20 overflow-hidden flex flex-col items-center justify-center text-center">
-                <p className="text-xl text-gray-500 font-black uppercase tracking-widest mb-2">Manager</p>
+            <div className="w-[920px] bg-purple-500/15 border border-purple-500/30 pt-10 pb-8 px-20 rounded-[2.5rem] mb-10 z-20 overflow-visible flex flex-col items-center justify-center text-center relative mt-0">
+
+                <p className="text-xl text-gray-400 font-black uppercase tracking-widest mb-2 mt-4">Manager</p>
                 <h3
                     className="font-black italic tracking-tighter uppercase text-white leading-tight"
                     style={{

@@ -25,6 +25,7 @@ interface RosterSectionProps {
     seasonName: string;
     leaderboardPromise: Promise<LeaderboardResponse>;
     weekNumber: number;
+    hallOfFameWins?: number;
 }
 
 export default async function RosterSection({
@@ -36,7 +37,8 @@ export default async function RosterSection({
     totalScore,
     seasonName,
     leaderboardPromise,
-    weekNumber
+    weekNumber,
+    hallOfFameWins
 }: RosterSectionProps) {
     const [userTeam, leaderboard] = await Promise.all([
         userTeamPromise,
@@ -266,6 +268,7 @@ export default async function RosterSection({
                                     weekNumber={weekNumber}
                                     seasonName={seasonName}
                                     percentile={percentile}
+                                    hallOfFameWins={hallOfFameWins}
                                     variant="iconOnly"
                                 />
                             </div>

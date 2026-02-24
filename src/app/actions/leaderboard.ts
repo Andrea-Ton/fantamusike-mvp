@@ -12,6 +12,7 @@ export type WeeklyRecap = {
     reward_musicoins: number;
     team?: UserTeamResponse;
     percentile?: string;
+    hallOfFameWins?: number;
 };
 
 export type LeaderboardEntry = {
@@ -78,10 +79,17 @@ export async function getUnseenWeeklyRecapAction(): Promise<WeeklyRecap | null> 
         }
     }
 
+    const { count: hallOfFameWins } = await supabase
+        .from('weekly_leaderboard_history')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('rank', 1);
+
     return {
         ...(data as WeeklyRecap),
         team: team || undefined,
-        percentile: percentile
+        percentile: percentile,
+        hallOfFameWins: hallOfFameWins || 0
     };
 }
 

@@ -37,7 +37,7 @@ export default function DailyPromoFeature({
             >
                 {/* 3D Base layer */}
                 <div className={`absolute inset-0 rounded-2xl transition-colors ${allActionsDone
-                    ? 'bg-green-800'
+                    ? 'bg-emerald-950'
                     : isLocked
                         ? 'bg-blue-900'
                         : 'bg-orange-800'
@@ -45,7 +45,7 @@ export default function DailyPromoFeature({
 
                 {/* Front Clickable Layer */}
                 <div className={`relative flex items-center justify-between w-full h-full px-6 py-4 rounded-2xl font-black uppercase tracking-tighter italic transition-transform -translate-y-[6px] active:translate-y-0 border ${allActionsDone
-                    ? 'bg-white/10 backdrop-blur-sm text-green-400 border-white/10'
+                    ? 'bg-emerald-500/10 backdrop-blur-md text-emerald-400 border-emerald-500/20'
                     : isLocked
                         ? 'bg-gradient-to-br from-purple-500 to-blue-600 text-white border-blue-400/50'
                         : 'bg-gradient-to-br from-orange-400 to-orange-500 text-white border-orange-300/50 group-hover:from-orange-400 group-hover:to-orange-400'
@@ -70,8 +70,8 @@ export default function DailyPromoFeature({
 
                     {allActionsDone && (
                         //TODO: Hidden for now
-                        <div className="hidden ml-4 p-1.5 bg-green-500/20 rounded-lg border border-green-500/20 relative z-10">
-                            <Sparkles size={12} className="text-green-400" />
+                        <div className="hidden ml-4 p-1.5 bg-emerald-500/20 rounded-lg border border-emerald-500/20 relative z-10">
+                            <Sparkles size={12} className="text-emerald-400" />
                         </div>
                     )}
                 </div>

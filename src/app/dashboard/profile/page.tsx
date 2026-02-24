@@ -112,8 +112,13 @@ export default async function ProfilePage() {
                         <BadgeSection userId={user.id} />
                     </div>
 
+
                     {/* Right Column: Settings Forms */}
                     <div className="lg:col-span-8 xl:col-span-9 space-y-8">
+
+                        {/* Tutorial Settings */}
+                        <TutorialSettings />
+
                         {/* General Settings */}
                         <div className="bg-white/[0.03] border border-white/10 rounded-[2.5rem] p-8 md:p-10 backdrop-blur-3xl shadow-2xl relative overflow-hidden">
                             <div className="relative z-10">
@@ -133,9 +138,6 @@ export default async function ProfilePage() {
                                 />
                             </div>
                         </div>
-
-                        {/* Tutorial Settings */}
-                        <TutorialSettings />
 
                         {/* Danger Zone */}
                         <DeleteAccount />

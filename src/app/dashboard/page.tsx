@@ -42,7 +42,8 @@ export default async function DashboardPage() {
         pendingBet,
         dailyPromoState,
         featured: featuredArtists,
-        referralCount
+        referralCount,
+        hallOfFameWins
     } = metadata;
 
     const musiCoins = profile?.musi_coins || 0;
@@ -157,6 +158,7 @@ export default async function DashboardPage() {
                                 seasonName={season?.name || 'Season 1'}
                                 weekNumber={currentWeek}
                                 leaderboardPromise={leaderboardPromise}
+                                hallOfFameWins={hallOfFameWins}
                             />
                         </Suspense>
                     </div>
