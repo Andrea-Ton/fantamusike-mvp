@@ -428,7 +428,8 @@ SELECT
             (total_score + listen_score) DESC, 
             total_score DESC, 
             listen_score DESC, 
-            created_at ASC
+            created_at ASC,
+            id ASC
     ) as rank
 FROM public.profiles;
 

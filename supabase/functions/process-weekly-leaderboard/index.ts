@@ -50,7 +50,8 @@ Deno.serve(async (_req: Request) => {
                 b.combined_score - a.combined_score ||
                 b.total_score - a.total_score ||
                 b.listen_score - a.listen_score ||
-                new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                new Date(a.created_at).getTime() - new Date(b.created_at).getTime() ||
+                a.id.localeCompare(b.id)
             );
 
         console.log(`Processing ${sortedPlayers.length} active players...`);
