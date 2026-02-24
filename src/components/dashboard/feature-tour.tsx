@@ -29,7 +29,7 @@ const STEPS: Step[] = [
         description: 'Condividi i tuoi traguardi sui social per ricevere MusiCoin extra e tagga quell’amico che ha fatto sicuramente peggio di te!'
     },
     {
-        targetId: 'tour-musirewards',
+        targetId: 'tour-musirewards-mobile,tour-musirewards-desktop',
         title: 'MusiRewards',
         description: 'Accedi ogni giorno e fai attività nel FantaMusiké per ottenere MusiCoin.'
     },

@@ -38,10 +38,73 @@ export default async function DashboardLayout({
     // Fetch System Notification
     const { data: notification } = await getSystemNotificationAction();
 
+    // Ping Calculations
+    // 1. Talent Scout Ping (If < 3 days to reset. Leaderboard resets Monday. Fri/Sat/Sun = day 5/6/0)
+    const currentUtcDay = new Date().getUTCDay();
+    const pingTalentScout = currentUtcDay === 5 || currentUtcDay === 6 || currentUtcDay === 0;
+
+    // 2. MusiMarket Ping (Advanced checkout - Only ping if AT LEAST ONE box is truly purchasable)
+    let pingMusiMarket = false;
+
+    const { data: activeBoxes } = await supabase
+        .from('mystery_boxes')
+        .select('id, price_musicoins, available_copies, max_copies_per_user, target_user_goal')
+        .eq('is_active', true);
+
+    if (activeBoxes && activeBoxes.length > 0) {
+        // Fetch user orders
+        const { data: userOrders } = await supabase
+            .from('mystery_box_orders')
+            .select('box_id')
+            .eq('user_id', user.id);
+
+        const orderCounts: Record<string, number> = {};
+        if (userOrders) {
+            userOrders.forEach(o => {
+                orderCounts[o.box_id] = (orderCounts[o.box_id] || 0) + 1;
+            });
+        }
+
+        // Fetch total users if any box needs it
+        let totalUsers = 0;
+        const needsUserCount = activeBoxes.some(b => b.target_user_goal !== null);
+        if (needsUserCount) {
+            const { count } = await supabase
+                .from('profiles')
+                .select('*', { count: 'exact', head: true });
+            totalUsers = count || 0;
+        }
+
+        const userCoins = profile?.musi_coins || 0;
+
+        pingMusiMarket = activeBoxes.some(box => {
+            // Price Check
+            if (userCoins < box.price_musicoins) return false;
+
+            // Stock Check
+            if (box.available_copies !== null && box.available_copies <= 0) return false;
+
+            // Per-User Limit Check
+            if (box.max_copies_per_user !== null && (orderCounts[box.id] || 0) >= box.max_copies_per_user) return false;
+
+            // Community Goal Check
+            if (box.target_user_goal !== null && totalUsers < box.target_user_goal) return false;
+
+            return true;
+        });
+    }
+
     return (
         <div className="flex min-h-screen bg-[#0b0b10] font-sans text-white">
             {/* Sidebar for Desktop */}
-            <Sidebar avatarUrl={avatarUrl} displayName={displayName} seasonName={seasonName} isAdmin={isAdmin} />
+            <Sidebar
+                avatarUrl={avatarUrl}
+                displayName={displayName}
+                seasonName={seasonName}
+                isAdmin={isAdmin}
+                pingTalentScout={pingTalentScout}
+                pingMusiMarket={pingMusiMarket}
+            />
 
             {/* Main Content Wrapper */}
             <div className="flex-1 flex flex-col md:ml-64 mb-20 md:mb-0 transition-all duration-300">
@@ -53,7 +116,11 @@ export default async function DashboardLayout({
             </div>
 
             {/* Bottom Nav for Mobile */}
-            <BottomNav isAdmin={isAdmin} />
+            <BottomNav
+                isAdmin={isAdmin}
+                pingTalentScout={pingTalentScout}
+                pingMusiMarket={pingMusiMarket}
+            />
         </div>
     );
 }

@@ -178,23 +178,12 @@ export default function ShareButton({
                         setError(null);
                         setShowModal(true);
                     }}
-                    className="relative p-2.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 rounded-xl transition-all group overflow-hidden"
+                    className="relative group outline-none mt-[6px] block"
                     title="Condividi Label"
                 >
-                    <motion.div
-                        animate={{
-                            scale: [1, 1.2, 1],
-                            opacity: [0.2, 0.4, 0.2]
-                        }}
-                        transition={{
-                            repeat: Infinity,
-                            duration: 2,
-                            ease: "easeInOut"
-                        }}
-                        className="absolute inset-0 bg-purple-500 blur-md pointer-events-none"
-                    />
-                    <div className="relative z-10">
-                        <Share2 size={16} className="text-purple-300 group-hover:scale-110 transition-transform" />
+                    <div className="absolute inset-0 bg-purple-900 rounded-xl"></div>
+                    <div className="relative p-2.5 bg-gradient-to-br from-purple-500 to-purple-600 border border-purple-400/50 rounded-xl flex items-center justify-center group-hover:from-purple-500 group-hover:to-purple-500 -translate-y-[6px] active:translate-y-0 transition-transform overflow-hidden">
+                        <Share2 size={18} className="text-white group-hover:scale-110 transition-all relative z-10" />
                     </div>
                 </button>
             );
@@ -224,12 +213,13 @@ export default function ShareButton({
                     setError(null);
                     setShowModal(true);
                 }}
-                className="px-6 py-3 bg-white/5 border border-white/10 backdrop-blur-md rounded-2xl text-white text-sm font-black uppercase tracking-tighter italic hover:bg-white/10 hover:border-purple-500/50 transition-all shadow-inner flex items-center gap-3 overflow-hidden group h-full"
+                className="group/share relative outline-none mt-[6px] w-full h-full block"
             >
-                <div className="relative">
-                    <Share2 size={18} className="text-purple-400 group-hover:rotate-12 transition-transform" />
+                <div className="absolute inset-0 bg-purple-900 rounded-2xl"></div>
+                <div className="relative px-6 py-3 bg-gradient-to-br from-purple-500 to-purple-600 border border-purple-400/50 rounded-2xl text-white text-sm font-black uppercase tracking-tighter italic group-hover/share:from-purple-500 group-hover/share:to-purple-500 transition-transform flex items-center justify-center gap-3 -translate-y-[6px] active:translate-y-0 w-full h-full">
+                    <Share2 size={18} className="text-white group-hover/share:rotate-12 transition-transform" />
+                    <span>Condividi&nbsp;Label</span>
                 </div>
-                <span>Condividi&nbsp;Label</span>
             </button>
         );
     };

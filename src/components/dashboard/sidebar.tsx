@@ -8,6 +8,7 @@ import { sendGTMEvent } from '@next/third-parties/google';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
+import { NotificationPing } from '@/components/ui/notification-ping';
 
 const NAV_ITEMS = [
     { href: '/dashboard', label: 'Dashboard', icon: Home },
@@ -21,9 +22,11 @@ interface SidebarProps {
     displayName?: string;
     seasonName?: string;
     isAdmin?: boolean;
+    pingTalentScout?: boolean;
+    pingMusiMarket?: boolean;
 }
 
-export default function Sidebar({ avatarUrl, displayName, seasonName, isAdmin }: SidebarProps) {
+export default function Sidebar({ avatarUrl, displayName, seasonName, isAdmin, pingTalentScout = false, pingMusiMarket = false }: SidebarProps) {
     const pathname = usePathname();
     const router = useRouter();
     const supabase = createClient();
@@ -59,6 +62,8 @@ export default function Sidebar({ avatarUrl, displayName, seasonName, isAdmin }:
                 <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] px-4 mb-3">Menu</p>
                 {NAV_ITEMS.map((item) => {
                     const isActive = pathname === item.href;
+                    const showPing = (item.href === '/dashboard/draft' && pingTalentScout) ||
+                        (item.href === '/dashboard/marketplace' && pingMusiMarket);
                     return (
                         <Link
                             key={item.href}
@@ -81,6 +86,9 @@ export default function Sidebar({ avatarUrl, displayName, seasonName, isAdmin }:
                             )}
                             <item.icon size={18} className={`${isActive ? 'text-purple-400' : 'group-hover:text-gray-300'} transition-colors`} />
                             <span className="font-black uppercase tracking-widest text-[11px]">{item.label}</span>
+                            {showPing && (
+                                <NotificationPing className="right-4 top-1/2 -translate-y-1/2" />
+                            )}
                         </Link>
                     );
                 })}
