@@ -16,35 +16,45 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://fanta.musike.fm"),
   title: {
-    default: "FantaMusiké - Dimostra di essere il miglior Talent Scout della scena musicale!",
+    default: "FantaMusiké - Il Fantasy Game della musica",
     template: "%s | FantaMusiké",
   },
-  description: "Crea la tua squadra, scala le classifiche e ottieni le prime MysteryBox della musica italiana!",
+  description: "Scova talenti, crea la tua etichetta musicale e scala la classifica. Entra nel gioco che sta rivoluzionando la musica!",
   keywords: ["fantamusica", "musica italiana", "talent scout", "gaming", "scommesse musicali", "mysterybox", "fantasanremo", "sanremo"],
   authors: [{ name: "MusiKé" }],
+  other: {
+    "thumbnail": "https://fanta.musike.fm/landing_boxes.png",
+  },
   openGraph: {
-    title: "FantaMusiké - Dimostra di essere il miglior Talent Scout della scena musicale!",
-    description: "Crea la tua squadra e scala le classifiche.",
+    title: "FantaMusiké - Il Fantasy Game della musica",
+    description: "Scova talenti, crea la tua etichetta musicale e scala la classifica. Entra nel gioco che sta rivoluzionando la musica!",
     url: "https://fanta.musike.fm",
     siteName: "FantaMusiké",
     locale: "it_IT",
     type: "website",
     images: [
       {
-        url: "/landing_boxes.png", // Or a dedicated OG image if available
+        url: "/landing_boxes.png",
         width: 1200,
         height: 630,
         alt: "FantaMusiké Preview",
+      },
+      {
+        url: "/logo.png",
+        width: 800,
+        height: 800,
+        alt: "FantaMusiké Logo",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
     title: "FantaMusiké",
-    description: "Crea la tua squadra e scala le classifiche.",
+    description: "Crea la tua etichetta, scova talenti e scala la classifica.",
     images: ["/landing_boxes.png"],
   },
   icons: {
+    icon: "/logo.png",
     apple: "/ios-icon.png",
   },
   alternates: {
@@ -64,6 +74,22 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://Schema.org",
+              "@type": "WebSite",
+              "name": "FantaMusiké",
+              "url": "https://fanta.musike.fm",
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": "https://fanta.musike.fm/dashboard/talent?q={search_term_string}",
+                "query-input": "required name=search_term_string"
+              }
+            })
+          }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `
