@@ -153,7 +153,7 @@ export default function FeatureTour({ onComplete }: { onComplete?: () => void })
         <>
             <SpotlightOverlay targetId={step.targetId} />
 
-            <div className={`fixed inset-x-0 ${cardPosition === 'top' ? 'top-0 pt-24 md:pt-10' : 'bottom-0 pb-20 md:pb-6'} z-[110] p-4 flex justify-center pointer-events-none transition-all duration-500`}>
+            <div className={`fixed inset-x-0 ${cardPosition === 'top' ? 'top-0 pt-24 md:pt-10' : 'bottom-0 pb-20 md:pb-6'} z-[110] p-4 flex justify-center pointer-events-none`}>
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={currentStep}
@@ -161,7 +161,8 @@ export default function FeatureTour({ onComplete }: { onComplete?: () => void })
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: cardPosition === 'top' ? -100 : 100 }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="w-full max-w-[500px] bg-[#0a0a0f]/95 border border-white/10 rounded-[2.5rem] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] pointer-events-auto backdrop-blur-2xl"
+                        className="w-full max-w-[500px] bg-[#0a0a0f]/95 border border-white/10 rounded-[2.5rem] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] pointer-events-auto backdrop-blur-2xl will-change-transform"
+                        style={{ willChange: 'transform, opacity' }}
                     >
                         {/* Header */}
                         <div className="flex justify-between items-start mb-4">

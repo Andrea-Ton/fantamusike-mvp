@@ -54,7 +54,7 @@ export default function SpotlightOverlay({ targetId, padding = 8 }: SpotlightOve
         updateRect();
 
         // Extra sync for the first 2 seconds to catch any late layout shifts/animations
-        const syncInterval = setInterval(updateRect, 100);
+        const syncInterval = setInterval(updateRect, 250);
         const syncTimeout = setTimeout(() => clearInterval(syncInterval), 2000);
 
         window.addEventListener('resize', updateRect);
