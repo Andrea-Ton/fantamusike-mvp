@@ -71,54 +71,51 @@ export default function FeatureTour({ onComplete }: { onComplete?: () => void })
     useEffect(() => {
         if (!isVisible || !step.targetId) return;
 
-        // Small delay to ensure layout is stable
+        // Calculate card position immediately for smooth transitions
+        const ids = step.targetId.split(',');
+        let targetElement: HTMLElement | null = null;
+        for (const id of ids) {
+            const el = document.getElementById(id.trim());
+            if (el && el.getBoundingClientRect().width > 0) {
+                targetElement = el;
+                break;
+            }
+        }
+
+        if (targetElement) {
+            const rect = targetElement.getBoundingClientRect();
+            const vh = window.innerHeight;
+
+            if (isMobile) {
+                setCardPosition(currentStep <= 2 ? 'bottom' : 'top');
+            } else {
+                setCardPosition(rect.top > vh * 0.5 ? 'top' : 'bottom');
+            }
+        }
+
+        // Handle scrolling with a small delay for layout stability
         const timer = setTimeout(() => {
-            const ids = step.targetId!.split(',');
-            let targetElement: HTMLElement | null = null;
+            if (!targetElement) return;
 
-            for (const id of ids) {
-                const el = document.getElementById(id.trim());
-                if (el) {
-                    const rect = el.getBoundingClientRect();
-                    if (rect.width > 0 && rect.height > 0) {
-                        targetElement = el;
-                        break;
-                    }
-                }
+            // Check if element is fixed (like mobile rewards)
+            const style = window.getComputedStyle(targetElement);
+            if (style.position === 'fixed') return;
+
+            const rect = targetElement.getBoundingClientRect();
+            const vh = window.innerHeight;
+            const elementPosition = rect.top + window.pageYOffset;
+
+            let offsetPercentage = isMobile ? 0.15 : 0.33;
+            if (isMobile && currentStep === 0) {
+                offsetPercentage = 0.05;
             }
 
-            if (targetElement) {
-                const rect = targetElement.getBoundingClientRect();
-                const vh = window.innerHeight;
+            const offsetPosition = elementPosition - (vh * offsetPercentage);
 
-                // Determine if card should be at top or bottom
-                if (isMobile) {
-                    // On mobile, force bottom for top elements and top for bottom elements
-                    // Step index 0, 1, 2 are in the top/middle area -> Tooltip Bottom
-                    // Step index 3, 4 are stickers/nav items at the bottom -> Tooltip Top
-                    setCardPosition(currentStep <= 2 ? 'bottom' : 'top');
-                } else {
-                    // Desktop: auto-calculate based on position
-                    const isSlowlyInBottom = rect.top > vh * 0.5;
-                    setCardPosition(isSlowlyInBottom ? 'top' : 'bottom');
-                }
-
-                // Scroll logic
-                const elementPosition = rect.top + window.pageYOffset;
-
-                // Specific offset for the score feature to keep it very high on mobile
-                let offsetPercentage = isMobile ? 0.15 : 0.33;
-                if (isMobile && currentStep === 0) {
-                    offsetPercentage = 0.05; // Move "Punteggio Totale" almost to the top
-                }
-
-                const offsetPosition = elementPosition - (vh * offsetPercentage);
-
-                window.scrollTo({
-                    top: offsetPosition,
-                    behavior: 'smooth'
-                });
-            }
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+            });
         }, 100);
 
         return () => clearTimeout(timer);
