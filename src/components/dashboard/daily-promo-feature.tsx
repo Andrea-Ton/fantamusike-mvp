@@ -51,7 +51,7 @@ export default function DailyPromoFeature({
                         : 'bg-gradient-to-br from-orange-400 to-orange-500 text-white border-orange-300/50 group-hover:from-orange-400 group-hover:to-orange-400'
                     }`}>
                     {!allActionsDone && (
-                        <NotificationPing className="absolute -top-2 -right-2" />
+                        <NotificationPing className="absolute -top-1 -right-1" />
                     )}
 
                     <div className="flex items-center gap-3 relative z-10">
