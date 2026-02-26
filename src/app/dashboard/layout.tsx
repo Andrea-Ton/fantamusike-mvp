@@ -24,7 +24,10 @@ export default async function DashboardLayout({
     }
 
     // Level 1: Fetch everything in parallel
+    const weekStart = await getGamingWeekStart();
+    const weekStartString = weekStart.toISOString().split('T')[0];
     const today = new Date().toISOString().split('T')[0];
+
     const [
         profileRes,
         currentSeason,
@@ -42,7 +45,7 @@ export default async function DashboardLayout({
         getSystemNotificationAction(),
         supabase.from('daily_promos').select('quiz_done, bet_done, boost_done').eq('user_id', user.id).eq('date', today).maybeSingle(),
         supabase.from('claimed_rewards').select('reward_slug').eq('user_id', user.id),
-        supabase.from('daily_promos').select('quiz_done, bet_done, boost_done').eq('user_id', user.id).limit(7),
+        supabase.from('daily_promos').select('quiz_done, bet_done, boost_done').eq('user_id', user.id).gte('date', weekStartString),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('referred_by', user.id),
         supabase.from('mystery_boxes').select('id, price_musicoins, available_copies, max_copies_per_user, target_user_goal').eq('is_active', true),
         supabase.from('mystery_box_orders').select('box_id').eq('user_id', user.id),
@@ -71,7 +74,6 @@ export default async function DashboardLayout({
 
     // 2. Rewards Checking
     const claimedSlugs = new Set(claimedRes.data?.map(c => c.reward_slug) || []);
-    const weekStart = await getGamingWeekStart();
     const weeklySlug = `weekly-commitment-${weekStart.getTime()}`;
 
     const daysDone = weekPromos?.filter(p => p.quiz_done && p.bet_done && p.boost_done).length || 0;
