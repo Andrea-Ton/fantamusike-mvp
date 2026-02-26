@@ -3,6 +3,22 @@
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 
+export const getGamingWeekStart = () => {
+    const d = new Date();
+    const day = d.getUTCDay(); // 0: Sun, 1: Mon, ..., 6: Sat
+    const diff = (day === 0 ? 6 : day - 1); // Days since last Monday
+
+    const start = new Date(d);
+    start.setUTCDate(d.getUTCDate() - diff);
+    start.setUTCHours(5, 0, 0, 0);
+
+    // If it's Monday but before 5 AM, go back 7 days
+    if (d < start) {
+        start.setUTCDate(start.getUTCDate() - 7);
+    }
+    return start;
+};
+
 export type RewardMission = {
     slug: string;
     title: string;
@@ -131,22 +147,6 @@ export async function getRewardsStateAction(): Promise<{ success: boolean; missi
 
     // 3. Weekly Commitment (3 promos for 5 days in last 7 days)
     // Anchor to Monday 5:00 AM UTC
-    const getGamingWeekStart = () => {
-        const d = new Date();
-        const day = d.getUTCDay(); // 0: Sun, 1: Mon, ..., 6: Sat
-        const diff = (day === 0 ? 6 : day - 1); // Days since last Monday
-
-        const start = new Date(d);
-        start.setUTCDate(d.getUTCDate() - diff);
-        start.setUTCHours(5, 0, 0, 0);
-
-        // If it's Monday but before 5 AM, go back 7 days
-        if (d < start) {
-            start.setUTCDate(start.getUTCDate() - 7);
-        }
-        return start;
-    };
-
     const weekStart = getGamingWeekStart();
     const currentWeekPromos = allPromos.filter(p => {
         const pDate = new Date(p.date); // daily_promos.date is just a date string, so it represents the start of the day

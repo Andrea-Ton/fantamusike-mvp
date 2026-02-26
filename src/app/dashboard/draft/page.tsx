@@ -934,7 +934,7 @@ export default function TalentScoutPage() {
                 {showScrollTop && (
                     <button
                         onClick={scrollToTop}
-                        className="fixed bottom-32 md:bottom-10 left-6 z-50 w-12 h-12 bg-white text-black rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all border border-white/20 group"
+                        className="fixed bottom-32 md:bottom-10 left-6 z-50 w-12 h-12 bg-white text-black rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all border border-white/20 group lg:hidden"
                     >
                         <ChevronUp size={24} className="group-hover:-translate-y-1 transition-transform" />
                     </button>
