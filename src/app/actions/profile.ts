@@ -6,6 +6,39 @@ import { redirect } from 'next/navigation';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { validateUsername } from '@/utils/validation';
 
+export async function checkUsernameAvailabilityAction(username: string): Promise<{ available: boolean; message?: string }> {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return { available: false, message: 'Unauthorized' };
+    }
+
+    const validation = validateUsername(username);
+    if (!validation.valid) {
+        return { available: false, message: validation.error };
+    }
+
+    // Check against existing profiles
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', username)
+        .neq('id', user.id) // Exclude current user from the check
+        .maybeSingle();
+
+    if (error) {
+        console.error('Error checking username availability:', error);
+        return { available: false, message: 'Errore durante la verifica del nome.' };
+    }
+
+    if (data) {
+        return { available: false, message: 'Nome manager già in uso' };
+    }
+
+    return { available: true };
+}
+
 export async function updateProfileAction(formData: FormData) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -134,4 +167,24 @@ export async function deleteAccountAction() {
         console.error('Full delete flow error:', error);
         return { success: false, message: error.message || 'Failed to delete account completely' };
     }
+}
+
+export async function markRechargeAsSeenAction() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return { success: false };
+
+    const { error } = await supabase
+        .from('profiles')
+        .update({ last_recharge_seen_at: new Date().toISOString() })
+        .eq('id', user.id);
+
+    if (error) {
+        console.error('Error marking recharge as seen:', error);
+        return { success: false };
+    }
+
+    revalidatePath('/dashboard');
+    return { success: true };
 }

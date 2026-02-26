@@ -27,7 +27,8 @@ export async function getDashboardMetadataAction() {
         dailyPromoState,
         featured,
         unseenWeeklyRecap,
-        referralCountRes
+        referralCountRes,
+        hallOfFameWinsRes
     ] = await Promise.all([
         getCurrentSeasonAction(),
         getCurrentWeekAction(),
@@ -37,11 +38,13 @@ export async function getDashboardMetadataAction() {
         getDailyPromoStateAction(),
         getFeaturedArtistsAction(),
         getUnseenWeeklyRecapAction(),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('referred_by', user.id)
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('referred_by', user.id),
+        supabase.from('weekly_leaderboard_history').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('rank', 1)
     ]);
 
     const profile = profileRes.data;
     const referralCount = referralCountRes.count || 0;
+    const hallOfFameWins = hallOfFameWinsRes.count || 0;
 
     return {
         user,
@@ -53,6 +56,7 @@ export async function getDashboardMetadataAction() {
         dailyPromoState,
         featured,
         unseenWeeklyRecap,
-        referralCount
+        referralCount,
+        hallOfFameWins
     };
 }

@@ -52,8 +52,11 @@ create table public.profiles (
   referral_code text unique,
   referred_by uuid references public.profiles(id),
   has_completed_onboarding boolean default false,
+  has_completed_tutorial boolean default false,
   has_used_free_label boolean default false,
   last_login_at timestamp with time zone,
+  last_recharge_seen_at timestamp with time zone, -- usato per il ping della ricarica/referral
+  tutorial_ping_seen boolean default true, -- usato per il ping del tutorial (true di default per i nuovi utenti)
   current_streak integer default 0,
   created_at timestamp with time zone default timezone('utc'::text, now()),
   updated_at timestamp with time zone default timezone('utc'::text, now())
@@ -294,9 +297,7 @@ create table public.weekly_leaderboard_history (
 );
 
 alter table public.weekly_leaderboard_history enable row level security;
-create policy "Users can view their own leaderboard history." on public.weekly_leaderboard_history for select using ( auth.uid() = user_id );
-create policy "Admins can view all leaderboard history." on public.weekly_leaderboard_history for select
-  using ( exists ( select 1 from public.profiles where id = auth.uid() and is_admin = true ) );
+create policy "Weekly leaderboard history is viewable by everyone." on public.weekly_leaderboard_history for select using ( true );
 
 create policy "Users can update their own leaderboard history." on public.weekly_leaderboard_history for update 
   using ( auth.uid() = user_id );
@@ -370,7 +371,8 @@ begin
     referred_by,
     marketing_opt_in,
     has_completed_onboarding,
-    has_used_free_label
+    has_used_free_label,
+    tutorial_ping_seen
   )
   values (
     new.id,
@@ -381,7 +383,8 @@ begin
     referrer_id,
     coalesce((new.raw_user_meta_data->>'marketing_opt_in')::boolean, false),
     false,
-    false
+    false,
+    true
   );
 
   -- Award bonus to referrer ONLY if under limit
@@ -419,11 +422,19 @@ begin
 end;
 $$ language plpgsql security definer;
 
--- 17. LEADERBOARD VIEW (Combined Score)
+-- 17. LEADERBOARD VIEW (Combined Score with Tie-breaking)
 CREATE OR REPLACE VIEW public.leaderboard_view AS
 SELECT 
     *,
-    (total_score + listen_score) as combined_score
+    (total_score + listen_score) as combined_score,
+    ROW_NUMBER() OVER (
+        ORDER BY 
+            (total_score + listen_score) DESC, 
+            total_score DESC, 
+            listen_score DESC, 
+            created_at ASC,
+            id ASC
+    ) as rank
 FROM public.profiles;
 
 -- 18. MYSTERY BOXES System
@@ -500,3 +511,25 @@ USING (auth.uid() = user_id);
 CREATE POLICY "Users insert own transactions" 
 ON public.musicoin_transactions FOR INSERT 
 WITH CHECK (auth.uid() = user_id);
+
+-- 21. SYSTEM NOTIFICATIONS Table
+CREATE TABLE public.system_notifications (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    content TEXT NOT NULL DEFAULT '',
+    is_active BOOLEAN NOT NULL DEFAULT false,
+    style TEXT NOT NULL DEFAULT 'warning',
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.system_notifications ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "System notifications are viewable by everyone." ON public.system_notifications FOR SELECT USING ( true );
+CREATE POLICY "Admins can manage system notifications." ON public.system_notifications FOR ALL 
+  USING ( EXISTS ( SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true ) );
+
+-- Insert a default record if none exists
+INSERT INTO public.system_notifications (content, is_active)
+SELECT 'Manutenzione in corso, ci scusiamo per il disagio.', false
+WHERE NOT EXISTS (SELECT 1 FROM public.system_notifications LIMIT 1);
+
+-- Enable Realtime for system_notifications
+ALTER PUBLICATION supabase_realtime ADD TABLE public.system_notifications;

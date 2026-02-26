@@ -6,19 +6,38 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import confetti from 'canvas-confetti';
 import { createPayPalOrderAction, capturePayPalOrderAction } from '@/app/actions/payment';
+import { markRechargeAsSeenAction } from '@/app/actions/profile';
 import { sendGTMEvent } from '@next/third-parties/google';
 import { REFERRAL_LIMIT, REFERRAL_BONUS } from '@/config/game';
+import { NotificationPing } from '@/components/ui/notification-ping';
 
 interface MusiCoinBalanceProps {
     musiCoins: number;
     referralCode?: string;
     referralCount?: number;
+    pingRecharge?: boolean;
 }
 
 const PAYPAL_CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "sb"; // Fallback to sandbox
 
-export default function MusiCoinBalance({ musiCoins, referralCode, referralCount = 0 }: MusiCoinBalanceProps) {
+export default function MusiCoinBalance({ musiCoins, referralCode, referralCount = 0, pingRecharge = false }: MusiCoinBalanceProps) {
     const [showModal, setShowModal] = useState(false);
+    const [localPingRecharge, setLocalPingRecharge] = useState(pingRecharge);
+    const [showInternalPing, setShowInternalPing] = useState(false);
+
+    React.useEffect(() => {
+        setLocalPingRecharge(pingRecharge);
+    }, [pingRecharge]);
+
+    const handleOpenModal = () => {
+        setShowModal(true);
+        if (localPingRecharge) {
+            setLocalPingRecharge(false);
+            setShowInternalPing(true);
+            markRechargeAsSeenAction();
+        }
+        sendGTMEvent({ event: 'musicoin_recharge_click', category: 'engagement' });
+    };
     const [copied, setCopied] = useState(false);
 
     // Payment State
@@ -68,6 +87,7 @@ export default function MusiCoinBalance({ musiCoins, referralCode, referralCount
     const resetModal = () => {
         setShowModal(false);
         setTimeout(() => {
+            setShowInternalPing(false);
             setSelectedPackage(null);
             setPaymentSuccess(false);
             setErrorMsg(null);
@@ -78,7 +98,7 @@ export default function MusiCoinBalance({ musiCoins, referralCode, referralCount
         <PayPalScriptProvider options={{ clientId: PAYPAL_CLIENT_ID, currency: "EUR" }}>
             <div className="flex items-center gap-3 md:gap-4 h-full">
                 {/* Balance Display */}
-                <div className="px-5 py-3 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md flex items-center gap-4 shadow-inner group transition-all hover:bg-white/10 h-16 min-w-[140px] md:min-w-[170px]">
+                <div className="musicoin-balance-target px-5 py-3 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md flex items-center gap-4 shadow-inner group transition-all hover:bg-white/10 h-16 min-w-[140px] md:min-w-[170px]">
                     <div className="w-10 h-10 rounded-xl bg-yellow-400/20 flex items-center justify-center text-yellow-400 group-hover:scale-110 transition-transform">
                         <Coins size={22} />
                     </div>
@@ -92,17 +112,23 @@ export default function MusiCoinBalance({ musiCoins, referralCode, referralCount
                 </div>
 
                 {/* Recharge Trigger Button */}
-                <div className="h-16">
+                <div className="h-16 relative">
+                    {localPingRecharge && (
+                        <NotificationPing className="absolute -top-1 -right-1" />
+                    )}
                     <button
-                        onClick={() => {
-                            setShowModal(true);
-                            sendGTMEvent({ event: 'musicoin_recharge_click', category: 'engagement' });
-                        }}
-                        className="h-full px-5 bg-yellow-500 text-black font-black uppercase tracking-tighter italic transition-all flex items-center gap-2 shadow-[0_5px_20px_rgba(234,179,8,0.3)] hover:scale-[1.05] active:scale-95 rounded-2xl group"
+                        onClick={handleOpenModal}
+                        className="group relative h-full outline-none block mt-[6px] shadow-[0_5px_20px_rgba(234,179,8,0.2)] hover:shadow-[0_8px_25px_rgba(234,179,8,0.4)] transition-all rounded-2xl"
                         title="Ricarica MusiCoins"
                     >
-                        <Plus size={22} className="group-hover:rotate-90 transition-transform duration-300" />
-                        <span className="text-[11px] tracking-widest leading-none">Ricarica</span>
+                        {/* 3D Base layer */}
+                        <div className="absolute inset-0 bg-yellow-700/80 rounded-2xl"></div>
+
+                        {/* Front Clickable Layer */}
+                        <div className="relative flex items-center gap-2 h-full px-5 bg-yellow-500 text-black font-black uppercase tracking-tighter italic rounded-2xl transition-transform -translate-y-[6px] active:translate-y-0 group-hover:bg-yellow-400">
+                            <Plus size={22} className="group-hover:rotate-90 transition-transform duration-300" />
+                            <span className="text-[11px] tracking-widest leading-none mt-0.5">Ricarica</span>
+                        </div>
                     </button>
                 </div>
 
@@ -155,8 +181,11 @@ export default function MusiCoinBalance({ musiCoins, referralCode, referralCount
                                                     </div>
                                                     <div
                                                         onClick={handleCopy}
-                                                        className="p-4 sm:p-5 rounded-3xl bg-purple-500/5 border border-purple-500/20 flex flex-col gap-4 hover:bg-purple-500/10 transition-all cursor-pointer group/invite"
+                                                        className="relative p-4 sm:p-5 rounded-3xl bg-purple-500/5 border border-purple-500/20 flex flex-col gap-4 hover:bg-purple-500/10 transition-all cursor-pointer group/invite"
                                                     >
+                                                        {showInternalPing && (
+                                                            <NotificationPing className="-top-1 -right-1" />
+                                                        )}
                                                         <div className="flex items-center justify-between gap-2">
                                                             <div className="flex items-center gap-3">
                                                                 <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">

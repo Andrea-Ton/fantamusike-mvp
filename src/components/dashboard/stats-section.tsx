@@ -1,20 +1,24 @@
 
 import React from 'react';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Trophy } from 'lucide-react';
 import { createClient } from '@/utils/supabase/server';
 import { getWeeklyScoresAction } from '@/app/actions/dashboard';
 import { UserTeamResponse } from '@/app/actions/team';
+import { LeaderboardResponse } from '@/app/actions/leaderboard';
 import CountdownTimer from './countdown-timer';
 
 interface StatsSectionProps {
     userId: string;
     userTeamPromise: Promise<UserTeamResponse>;
+    leaderboardPromise: Promise<LeaderboardResponse>;
     totalScore: number;
 }
 
-export default async function StatsSection({ userId, userTeamPromise, totalScore }: StatsSectionProps) {
+export default async function StatsSection({ userId, userTeamPromise, leaderboardPromise, totalScore }: StatsSectionProps) {
     const supabase = await createClient();
     const userTeam = await userTeamPromise;
+    const leaderboard = await leaderboardPromise;
+    const userRank = leaderboard?.userRank;
 
     let weeklyTrend = 0;
     let weeklyFanta = 0;
@@ -49,9 +53,24 @@ export default async function StatsSection({ userId, userTeamPromise, totalScore
                             <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></div>
                             <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em]">Punteggio Totale</p>
                         </div>
-                        <h2 className="text-6xl md:text-7xl font-black tracking-tighter italic uppercase text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/40 leading-tight py-4 px-8 -ml-8 -my-2">
-                            {totalScore}
-                        </h2>
+                        <div className="flex flex-col items-start">
+                            <h2 id="tour-total-score" className="text-6xl md:text-7xl font-black tracking-tighter italic uppercase text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 leading-tight py-4 px-8 -ml-8 -my-2 drop-shadow-[0_0_20px_rgba(168,85,247,0.4)]">
+                                {totalScore}
+                            </h2>
+                            {userRank && (
+                                <div className="mt-2 flex flex-col items-start animate-fade-in group/rank cursor-help">
+                                    <div className="flex items-center gap-2 mb-1.5 px-1">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]"></div>
+                                        <p className="text-gray-500 text-[9px] font-black uppercase tracking-[0.2em]">Posizione Attuale</p>
+                                    </div>
+                                    <div className="flex items-baseline gap-2 px-1">
+                                        <span className="pr-2 text-3xl md:text-4xl font-black tracking-tighter italic uppercase text-transparent bg-clip-text bg-gradient-to-br from-yellow-300 via-yellow-500 to-orange-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.3)] group-hover/rank:drop-shadow-[0_0_15px_rgba(234,179,8,0.5)] transition-all duration-300">
+                                            # {userRank}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Minimal Timer Badge */}
@@ -68,7 +87,8 @@ export default async function StatsSection({ userId, userTeamPromise, totalScore
 
                 <div className="flex flex-col gap-6">
                     {/* Main Trend */}
-                    <div className="flex flex-col">
+                    {/* TODO: Nascosto per ora */}
+                    <div className="hidden flex flex-col">
                         <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-2">Trend Settimanale</span>
                         <div className={`flex items-center gap-2 text-2xl font-black italic uppercase ${weeklyTrend > 0 ? 'text-green-400' : weeklyTrend < 0 ? 'text-red-400' : 'text-gray-500'}`}>
                             {weeklyTrend > 0 ? '+' : ''}{weeklyTrend} <span className="text-sm opacity-60 not-italic font-bold">PTS</span>

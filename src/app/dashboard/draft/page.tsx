@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Plus, LogOut, Loader2, X, Save, Trophy, Users, Zap, ChevronUp, Star, Crown, Sparkles, RotateCcw, Info, Rocket } from 'lucide-react';
+import { Search, Plus, LogOut, Loader2, X, Save, Trophy, Users, Zap, ChevronUp, Star, Crown, Sparkles, RotateCcw, Info, Rocket, SlidersHorizontal, ChevronDown } from 'lucide-react';
 import Image from 'next/image';
-import { searchArtistsAction } from '@/app/actions/spotify';
+import { searchDraftArtistsAction } from '@/app/actions/draft-search';
 import { saveTeamAction, TeamSlots, getUserTeamAction } from '@/app/actions/team';
 import { getFeaturedArtistsAction, getArtistAction } from '@/app/actions/artist';
 import { getCuratedRosterAction } from '@/app/actions/scout';
@@ -16,7 +16,7 @@ import { getDraftInitialDataAction } from '@/app/actions/draft-init';
 import { createClient } from '@/utils/supabase/client';
 import InviteButton from '@/components/dashboard/invite-button';
 import { ARTIST_TIERS } from '@/config/game';
-import { main } from 'framer-motion/client';
+
 
 const getCategory = (popularity: number) => {
     if (popularity >= ARTIST_TIERS.BIG.min) return ARTIST_TIERS.BIG.label;
@@ -24,20 +24,7 @@ const getCategory = (popularity: number) => {
     return ARTIST_TIERS.NEW_GEN.label;
 };
 
-// Helper to debounce search
-function useDebounce<T>(value: T, delay: number): T {
-    const [debouncedValue, setDebouncedValue] = useState<T>(value);
-    useEffect(() => {
-        const handler = setTimeout(() => {
-            setDebouncedValue(value);
-        }, delay);
-        return () => {
-            clearTimeout(handler);
-        };
-    }, [value, delay]);
-    return debouncedValue;
-}
-
+// Initial slots definition
 const INITIAL_SLOTS: TeamSlots = {
     slot_1: null,
     slot_2: null,
@@ -49,7 +36,6 @@ const INITIAL_SLOTS: TeamSlots = {
 export default function TalentScoutPage() {
     const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
-    const debouncedSearchTerm = useDebounce(searchTerm, 300);
     const [activeFilter, setActiveFilter] = useState('All');
     const [artists, setArtists] = useState<SpotifyArtist[]>([]);
     const [featuredArtists, setFeaturedArtists] = useState<Set<string>>(new Set());
@@ -61,6 +47,8 @@ export default function TalentScoutPage() {
     const [showMobileTeam, setShowMobileTeam] = useState(false);
     const [isTeamLoaded, setIsTeamLoaded] = useState(false);
     const [viewMode, setViewMode] = useState<'search' | 'featured' | 'suggested'>('suggested');
+    const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+    const [showScrollTop, setShowScrollTop] = useState(false);
 
     // MusiCoin & Season State
     const [initialTeam, setInitialTeam] = useState<TeamSlots | null>(null);
@@ -216,61 +204,66 @@ export default function TalentScoutPage() {
         }
     }, [draftTeam, captainId, isTeamLoaded]);
 
+    // Handle initial scroll top state & listener
     useEffect(() => {
-        const fetchArtists = async () => {
-            if (viewMode === 'featured' || viewMode === 'suggested') return;
-
-            if (debouncedSearchTerm.length < 2) {
-                setArtists([]);
-                return;
-            }
-
-            setIsLoading(true);
-            const result = await searchArtistsAction(debouncedSearchTerm);
-            if (result.success && result.data) {
-                setArtists(result.data);
-            }
-            setIsLoading(false);
+        const handleScroll = () => {
+            setShowScrollTop(window.scrollY > 400);
         };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
-        fetchArtists();
-    }, [debouncedSearchTerm, viewMode]);
-
-    // Removed redundant suggested load useEffect (now in consolidated initialize)
-
-    const handleLoadFeatured = async () => {
-        setIsLoading(true);
-        setViewMode('featured');
-        setSearchTerm('');
-        const featured = await getFeaturedArtistsAction();
-        setArtists(featured);
-        setIsLoading(false);
+    const scrollToTop = () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const handleLoadSuggested = async () => {
+    const handleSearch = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+
+        // Don't search for very short queries in 'search' mode
+        if (viewMode === 'search' && searchTerm.trim().length < 2) {
+            setArtists([]);
+            return;
+        }
+
         setIsLoading(true);
+        try {
+            const result = await searchDraftArtistsAction(searchTerm, viewMode);
+            if (result.success) {
+                setArtists(result.data);
+            }
+        } catch (err) {
+            console.error('Search error:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Auto-search for Featured and Suggested when switching tabs
+    useEffect(() => {
+        if (viewMode !== 'search') {
+            handleSearch();
+        }
+    }, [viewMode]);
+
+    const handleLoadFeatured = () => {
+        if (viewMode === 'featured') return;
+        setViewMode('featured');
+        setSearchTerm('');
+        setArtists([]); // Clear current list to avoid mixing results
+        setIsSearchExpanded(false);
+    };
+
+    const handleLoadSuggested = () => {
+        if (viewMode === 'suggested') return;
         setViewMode('suggested');
         setSearchTerm('');
-        const suggested = await getCuratedRosterAction();
-        // Map ScoutSuggestion to SpotifyArtist
-        const mappedArtists: SpotifyArtist[] = suggested.map(s => ({
-            id: s.spotify_id,
-            name: s.name,
-            external_urls: { spotify: '' },
-            images: [{ url: s.image_url, height: 0, width: 0 }],
-            popularity: s.popularity,
-            genres: s.genre ? [s.genre] : [],
-            followers: { total: s.followers || 0 }
-        })).filter(a => !featuredArtists.has(a.id));
-        setArtists(mappedArtists);
-        setIsLoading(false);
+        setArtists([]); // Clear current list to avoid mixing results
+        setIsSearchExpanded(false);
     };
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(e.target.value);
-        if (viewMode === 'featured' || viewMode === 'suggested') {
-            setViewMode('search');
-        }
     };
 
     const filteredArtists = artists.filter(artist => {
@@ -459,6 +452,18 @@ export default function TalentScoutPage() {
                     </div>
                 )}
 
+                {filledSlotsCount === 5 && !captainId && (
+                    <div className="mb-4 flex flex-col items-center justify-center p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl animate-pulse">
+                        <Crown size={24} className="text-yellow-500 mb-2" />
+                        <span className="text-yellow-400 text-xs font-black uppercase tracking-widest text-center">
+                            Seleziona un Capitano per confermare
+                        </span>
+                        <span className="text-yellow-500/60 text-[10px] uppercase tracking-widest mt-1 text-center font-bold">
+                            Clicca sulla corona accanto all'artista
+                        </span>
+                    </div>
+                )}
+
                 <button
                     onClick={handleSaveClick}
                     disabled={filledSlotsCount < 5 || !captainId || isSaving}
@@ -485,7 +490,7 @@ export default function TalentScoutPage() {
                         <div className="relative z-10">
                             <div className="flex items-center gap-2 mb-4">
                                 <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></div>
-                                <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">Transazione in corso</p>
+                                <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">Modifica squadra</p>
                             </div>
                             <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-6">Conferma Modifiche</h3>
 
@@ -528,7 +533,7 @@ export default function TalentScoutPage() {
                                 </div>
                             ) : (
                                 <p className="text-gray-500 text-xs italic mb-8">
-                                    Le modifiche saranno applicate istantaneamente all'inizio della prossima settimana di gioco.
+                                    La nuova squadra sarà attiva all'inizio della prossima settimana di gioco.
                                 </p>
                             )}
 
@@ -537,7 +542,7 @@ export default function TalentScoutPage() {
                                     onClick={() => setShowCostModal(false)}
                                     className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-[11px] bg-white/5 text-gray-400 hover:bg-white/10 transition-all border border-white/5"
                                 >
-                                    Cancel
+                                    Annulla
                                 </button>
                                 <button
                                     onClick={handleConfirmSave}
@@ -548,7 +553,7 @@ export default function TalentScoutPage() {
                                         }`}
                                 >
                                     {isSaving ? <Loader2 className="animate-spin" /> : <Zap size={14} className={musiCoins < cost ? "opacity-30" : "fill-black"} />}
-                                    Paga e Salva
+                                    Conferma
                                 </button>
                             </div>
                         </div>
@@ -556,7 +561,10 @@ export default function TalentScoutPage() {
                 </div>
             )}
             {/* Mobile Header */}
-            <div className="md:hidden pt-12 px-6 flex justify-between items-center mb-4 bg-[#0a0a0e]/80 backdrop-blur-xl border-b border-white/5 pb-4 sticky top-0 z-30">
+            <div
+                className="md:hidden pt-4 px-6 flex justify-between items-center mb-4 bg-[#0a0a0e]/80 backdrop-blur-xl border-b border-white/5 pb-4 sticky z-30 transition-all duration-300"
+                style={{ top: 'var(--notification-height, 0px)' }}
+            >
                 <div className="flex items-center gap-3">
                     <div className="relative w-10 h-10 flex-shrink-0">
                         <Image
@@ -576,7 +584,6 @@ export default function TalentScoutPage() {
                                 </span>
                             )}
                         </div>
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{seasonName}</p>
                     </div>
                 </div>
                 <LogoutButton />
@@ -587,7 +594,7 @@ export default function TalentScoutPage() {
 
                     {/* Left Column: Search */}
                     <div className="lg:col-span-7">
-                        <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+                        <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
                             <div className="hidden md:block">
                                 <div className="flex items-center gap-2 mb-2">
                                     <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></div>
@@ -612,7 +619,13 @@ export default function TalentScoutPage() {
                                     Featured
                                 </button>
                                 <button
-                                    onClick={() => setViewMode('search')}
+                                    onClick={() => {
+                                        if (viewMode !== 'search') {
+                                            setSearchTerm('');
+                                            setArtists([]);
+                                        }
+                                        setViewMode('search');
+                                    }}
                                     className={`px-3 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${viewMode === 'search' ? 'bg-white text-black shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
                                 >
                                     Cerca
@@ -620,21 +633,63 @@ export default function TalentScoutPage() {
                             </div>
                         </div>
 
-                        {/* Search Bar */}
-                        {viewMode === 'search' && (
-                            <div className="relative mb-8 group">
-                                <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
-                                    <Search className="text-gray-500 group-focus-within:text-purple-400 transition-colors" size={20} />
-                                </div>
-                                <input
-                                    type="text"
-                                    placeholder="Scrivi il nome di un artista..."
-                                    value={searchTerm}
-                                    onChange={handleSearchChange}
-                                    className="w-full h-16 pl-14 pr-6 bg-white/[0.03] border border-white/10 rounded-2xl text-white font-bold placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500/50 transition-all backdrop-blur-xl"
-                                />
+                        {/* Search Bar Header (Collapsible Toggle) */}
+                        {viewMode !== 'search' && (
+                            <div className="mb-6">
+                                <button
+                                    onClick={() => setIsSearchExpanded(!isSearchExpanded)}
+                                    className="flex items-center gap-2 group transition-all"
+                                >
+                                    <div className="h-px w-6 bg-gradient-to-r from-purple-500 to-transparent opacity-50" />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 italic group-hover:text-purple-400 flex items-center gap-2 transition-colors">
+                                        <div className="flex items-center -space-x-1">
+                                            <SlidersHorizontal size={12} className="opacity-50" />
+                                        </div>
+                                        Filtra per nome
+                                        {isSearchExpanded ? <ChevronUp size={12} className="opacity-30" /> : <ChevronDown size={12} className="opacity-30" />}
+                                    </span>
+                                </button>
                             </div>
                         )}
+
+                        {/* Search Bar */}
+                        <div className={`
+                            overflow-hidden transition-all duration-500 ease-in-out
+                            ${(viewMode === 'search' || isSearchExpanded) ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}
+                        `}>
+                            <form onSubmit={handleSearch} className="relative mb-8 group flex flex-col sm:flex-row gap-3">
+                                <div className="relative flex-1">
+                                    <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none z-10 transition-colors">
+                                        <Search className="text-gray-500 group-focus-within:text-purple-400 transition-colors" size={18} />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder={
+                                            viewMode === 'featured' ? "Filtra artisti Featured..." :
+                                                viewMode === 'suggested' ? "Filtra artisti Suggeriti..." :
+                                                    "Scrivi nome artista..."
+                                        }
+                                        value={searchTerm}
+                                        onChange={handleSearchChange}
+                                        className="w-full h-16 pl-14 pr-6 bg-white/[0.03] border border-white/10 rounded-2xl text-white font-bold placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500/50 transition-all backdrop-blur-xl"
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className="h-16 px-8 bg-white text-black font-black uppercase tracking-tighter italic rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl flex items-center justify-center gap-3 shrink-0 disabled:opacity-50"
+                                >
+                                    <div className="relative w-5 h-5 flex items-center justify-center">
+                                        {isLoading ? (
+                                            <Loader2 className="animate-spin text-purple-600 absolute" size={20} />
+                                        ) : (
+                                            <Search size={20} className="absolute" />
+                                        )}
+                                    </div>
+                                    <span className="sm:hidden lg:inline">Cerca</span>
+                                </button>
+                            </form>
+                        </div>
 
                         {/* Filters */}
                         <div className="flex gap-2 mb-8 overflow-x-auto pb-4 scrollbar-hide">
@@ -659,7 +714,7 @@ export default function TalentScoutPage() {
                                     <ArtistSkeleton key={i} />
                                 ))}
                             </div>
-                        ) : (
+                        ) : filteredArtists.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {filteredArtists.map((artist) => {
                                     const availableSlots = getAvailableSlots(artist);
@@ -742,6 +797,22 @@ export default function TalentScoutPage() {
                                         </div>
                                     );
                                 })}
+                            </div>
+                        ) : (
+                            <div className="bg-white/[0.02] border border-dashed border-white/10 rounded-[2.5rem] py-20 px-10 text-center flex flex-col items-center gap-4">
+                                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-2">
+                                    <Search size={32} className="text-gray-700" />
+                                </div>
+                                <h3 className="text-white font-black italic uppercase tracking-tighter text-xl">Nessun artista trovato</h3>
+                                <p className="text-gray-500 text-xs font-medium max-w-xs leading-relaxed uppercase tracking-widest">
+                                    {viewMode === 'suggested' ? (
+                                        <>Non è stato trovato nessun artista.<br />Prova a cercare tra i <span className="text-yellow-500">Featured</span> o usa la ricerca manuale.</>
+                                    ) : viewMode === 'featured' ? (
+                                        <>Non è stato trovato nessun artista.<br />Prova a cercare tra i <span className="text-purple-500">Suggeriti</span> o usa la ricerca manuale.</>
+                                    ) : (
+                                        <>Non è stato trovato nessun artista.</>
+                                    )}
+                                </p>
                             </div>
                         )}
                     </div>
@@ -859,6 +930,15 @@ export default function TalentScoutPage() {
 
 
 
+                {/* Scroll to Top Arrow */}
+                {showScrollTop && (
+                    <button
+                        onClick={scrollToTop}
+                        className="fixed bottom-32 md:bottom-10 left-6 z-50 w-12 h-12 bg-white text-black rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all border border-white/20 group"
+                    >
+                        <ChevronUp size={24} className="group-hover:-translate-y-1 transition-transform" />
+                    </button>
+                )}
             </main >
         </>
     );

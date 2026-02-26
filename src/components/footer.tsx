@@ -33,6 +33,7 @@ export default function Footer() {
                             <div className="flex flex-col gap-3">
                                 <Link href="/privacy-policy" className="text-xs font-bold text-gray-500 hover:text-white transition-colors">Privacy Policy</Link>
                                 <Link href="/cookie-policy" className="text-xs font-bold text-gray-500 hover:text-white transition-colors">Cookie Policy</Link>
+                                <Link href="/rules" className="text-xs font-bold text-gray-500 hover:text-white transition-colors">Regole</Link>
                                 <Link href="/terms" className="text-xs font-bold text-gray-500 hover:text-white transition-colors">Termini e Condizioni</Link>
                                 <button
                                     onClick={handleReviewCookies}

@@ -15,21 +15,23 @@ import { getFeaturedArtistsAction } from '@/app/actions/artist';
 import { getCuratedRosterAction } from '@/app/actions/scout';
 import OnboardingWrapper from '@/components/dashboard/onboarding-wrapper';
 import ShareButton from '@/components/dashboard/share-button';
-import { UserTeamResponse } from '@/app/actions/team';
-import { LeaderboardResponse } from '@/app/actions/leaderboard';
 import { updateLoginStreakAction, getRewardsStateAction } from '@/app/actions/rewards';
 import MusiRewards from '@/components/dashboard/musi-rewards';
 import MusiCoinBalance from '@/components/dashboard/musicoin-balance';
+import FeatureTour from '@/components/dashboard/feature-tour';
 
 export default async function DashboardPage() {
-    const metadata = await getDashboardMetadataAction();
+    // Level 1: Fetch metadata and update streak in parallel
+    const [metadata, _streak] = await Promise.all([
+        getDashboardMetadataAction(),
+        updateLoginStreakAction()
+    ]);
 
     if (!metadata) {
         redirect('/');
     }
 
-    // Update Streak & Fetch Rewards State
-    await updateLoginStreakAction();
+    // Level 2: Fetch rewards state and curate roster in parallel
     const { missions } = await getRewardsStateAction();
 
     const {
@@ -41,10 +43,18 @@ export default async function DashboardPage() {
         pendingBet,
         dailyPromoState,
         featured: featuredArtists,
-        referralCount
+        referralCount,
+        hallOfFameWins
     } = metadata;
 
     const musiCoins = profile?.musi_coins || 0;
+
+    // 24h Recharge Ping Logic
+    const REFERRAL_LIMIT = 10;
+    const lastSeen = profile?.last_recharge_seen_at ? new Date(profile.last_recharge_seen_at) : new Date(0);
+    const now = new Date();
+    const isMoreThan24Hours = (now.getTime() - lastSeen.getTime()) > (24 * 60 * 60 * 1000);
+    const pingRecharge = (referralCount || 0) < REFERRAL_LIMIT && (!profile?.last_recharge_seen_at || isMoreThan24Hours);
 
     // Background Promises (Non-Blocking)
     const userTeamPromise = getUserTeamAction(currentWeek);
@@ -76,8 +86,15 @@ export default async function DashboardPage() {
                 username={profile?.username || 'Gamer'}
             />
 
-            {/* Mobile Header */}
-            <div className="md:hidden pt-12 px-6 flex justify-between items-center mb-4 bg-[#0a0a0e]/80 backdrop-blur-xl border-b border-white/5 pb-4 sticky top-0 z-30">
+            {profile?.has_completed_onboarding && !profile?.has_completed_tutorial && (
+                <FeatureTour />
+            )}
+
+            {/* Mobile Header - Shifted down if notification bar is active using CSS variable */}
+            <div
+                className="md:hidden pt-4 px-6 flex justify-between items-center mb-4 bg-[#0a0a0e]/80 backdrop-blur-xl border-b border-white/5 pb-4 sticky z-30 transition-all duration-300"
+                style={{ top: 'var(--notification-height, 0px)' }}
+            >
                 <div className="flex items-center gap-3">
                     <div className="relative w-10 h-10 flex-shrink-0">
                         <Image
@@ -97,7 +114,7 @@ export default async function DashboardPage() {
 
             {/* Mobile Action Bar */}
             <div className="md:hidden px-6 mb-5 flex flex-col gap-3">
-                <MusiCoinBalance musiCoins={musiCoins} referralCode={profile?.referral_code} referralCount={referralCount} />
+                <MusiCoinBalance musiCoins={musiCoins} referralCode={profile?.referral_code} referralCount={referralCount} pingRecharge={pingRecharge} />
             </div>
 
             {/* Sequential Modals: Weekly Recap -> Daily Recap -> MusiBet Results */}
@@ -119,7 +136,7 @@ export default async function DashboardPage() {
                         <h1 className="text-5xl font-black text-white italic tracking-tighter uppercase leading-none">Bentornato {profile?.username},</h1>
                         <p className="text-gray-500 mt-3 font-medium text-lg">Controlla la tua Label e scala le classifiche mondiali.</p>
                     </div>
-                    <MusiCoinBalance musiCoins={musiCoins} referralCode={profile?.referral_code} referralCount={referralCount} />
+                    <MusiCoinBalance musiCoins={musiCoins} referralCode={profile?.referral_code} referralCount={referralCount} pingRecharge={pingRecharge} />
                 </header>
 
 
@@ -130,6 +147,7 @@ export default async function DashboardPage() {
                             <StatsSection
                                 userId={user.id}
                                 userTeamPromise={userTeamPromise}
+                                leaderboardPromise={leaderboardPromise}
                                 totalScore={(profile?.total_score || 0) + (profile?.listen_score || 0)}
                             />
                         </Suspense>
@@ -148,6 +166,7 @@ export default async function DashboardPage() {
                                 seasonName={season?.name || 'Season 1'}
                                 weekNumber={currentWeek}
                                 leaderboardPromise={leaderboardPromise}
+                                hallOfFameWins={hallOfFameWins}
                             />
                         </Suspense>
                     </div>

@@ -86,7 +86,7 @@ export async function searchArtists(query: string): Promise<SpotifyArtist[]> {
 
     try {
         const response = await fetchWithRetry(
-            `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist&limit=20`,
+            `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist&limit=10`,
             {
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -104,7 +104,7 @@ export async function searchArtists(query: string): Promise<SpotifyArtist[]> {
 
         // Smart Sorting: Prioritize exact matches and partial matches starting with query
         const lowercaseQuery = query.toLowerCase().trim();
-        
+
         return items.sort((a, b) => {
             const nameA = a.name.toLowerCase();
             const nameB = b.name.toLowerCase();

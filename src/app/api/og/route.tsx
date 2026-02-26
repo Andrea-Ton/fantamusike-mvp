@@ -44,6 +44,7 @@ async function generateImage(data: any) {
         rank = '-',
         seasonName = 'Season 1',
         percentile,
+        hallOfFameWins = 0,
         captainName = 'Nessuno',
         captainImage,
         roster = []
@@ -173,7 +174,7 @@ async function generateImage(data: any) {
 
 
                     {/* Captain Section */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '42px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '28px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px', color: '#6b7280', fontSize: '16px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '4px' }}>
                             <div style={{ width: '40px', height: '2px', backgroundColor: '#a855f7', marginRight: '14px' }}></div>
                             <span>Capitano</span>
@@ -182,8 +183,8 @@ async function generateImage(data: any) {
 
                         <div style={{
                             position: 'relative',
-                            width: '300px',
-                            height: '300px',
+                            width: '280px',
+                            height: '280px',
                             borderRadius: '40px',
                             display: 'flex',
                             overflow: 'hidden',
@@ -223,7 +224,7 @@ async function generateImage(data: any) {
 
 
                     {/* Roster Grid (2x2) */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', width: '500px', justifyContent: 'center', gap: '26px', marginBottom: '26px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', width: '500px', justifyContent: 'center', gap: '26px', marginBottom: '20px' }}>
                         {rosterSlots.slice(0, 4).map((artist, index) => (
                             <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '210px' }}>
                                 <div style={{
@@ -231,7 +232,7 @@ async function generateImage(data: any) {
                                     height: '180px',
                                     borderRadius: '30px',
                                     overflow: 'hidden',
-                                    marginBottom: '14px',
+                                    marginBottom: '10px',
                                     border: '2px solid rgba(255,255,255,0.15)',
                                     background: 'rgba(255,255,255,0.05)',
                                     position: 'relative',
@@ -249,7 +250,8 @@ async function generateImage(data: any) {
                     </div>
 
 
-                    {/* Manager Name Hero Section (Full Width) */}
+
+
                     <div style={{
                         display: 'flex',
                         flexDirection: 'column',
@@ -258,26 +260,78 @@ async function generateImage(data: any) {
                         width: '613px',
                         backgroundColor: 'rgba(168, 85, 247, 0.15)',
                         border: '1px solid rgba(168, 85, 247, 0.3)',
-                        padding: '14px 26px',
+                        padding: 0,
                         borderRadius: '26px',
-                        marginBottom: '26px',
+                        marginBottom: '20px',
                         zIndex: 20,
-                        overflow: 'hidden'
+                        overflow: 'visible',
+                        position: 'relative',
+                        marginTop: '28px'
                     }}>
-                        <div style={{ display: 'flex', fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#6b7280', marginBottom: '5px', letterSpacing: '3px' }}>
-                            <span>Manager</span>
-                        </div>
+                        {/* Inner Padded Wrapper */}
                         <div style={{
                             display: 'flex',
-                            fontSize: `${getFontSize(username, 30, 18)}px`,
-                            fontWeight: 900,
-                            textTransform: 'uppercase',
-                            marginBottom: '5px',
-                            letterSpacing: '3px',
-                            textAlign: 'center'
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            width: '100%',
+                            padding: '14px 26px',
                         }}>
-                            <span>{username}</span>
+                            <div style={{ display: 'flex', fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#6b7280', marginBottom: '5px', marginTop: '16px', letterSpacing: '3px' }}>
+                                <span>Manager</span>
+                            </div>
+                            <div style={{
+                                display: 'flex',
+                                fontSize: `${getFontSize(username, 30, 18)}px`,
+                                fontWeight: 900,
+                                textTransform: 'uppercase',
+                                marginBottom: '5px',
+                                letterSpacing: '3px',
+                                textAlign: 'center'
+                            }}>
+                                <span>{username}</span>
+                            </div>
                         </div>
+
+                        {/* Golden Badge (Layered on top, width 100% for perfect center) */}
+                        {hallOfFameWins > 0 && (
+                            <div style={{
+                                position: 'absolute',
+                                top: '-25px',
+                                left: 0,
+                                width: '100%',
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                zIndex: 100,
+                            }}>
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    backgroundColor: '#f59e0b',
+                                    padding: '10px 28px',
+                                    borderRadius: '100px',
+                                    border: '4px solid #050507',
+                                    boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+                                }}>
+                                    <svg width="24" height="24" viewBox="0 0 24 24">
+                                        <path d="m2 4 3 12h14l3-12-6 7-4-11-4 11-6-7z" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                        <path d="M5 20h14" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                    <div style={{
+                                        display: 'flex',
+                                        color: 'white',
+                                        fontWeight: 900,
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '2px',
+                                        fontSize: '18px',
+                                        fontStyle: 'italic',
+                                    }}>
+                                        <span>HALL OF FAME | {hallOfFameWins}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
 
@@ -365,6 +419,7 @@ export async function GET(request: NextRequest) {
             rank: searchParams.get('rank'),
             seasonName: searchParams.get('seasonName'),
             percentile: searchParams.get('percentile'),
+            hallOfFameWins: searchParams.get('hallOfFameWins') ? parseInt(searchParams.get('hallOfFameWins')!) : 0,
             captainName: searchParams.get('captainName'),
             captainImage: searchParams.get('captainImage'),
             roster: []

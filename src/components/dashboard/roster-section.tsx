@@ -25,6 +25,7 @@ interface RosterSectionProps {
     seasonName: string;
     leaderboardPromise: Promise<LeaderboardResponse>;
     weekNumber: number;
+    hallOfFameWins?: number;
 }
 
 export default async function RosterSection({
@@ -36,7 +37,8 @@ export default async function RosterSection({
     totalScore,
     seasonName,
     leaderboardPromise,
-    weekNumber
+    weekNumber,
+    hallOfFameWins
 }: RosterSectionProps) {
     const [userTeam, leaderboard] = await Promise.all([
         userTeamPromise,
@@ -248,10 +250,13 @@ export default async function RosterSection({
                             <div className="flex items-center gap-2">
                                 <Link
                                     href="/dashboard/draft"
-                                    className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all group"
+                                    className="relative group outline-none mt-[6px] block"
                                     title="Modifica Label"
                                 >
-                                    <Pencil size={14} className="text-gray-500 group-hover:text-white" />
+                                    <div className="absolute inset-0 bg-gray-700/80 rounded-xl"></div>
+                                    <div className="relative p-2.5 bg-gradient-to-br from-gray-500 to-gray-600 border border-gray-400/50 rounded-xl flex items-center justify-center group-hover:from-gray-500 group-hover:to-gray-500 -translate-y-[6px] active:translate-y-0 transition-transform">
+                                        <Pencil size={18} className="text-white transition-colors" />
+                                    </div>
                                 </Link>
 
                                 <ShareButton
@@ -263,6 +268,7 @@ export default async function RosterSection({
                                     weekNumber={weekNumber}
                                     seasonName={seasonName}
                                     percentile={percentile}
+                                    hallOfFameWins={hallOfFameWins}
                                     variant="iconOnly"
                                 />
                             </div>

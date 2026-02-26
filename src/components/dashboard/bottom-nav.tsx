@@ -4,6 +4,7 @@ import React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Home, Search, Trophy, Shield, User, ShoppingBag } from 'lucide-react';
 import { sendGTMEvent } from '@next/third-parties/google';
+import { NotificationPing } from '@/components/ui/notification-ping';
 
 const NAV_ITEMS = [
     { href: '/dashboard', label: 'Dashboard', icon: Home },
@@ -13,7 +14,19 @@ const NAV_ITEMS = [
     { href: '/dashboard/profile', label: 'Profilo', icon: User },
 ];
 
-export default function BottomNav({ isAdmin }: { isAdmin?: boolean }) {
+export default function BottomNav({
+    isAdmin = false,
+    pingTalentScout = false,
+    pingMusiMarket = false,
+    pingDashboard = false,
+    pingProfile = false
+}: {
+    isAdmin?: boolean,
+    pingTalentScout?: boolean,
+    pingMusiMarket?: boolean,
+    pingDashboard?: boolean,
+    pingProfile?: boolean
+}) {
     const pathname = usePathname();
     const router = useRouter();
 
@@ -30,20 +43,26 @@ export default function BottomNav({ isAdmin }: { isAdmin?: boolean }) {
 
     return (
         <>
-            {/* Background Buffer for Mobile Chrome UI shifts */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-[#0b0b10] z-40 pointer-events-none" />
+            {/* Background Buffer for Mobile Safari/Chrome UI shifts - Made taller for better coverage */}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 h-24 bg-[#0b0b10] z-40 pointer-events-none" />
 
             <div className="md:hidden fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-5 right-5 bg-[#0a0a0e]/90 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] px-4 py-2.5 flex justify-around items-center z-50 animate-fade-in-up-subtle shadow-[0_8px_32px_rgba(0,0,0,0.8)]">
                 {NAV_ITEMS.map((item) => {
                     const isActive = pathname === item.href;
+                    const showPing = (item.href === '/dashboard' && pingDashboard) ||
+                        (item.href === '/dashboard/draft' && pingTalentScout) ||
+                        (item.href === '/dashboard/marketplace' && pingMusiMarket) ||
+                        (item.href === '/dashboard/profile' && pingProfile);
                     return (
                         <button
                             key={item.href}
+                            id={item.href === '/dashboard/draft' ? 'nav-draft-mobile' : undefined}
                             onClick={() => handleNavigation(item.href, item.label)}
                             className={`flex flex-col items-center gap-1.5 transition-all relative outline-none ${isActive ? 'text-white scale-110' : 'text-gray-500 hover:text-gray-300'
                                 }`}
                         >
-                            <div className={`p-2 rounded-xl transition-all ${isActive ? 'bg-white/10 shadow-inner' : ''}`}>
+                            <div className={`p-2 rounded-xl transition-all relative ${isActive ? 'bg-white/10 shadow-inner' : ''}`}>
+                                {showPing && <NotificationPing className="-top-1 -right-1" />}
                                 <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'text-purple-400' : ''} />
                             </div>
                             <span className={`text-[9px] font-black uppercase tracking-tighter italic ${isActive ? 'opacity-100' : 'opacity-60'}`}>

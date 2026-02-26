@@ -25,6 +25,7 @@ import {
     SlidersHorizontal
 } from 'lucide-react';
 import { buyMysteryBoxAction } from '@/app/actions/mystery-box';
+import { NotificationPing } from '@/components/ui/notification-ping';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
@@ -91,21 +92,31 @@ export default function MarketplaceClient({ initialBoxes, userMusiCoins, userOrd
             });
         }
 
-        // 2. Sort: Available first, then Price Descending
+        // 2. Sort: Available first, then Free first, then Price Descending
         return result.sort((a, b) => {
             const isLimitReachedA = a.max_copies_per_user !== null && (userOrderCounts[a.id] || 0) >= a.max_copies_per_user;
             const isOutOfStockA = a.available_copies !== null && a.available_copies <= 0;
-            const isUnavailableA = isLimitReachedA || isOutOfStockA;
+            const isCommunityLockedA = a.target_user_goal !== null && totalUsers < a.target_user_goal;
+            const isUnavailableA = isLimitReachedA || isOutOfStockA || isCommunityLockedA;
 
             const isLimitReachedB = b.max_copies_per_user !== null && (userOrderCounts[b.id] || 0) >= b.max_copies_per_user;
             const isOutOfStockB = b.available_copies !== null && b.available_copies <= 0;
-            const isUnavailableB = isLimitReachedB || isOutOfStockB;
+            const isCommunityLockedB = b.target_user_goal !== null && totalUsers < b.target_user_goal;
+            const isUnavailableB = isLimitReachedB || isOutOfStockB || isCommunityLockedB;
 
-            // Group by Availability
+            // Group 1: Availability (Available first)
             if (!isUnavailableA && isUnavailableB) return -1;
             if (isUnavailableA && !isUnavailableB) return 1;
 
-            // Both same availability group, sort by Price (High to Low)
+            // If both available, Group 2: Free first
+            if (!isUnavailableA && !isUnavailableB) {
+                const isFreeA = a.price_musicoins === 0;
+                const isFreeB = b.price_musicoins === 0;
+                if (isFreeA && !isFreeB) return -1;
+                if (!isFreeA && isFreeB) return 1;
+            }
+
+            // Group 3: Price Descending (for both paid available or both unavailable)
             return b.price_musicoins - a.price_musicoins;
         });
     }, [initialBoxes, userOrderCounts, activeFilter, totalUsers]);
@@ -193,12 +204,18 @@ export default function MarketplaceClient({ initialBoxes, userMusiCoins, userOrd
                     const isUnavailable = isLimitReached || isOutOfStock;
                     const isCommunityLocked = box.target_user_goal !== null && totalUsers < box.target_user_goal;
 
+                    const canAfford = userMusiCoins >= box.price_musicoins;
+                    const showPing = !isUnavailable && !isCommunityLocked && canAfford;
+
                     return (
                         <div
                             key={box.id}
                             className={`group relative bg-[#12121a]/80 backdrop-blur-xl border border-white/5 rounded-[2.5rem] overflow-hidden hover:border-purple-500/50 transition-all duration-500 hover:translate-y-[-4px] shadow-2xl ${isUnavailable ? 'opacity-50 grayscale-[0.5]' : ''
                                 }`}
                         >
+                            {showPing && (
+                                <NotificationPing className="absolute top-4 left-4 z-20 scale-125" />
+                            )}
                             {/* Box Image / Visual Placeholder */}
                             <div className={`relative h-48 bg-gradient-to-br from-purple-900/40 to-black flex items-center justify-center overflow-hidden ${isUnavailable ? 'blur-[1px]' : ''}`}>
                                 <div className="absolute inset-0 bg-[#0b0b10]/20" />

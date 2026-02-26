@@ -1,6 +1,8 @@
-import React from 'react';
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
+
+export const dynamic = 'force-dynamic';
+
 import AvatarUpload from '@/components/profile/avatar-upload';
 import ProfileForm from '@/components/profile/profile-form';
 import DeleteAccount from '@/components/profile/delete-account';
@@ -10,6 +12,8 @@ import LogoutButton from '@/components/logout-button';
 import { getCurrentSeasonAction } from '@/app/actions/season';
 import { ShieldCheck, Calendar } from 'lucide-react';
 import ProfileViewTracker from '@/components/profile/profile-view-tracker';
+import TutorialSettings from '@/components/profile/tutorial-settings';
+import MarkTutorialSeen from '@/components/profile/mark-tutorial-seen';
 
 export default async function ProfilePage() {
     const supabase = await createClient();
@@ -37,8 +41,12 @@ export default async function ProfilePage() {
     return (
         <>
             <ProfileViewTracker />
+            <MarkTutorialSeen isActive={!profile?.tutorial_ping_seen} />
             {/* Mobile Header */}
-            <div className="md:hidden pt-12 px-6 flex justify-between items-center mb-4 bg-[#0a0a0e]/80 backdrop-blur-xl border-b border-white/5 pb-4 sticky top-0 z-30">
+            <div
+                className="md:hidden pt-4 px-6 flex justify-between items-center mb-4 bg-[#0a0a0e]/80 backdrop-blur-xl border-b border-white/5 pb-4 sticky z-30 transition-all duration-300"
+                style={{ top: 'var(--notification-height, 0px)' }}
+            >
                 <div className="flex items-center gap-3">
                     <div className="relative w-10 h-10 flex-shrink-0">
                         <Image
@@ -51,7 +59,6 @@ export default async function ProfilePage() {
                     </div>
                     <div>
                         <h1 className="text-xl font-black text-white tracking-tighter uppercase italic leading-none">FantaMusiké</h1>
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">{seasonName}</p>
                     </div>
                 </div>
                 <LogoutButton />
@@ -109,8 +116,13 @@ export default async function ProfilePage() {
                         <BadgeSection userId={user.id} />
                     </div>
 
+
                     {/* Right Column: Settings Forms */}
                     <div className="lg:col-span-8 xl:col-span-9 space-y-8">
+
+                        {/* Tutorial Settings */}
+                        <TutorialSettings pingTutorialBanner={!profile?.tutorial_ping_seen} />
+
                         {/* General Settings */}
                         <div className="bg-white/[0.03] border border-white/10 rounded-[2.5rem] p-8 md:p-10 backdrop-blur-3xl shadow-2xl relative overflow-hidden">
                             <div className="relative z-10">

@@ -12,6 +12,7 @@ export type WeeklyRecap = {
     reward_musicoins: number;
     team?: UserTeamResponse;
     percentile?: string;
+    hallOfFameWins?: number;
 };
 
 export type LeaderboardEntry = {
@@ -22,6 +23,13 @@ export type LeaderboardEntry = {
     listen_score: number;
     combined_score: number;
     rank: number;
+};
+
+export type HallOfFameEntry = {
+    id: string;
+    username: string;
+    avatar_url: string;
+    wins_count: number;
 };
 
 export type LeaderboardResponse = {
@@ -71,10 +79,17 @@ export async function getUnseenWeeklyRecapAction(): Promise<WeeklyRecap | null> 
         }
     }
 
+    const { count: hallOfFameWins } = await supabase
+        .from('weekly_leaderboard_history')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('rank', 1);
+
     return {
         ...(data as WeeklyRecap),
         team: team || undefined,
-        percentile: percentile
+        percentile: percentile,
+        hallOfFameWins: hallOfFameWins || 0
     };
 }
 
@@ -112,23 +127,21 @@ export async function getLeaderboardAction(userId?: string, page: number = 1): P
     // 2. Fetch Podium (Top 3)
     const { data: podiumData } = await supabase
         .from('leaderboard_view')
-        .select('id, username, avatar_url, total_score, listen_score, combined_score')
-        .order('combined_score', { ascending: false })
-        .order('listen_score', { ascending: false })
+        .select('id, username, avatar_url, total_score, listen_score, combined_score, rank')
+        .order('rank', { ascending: true })
         .limit(3);
 
-    const podium = (podiumData || []).map((p, i) => ({ ...p, rank: i + 1 }));
+    const podium = podiumData || [];
 
     // 3. Fetch Paginated Entries
     const from = (page - 1) * pageSize;
     const { data: entriesData } = await supabase
         .from('leaderboard_view')
-        .select('id, username, avatar_url, total_score, listen_score, combined_score')
-        .order('combined_score', { ascending: false })
-        .order('listen_score', { ascending: false })
+        .select('id, username, avatar_url, total_score, listen_score, combined_score, rank')
+        .order('rank', { ascending: true })
         .range(from, from + pageSize - 1);
 
-    const entries = (entriesData || []).map((e, i) => ({ ...e, rank: from + i + 1 }));
+    const entries = entriesData || [];
 
     // NEW: Fetch current game week
     const { data: latestSnap } = await supabase
@@ -145,17 +158,12 @@ export async function getLeaderboardAction(userId?: string, page: number = 1): P
     if (userId) {
         const { data: userEntry } = await supabase
             .from('leaderboard_view')
-            .select('id, combined_score')
+            .select('rank')
             .eq('id', userId)
             .maybeSingle();
 
         if (userEntry) {
-            const { count: rankCount } = await supabase
-                .from('leaderboard_view')
-                .select('*', { count: 'exact', head: true })
-                .gt('combined_score', userEntry.combined_score);
-
-            userRank = (rankCount || 0) + 1;
+            userRank = userEntry.rank;
         }
     }
 
@@ -168,6 +176,52 @@ export async function getLeaderboardAction(userId?: string, page: number = 1): P
         currentWeek,
         userRank
     };
+}
+
+export async function getHallOfFameAction(): Promise<HallOfFameEntry[]> {
+    const supabase = await createClient();
+
+    // Fetch users who achieved rank 1 at least once
+    // We group by user_id to count how many times they reached 1st place
+    const { data, error } = await supabase
+        .from('weekly_leaderboard_history')
+        .select(`
+            user_id,
+            profiles:user_id (
+                username,
+                avatar_url
+            )
+        `)
+        .eq('rank', 1);
+
+    if (error || !data) {
+        console.error('Error fetching Hall of Fame:', error);
+        return [];
+    }
+
+    // Count wins per user
+    const winsMap: Record<string, { username: string; avatar_url: string; wins_count: number }> = {};
+
+    data.forEach((entry: any) => {
+        const userId = entry.user_id;
+        const profile = entry.profiles;
+        if (!winsMap[userId]) {
+            winsMap[userId] = {
+                username: profile?.username || 'Unknown',
+                avatar_url: profile?.avatar_url || '',
+                wins_count: 0
+            };
+        }
+        winsMap[userId].wins_count += 1;
+    });
+
+    const winners = Object.entries(winsMap).map(([id, info]) => ({
+        id,
+        ...info
+    }));
+
+    // Sort by wins_count DESC
+    return winners.sort((a, b) => b.wins_count - a.wins_count);
 }
 
 export async function triggerWeeklyLeaderboardAction() {
