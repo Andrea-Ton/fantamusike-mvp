@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
 import { getCurrentSeasonAction } from '@/app/actions/season';
 import { getSystemNotificationAction } from '@/app/actions/system';
 import NotificationBar from '@/components/dashboard/notification-bar';
+import { getGamingWeekStart } from '@/app/actions/rewards';
 
 export default async function DashboardLayout({
     children,
@@ -70,9 +71,11 @@ export default async function DashboardLayout({
 
     // 2. Rewards Checking
     const claimedSlugs = new Set(claimedRes.data?.map(c => c.reward_slug) || []);
+    const weekStart = getGamingWeekStart();
+    const weeklySlug = `weekly-commitment-${weekStart.getTime()}`;
 
     const daysDone = weekPromos?.filter(p => p.quiz_done && p.bet_done && p.boost_done).length || 0;
-    const pendingRewards = (daysDone >= 5 && !claimedSlugs.has('weekly-commitment')) ||
+    const pendingRewards = (daysDone >= 5 && !claimedSlugs.has(weeklySlug)) ||
         (todayPromo?.quiz_done && todayPromo?.bet_done && todayPromo?.boost_done && !claimedSlugs.has(`clean-sweep-${today}`));
     // Note: This is an approximation for the layout ping. MusiRewards component handles full logic.
 
