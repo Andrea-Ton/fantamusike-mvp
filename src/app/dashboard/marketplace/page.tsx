@@ -43,6 +43,19 @@ export default async function MarketplacePage() {
         .from('profiles')
         .select('*', { count: 'exact', head: true });
 
+    // Fetch referral count for ping logic
+    const { count: referralCount } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('referred_by', user.id);
+
+    // 24h Recharge Ping Logic
+    const REFERRAL_LIMIT = 10;
+    const lastSeen = profile?.last_recharge_seen_at ? new Date(profile.last_recharge_seen_at) : new Date(0);
+    const now = new Date();
+    const isMoreThan24Hours = (now.getTime() - lastSeen.getTime()) > (24 * 60 * 60 * 1000);
+    const pingRecharge = (referralCount || 0) < REFERRAL_LIMIT && (!profile?.last_recharge_seen_at || isMoreThan24Hours);
+
     return (
         <>
             {/* Mobile Header - Shifted down if notification bar is active using CSS variable */}
@@ -74,11 +87,16 @@ export default async function MarketplacePage() {
                             <span className="w-8 h-px bg-yellow-500"></span>
                             <span className="text-[10px] font-black text-yellow-500 uppercase tracking-[0.2em]">ottieni le mysterybox</span>
                         </div>
-                        <h1 className="text-5xl font-black text-white italic tracking-tighter uppercase leading-none">MusiMarket</h1>
-                        <p className="text-gray-500 mt-3 font-medium text-lg">Usa i tuoi MusiCoins per sbloccare le esclusive MysteryBox della Musica.</p>
+                        <h1 className="text-4xl md:text-5xl font-black text-white italic tracking-tighter uppercase leading-none">MusiMarket</h1>
+                        <p className="text-gray-500 mt-3 font-medium text-sm">Usa i tuoi MusiCoins per sbloccare le esclusive MysteryBox della Musica.</p>
                     </div>
 
-                    <MusiCoinBalance musiCoins={profile?.musi_coins || 0} referralCode={profile?.referral_code} />
+                    <MusiCoinBalance
+                        musiCoins={profile?.musi_coins || 0}
+                        referralCode={profile?.referral_code}
+                        referralCount={referralCount || 0}
+                        pingRecharge={pingRecharge}
+                    />
                 </header>
 
                 <MarketplaceClient

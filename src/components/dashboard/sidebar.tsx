@@ -24,9 +24,20 @@ interface SidebarProps {
     isAdmin?: boolean;
     pingTalentScout?: boolean;
     pingMusiMarket?: boolean;
+    pingDashboard?: boolean;
+    pingProfile?: boolean;
 }
 
-export default function Sidebar({ avatarUrl, displayName, seasonName, isAdmin, pingTalentScout = false, pingMusiMarket = false }: SidebarProps) {
+export default function Sidebar({
+    avatarUrl,
+    displayName,
+    seasonName,
+    isAdmin,
+    pingTalentScout = false,
+    pingMusiMarket = false,
+    pingDashboard = false,
+    pingProfile = false
+}: SidebarProps) {
     const pathname = usePathname();
     const router = useRouter();
     const supabase = createClient();
@@ -62,7 +73,8 @@ export default function Sidebar({ avatarUrl, displayName, seasonName, isAdmin, p
                 <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] px-4 mb-3">Menu</p>
                 {NAV_ITEMS.map((item) => {
                     const isActive = pathname === item.href;
-                    const showPing = (item.href === '/dashboard/draft' && pingTalentScout) ||
+                    const showPing = (item.href === '/dashboard' && pingDashboard) ||
+                        (item.href === '/dashboard/draft' && pingTalentScout) ||
                         (item.href === '/dashboard/marketplace' && pingMusiMarket);
                     return (
                         <Link
@@ -122,7 +134,7 @@ export default function Sidebar({ avatarUrl, displayName, seasonName, isAdmin, p
             </div>
 
             <div className="p-6 mt-auto">
-                <Link href="/dashboard/profile" className="bg-white/5 rounded-[1.5rem] p-4 border border-white/10 flex items-center gap-3 mb-2 hover:bg-white/10 transition-all group cursor-pointer shadow-inner backdrop-blur-md">
+                <Link href="/dashboard/profile" className="bg-white/5 rounded-[1.5rem] p-4 border border-white/10 flex items-center gap-3 mb-2 hover:bg-white/10 transition-all group cursor-pointer shadow-inner backdrop-blur-md relative">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 p-0.5 relative group-hover:scale-105 transition-transform shadow-lg">
                         {avatarUrl ? (
                             <Image
@@ -138,6 +150,9 @@ export default function Sidebar({ avatarUrl, displayName, seasonName, isAdmin, p
                         )}
                         <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-[#050507]"></div>
                     </div>
+                    {pingProfile && (
+                        <NotificationPing className="left-10 top-3" />
+                    )}
                     <div className="flex-1 overflow-hidden">
                         <p className="text-[11px] font-black text-white tracking-wider truncate group-hover:text-purple-400 transition-colors">{display}</p>
                     </div>

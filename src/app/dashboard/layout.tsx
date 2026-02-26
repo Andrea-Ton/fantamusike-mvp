@@ -4,6 +4,8 @@ import BottomNav from '@/components/dashboard/bottom-nav';
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+
 import { getCurrentSeasonAction } from '@/app/actions/season';
 import { getSystemNotificationAction } from '@/app/actions/system';
 import NotificationBar from '@/components/dashboard/notification-bar';
@@ -38,12 +40,54 @@ export default async function DashboardLayout({
     // Fetch System Notification
     const { data: notification } = await getSystemNotificationAction();
 
-    // Ping Calculations
-    // 1. Talent Scout Ping (If < 3 days to reset. Leaderboard resets Monday. Fri/Sat/Sun = day 5/6/0)
+    // 1. Promo Checking
+    const today = new Date().toISOString().split('T')[0];
+    const { data: todayPromo } = await supabase
+        .from('daily_promos')
+        .select('quiz_done, bet_done, boost_done')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .maybeSingle();
+
+    const pendingPromos = !todayPromo || !(todayPromo.quiz_done && todayPromo.bet_done && todayPromo.boost_done);
+
+    // 2. Rewards Checking
+    const { data: claimedRes } = await supabase
+        .from('claimed_rewards')
+        .select('reward_slug')
+        .eq('user_id', user.id);
+    const claimedSlugs = new Set(claimedRes?.map(c => c.reward_slug) || []);
+
+    // Fetch promos for the weekly commitment logic (rough estimate for ping)
+    const { data: weekPromos } = await supabase
+        .from('daily_promos')
+        .select('quiz_done, bet_done, boost_done')
+        .eq('user_id', user.id)
+        .limit(7); // Enough for quick check
+
+    const daysDone = weekPromos?.filter(p => p.quiz_done && p.bet_done && p.boost_done).length || 0;
+    const pendingRewards = (daysDone >= 5 && !claimedSlugs.has('weekly-commitment')) ||
+        (todayPromo?.quiz_done && todayPromo?.bet_done && todayPromo?.boost_done && !claimedSlugs.has(`clean-sweep-${today}`));
+    // Note: This is an approximation for the layout ping. MusiRewards component handles full logic.
+
+    // 3. Recharge Checking (Session-based via last_recharge_seen_at)
+    const { count: referralCount } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('referred_by', user.id);
+
+    const REFERRAL_LIMIT = 10;
+    const lastSeen = profile?.last_recharge_seen_at ? new Date(profile.last_recharge_seen_at) : new Date(0);
+    const now = new Date();
+    const isMoreThan24Hours = (now.getTime() - lastSeen.getTime()) > (24 * 60 * 60 * 1000);
+
+    const pingRecharge = (referralCount || 0) < REFERRAL_LIMIT && (!profile?.last_recharge_seen_at || isMoreThan24Hours);
+
+    // 4. Talent Scout Ping (If < 3 days to reset. Leaderboard resets Monday. Fri/Sat/Sun = day 5/6/0)
     const currentUtcDay = new Date().getUTCDay();
     const pingTalentScout = currentUtcDay === 5 || currentUtcDay === 6 || currentUtcDay === 0;
 
-    // 2. MusiMarket Ping (Advanced checkout - Only ping if AT LEAST ONE box is truly purchasable)
+    // 5. MusiMarket Ping (Advanced checkout - Only ping if AT LEAST ONE box is truly purchasable)
     let pingMusiMarket = false;
 
     const { data: activeBoxes } = await supabase
@@ -78,21 +122,16 @@ export default async function DashboardLayout({
         const userCoins = profile?.musi_coins || 0;
 
         pingMusiMarket = activeBoxes.some(box => {
-            // Price Check
             if (userCoins < box.price_musicoins) return false;
-
-            // Stock Check
             if (box.available_copies !== null && box.available_copies <= 0) return false;
-
-            // Per-User Limit Check
             if (box.max_copies_per_user !== null && (orderCounts[box.id] || 0) >= box.max_copies_per_user) return false;
-
-            // Community Goal Check
             if (box.target_user_goal !== null && totalUsers < box.target_user_goal) return false;
-
             return true;
         });
     }
+
+    const pingDashboard = pendingPromos || pendingRewards || pingRecharge;
+    const pingProfile = !profile?.tutorial_ping_seen;
 
     return (
         <div className="flex min-h-screen bg-[#0b0b10] font-sans text-white">
@@ -104,6 +143,8 @@ export default async function DashboardLayout({
                 isAdmin={isAdmin}
                 pingTalentScout={pingTalentScout}
                 pingMusiMarket={pingMusiMarket}
+                pingDashboard={pingDashboard}
+                pingProfile={pingProfile}
             />
 
             {/* Main Content Wrapper */}
@@ -120,6 +161,8 @@ export default async function DashboardLayout({
                 isAdmin={isAdmin}
                 pingTalentScout={pingTalentScout}
                 pingMusiMarket={pingMusiMarket}
+                pingDashboard={pingDashboard}
+                pingProfile={pingProfile}
             />
         </div>
     );

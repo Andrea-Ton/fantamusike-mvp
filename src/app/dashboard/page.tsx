@@ -15,8 +15,6 @@ import { getFeaturedArtistsAction } from '@/app/actions/artist';
 import { getCuratedRosterAction } from '@/app/actions/scout';
 import OnboardingWrapper from '@/components/dashboard/onboarding-wrapper';
 import ShareButton from '@/components/dashboard/share-button';
-import { UserTeamResponse } from '@/app/actions/team';
-import { LeaderboardResponse } from '@/app/actions/leaderboard';
 import { updateLoginStreakAction, getRewardsStateAction } from '@/app/actions/rewards';
 import MusiRewards from '@/components/dashboard/musi-rewards';
 import MusiCoinBalance from '@/components/dashboard/musicoin-balance';
@@ -47,6 +45,13 @@ export default async function DashboardPage() {
     } = metadata;
 
     const musiCoins = profile?.musi_coins || 0;
+
+    // 24h Recharge Ping Logic
+    const REFERRAL_LIMIT = 10;
+    const lastSeen = profile?.last_recharge_seen_at ? new Date(profile.last_recharge_seen_at) : new Date(0);
+    const now = new Date();
+    const isMoreThan24Hours = (now.getTime() - lastSeen.getTime()) > (24 * 60 * 60 * 1000);
+    const pingRecharge = (referralCount || 0) < REFERRAL_LIMIT && (!profile?.last_recharge_seen_at || isMoreThan24Hours);
 
     // Background Promises (Non-Blocking)
     const userTeamPromise = getUserTeamAction(currentWeek);
@@ -106,7 +111,7 @@ export default async function DashboardPage() {
 
             {/* Mobile Action Bar */}
             <div className="md:hidden px-6 mb-5 flex flex-col gap-3">
-                <MusiCoinBalance musiCoins={musiCoins} referralCode={profile?.referral_code} referralCount={referralCount} />
+                <MusiCoinBalance musiCoins={musiCoins} referralCode={profile?.referral_code} referralCount={referralCount} pingRecharge={pingRecharge} />
             </div>
 
             {/* Sequential Modals: Weekly Recap -> Daily Recap -> MusiBet Results */}
@@ -128,7 +133,7 @@ export default async function DashboardPage() {
                         <h1 className="text-5xl font-black text-white italic tracking-tighter uppercase leading-none">Bentornato {profile?.username},</h1>
                         <p className="text-gray-500 mt-3 font-medium text-lg">Controlla la tua Label e scala le classifiche mondiali.</p>
                     </div>
-                    <MusiCoinBalance musiCoins={musiCoins} referralCode={profile?.referral_code} referralCount={referralCount} />
+                    <MusiCoinBalance musiCoins={musiCoins} referralCode={profile?.referral_code} referralCount={referralCount} pingRecharge={pingRecharge} />
                 </header>
 
 

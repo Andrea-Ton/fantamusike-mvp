@@ -4,8 +4,9 @@ import React, { useState } from 'react';
 import { HelpCircle, RefreshCcw, Check } from 'lucide-react';
 import { resetTutorialAction } from '@/app/actions/tour';
 import { useRouter } from 'next/navigation';
+import { NotificationPing } from '../ui/notification-ping';
 
-export default function TutorialSettings() {
+export default function TutorialSettings({ pingTutorialBanner = false }: { pingTutorialBanner?: boolean }) {
     const [isResetting, setIsResetting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const router = useRouter();
@@ -28,9 +29,18 @@ export default function TutorialSettings() {
         <div className="bg-white/[0.03] border border-white/10 rounded-[2.5rem] p-8 md:p-10 backdrop-blur-3xl shadow-2xl relative overflow-hidden mt-8">
             <div className="relative z-10">
                 <div className="flex items-center justify-between mb-8 border-b border-white/5 pb-6">
-                    <div>
-                        <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Aiuto & Tutorial</h3>
-                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Guide e Istruzioni</p>
+                    <div className="flex items-center gap-3">
+                        <div>
+                            <div className="flex items-center gap-3">
+                                <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Aiuto & Tutorial</h3>
+                                {pingTutorialBanner && (
+                                    <div className="relative w-4 h-4 flex-shrink-0">
+                                        <NotificationPing className="-top-1 -left-1" />
+                                    </div>
+                                )}
+                            </div>
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Guide e Istruzioni</p>
+                        </div>
                     </div>
                     <div className="bg-purple-500/10 p-2 rounded-xl border border-purple-500/20">
                         <HelpCircle size={20} className="text-purple-400" />

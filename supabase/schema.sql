@@ -55,6 +55,8 @@ create table public.profiles (
   has_completed_tutorial boolean default false,
   has_used_free_label boolean default false,
   last_login_at timestamp with time zone,
+  last_recharge_seen_at timestamp with time zone, -- usato per il ping della ricarica/referral
+  tutorial_ping_seen boolean default true, -- usato per il ping del tutorial (true di default per i nuovi utenti)
   current_streak integer default 0,
   created_at timestamp with time zone default timezone('utc'::text, now()),
   updated_at timestamp with time zone default timezone('utc'::text, now())
@@ -369,7 +371,8 @@ begin
     referred_by,
     marketing_opt_in,
     has_completed_onboarding,
-    has_used_free_label
+    has_used_free_label,
+    tutorial_ping_seen
   )
   values (
     new.id,
@@ -380,7 +383,8 @@ begin
     referrer_id,
     coalesce((new.raw_user_meta_data->>'marketing_opt_in')::boolean, false),
     false,
-    false
+    false,
+    true
   );
 
   -- Award bonus to referrer ONLY if under limit

@@ -48,6 +48,7 @@ export default function TalentScoutPage() {
     const [isTeamLoaded, setIsTeamLoaded] = useState(false);
     const [viewMode, setViewMode] = useState<'search' | 'featured' | 'suggested'>('suggested');
     const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+    const [showScrollTop, setShowScrollTop] = useState(false);
 
     // MusiCoin & Season State
     const [initialTeam, setInitialTeam] = useState<TeamSlots | null>(null);
@@ -203,6 +204,19 @@ export default function TalentScoutPage() {
         }
     }, [draftTeam, captainId, isTeamLoaded]);
 
+    // Handle initial scroll top state & listener
+    useEffect(() => {
+        const handleScroll = () => {
+            setShowScrollTop(window.scrollY > 400);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    const scrollToTop = () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
     const handleSearch = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
 
@@ -233,14 +247,18 @@ export default function TalentScoutPage() {
     }, [viewMode]);
 
     const handleLoadFeatured = () => {
+        if (viewMode === 'featured') return;
         setViewMode('featured');
         setSearchTerm('');
+        setArtists([]); // Clear current list to avoid mixing results
         setIsSearchExpanded(false);
     };
 
     const handleLoadSuggested = () => {
+        if (viewMode === 'suggested') return;
         setViewMode('suggested');
         setSearchTerm('');
+        setArtists([]); // Clear current list to avoid mixing results
         setIsSearchExpanded(false);
     };
 
@@ -601,7 +619,13 @@ export default function TalentScoutPage() {
                                     Featured
                                 </button>
                                 <button
-                                    onClick={() => setViewMode('search')}
+                                    onClick={() => {
+                                        if (viewMode !== 'search') {
+                                            setSearchTerm('');
+                                            setArtists([]);
+                                        }
+                                        setViewMode('search');
+                                    }}
                                     className={`px-3 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${viewMode === 'search' ? 'bg-white text-black shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
                                 >
                                     Cerca
@@ -690,7 +714,7 @@ export default function TalentScoutPage() {
                                     <ArtistSkeleton key={i} />
                                 ))}
                             </div>
-                        ) : (
+                        ) : filteredArtists.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {filteredArtists.map((artist) => {
                                     const availableSlots = getAvailableSlots(artist);
@@ -773,6 +797,22 @@ export default function TalentScoutPage() {
                                         </div>
                                     );
                                 })}
+                            </div>
+                        ) : (
+                            <div className="bg-white/[0.02] border border-dashed border-white/10 rounded-[2.5rem] py-20 px-10 text-center flex flex-col items-center gap-4">
+                                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-2">
+                                    <Search size={32} className="text-gray-700" />
+                                </div>
+                                <h3 className="text-white font-black italic uppercase tracking-tighter text-xl">Nessun artista trovato</h3>
+                                <p className="text-gray-500 text-xs font-medium max-w-xs leading-relaxed uppercase tracking-widest">
+                                    {viewMode === 'suggested' ? (
+                                        <>Non è stato trovato nessun artista.<br />Prova a cercare tra i <span className="text-yellow-500">Featured</span> o usa la ricerca manuale.</>
+                                    ) : viewMode === 'featured' ? (
+                                        <>Non è stato trovato nessun artista.<br />Prova a cercare tra i <span className="text-purple-500">Suggeriti</span> o usa la ricerca manuale.</>
+                                    ) : (
+                                        <>Non è stato trovato nessun artista.</>
+                                    )}
+                                </p>
                             </div>
                         )}
                     </div>
@@ -890,6 +930,15 @@ export default function TalentScoutPage() {
 
 
 
+                {/* Scroll to Top Arrow */}
+                {showScrollTop && (
+                    <button
+                        onClick={scrollToTop}
+                        className="fixed bottom-32 md:bottom-10 left-6 z-50 w-12 h-12 bg-white text-black rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all border border-white/20 group"
+                    >
+                        <ChevronUp size={24} className="group-hover:-translate-y-1 transition-transform" />
+                    </button>
+                )}
             </main >
         </>
     );

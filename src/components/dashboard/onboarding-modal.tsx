@@ -161,6 +161,41 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
         }
     };
 
+    const handleConfirmName = async () => {
+        if (managerName.length < 3) return;
+
+        // Skip check if it matches original username (already validated by system)
+        if (managerName === username) {
+            nextStep();
+            return;
+        }
+
+        setIsValidatingName(true);
+        setNameError(null);
+
+        try {
+            const val = validateUsername(managerName);
+            if (!val.valid) {
+                setNameError(val.error || 'Nome non valido');
+                return;
+            }
+
+            const res = await checkUsernameAvailabilityAction(managerName);
+            if (!res.available) {
+                setNameError(res.message || 'Nome non disponibile');
+                return;
+            }
+
+            // If all good, proceed
+            nextStep();
+        } catch (err) {
+            console.error('Validation error:', err);
+            setNameError('Errore durante la verifica');
+        } finally {
+            setIsValidatingName(false);
+        }
+    };
+
     const handleComplete = async () => {
         setIsSaving(true);
         try {
@@ -219,7 +254,7 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
 
     const isStepComplete = useMemo(() => {
         if (step === 'manager_name') {
-            return managerName.length >= 3 && !nameError && !isValidatingName;
+            return managerName.length >= 3;
         }
         if (step === 'explain_fantamusike') return true;
         if (step === 'select_big') return !!team.slot_1;
@@ -340,8 +375,8 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
                                     </div>
 
                                     <button
-                                        onClick={nextStep}
-                                        disabled={!isStepComplete}
+                                        onClick={handleConfirmName}
+                                        disabled={!isStepComplete || isValidatingName}
                                         className="w-full h-16 bg-white text-black font-black uppercase tracking-tighter italic rounded-2xl flex items-center justify-center gap-3 hover:scale-[1.02] transition-all shadow-[0_10px_30px_rgba(255,255,255,0.1)] disabled:opacity-50"
                                     >
                                         {isValidatingName ? <><Loader2 className="animate-spin" size={20} /> Verifica...</> : <>Conferma Nome <ArrowRight size={20} /></>}
@@ -561,7 +596,7 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
                                                 <Star className="text-orange-500" size={20} />
                                             </div>
                                             <div>
-                                                <h4 className="text-[12px] font-black text-white uppercase tracking-widest mb-1">1. Guadagnarli</h4>
+                                                <h4 className="text-[12px] font-black text-white uppercase tracking-widest mb-1">1. Come Guadagnarli</h4>
                                                 <p className="text-[12px] text-gray-400 font-medium">Completando le MusiRewards, invitando amici, o condividendo la Share card sui social.</p>
                                             </div>
                                         </div>
@@ -571,7 +606,7 @@ export default function OnboardingModal({ featuredArtists, curatedRoster, userna
                                                 <Zap className="text-yellow-500" size={20} />
                                             </div>
                                             <div>
-                                                <h4 className="text-[12px] font-black text-white uppercase tracking-widest mb-1">2. Spenderli</h4>
+                                                <h4 className="text-[12px] font-black text-white uppercase tracking-widest mb-1">2. Come Usarli</h4>
                                                 <p className="text-[12px] text-gray-400 font-medium">Usa i Musicoin per effettuare cambi artisti nella tua squadra o per acquistare mystery box esclusive.</p>
                                             </div>
                                         </div>

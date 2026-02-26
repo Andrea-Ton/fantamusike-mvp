@@ -12,107 +12,73 @@ import { NotificationPing } from '@/components/ui/notification-ping';
 interface MissionItemProps {
     mission: RewardMission;
     claiming: string | null;
-    onClaim: (mission: RewardMission) => void;
+    onClaim: (mission: RewardMission, e: React.MouseEvent) => void;
 }
 
 function MissionItem({ mission, claiming, onClaim }: MissionItemProps) {
-    const [isDescOpen, setIsDescOpen] = useState(false);
     const progress = Math.min((mission.current / mission.goal) * 100, 100);
     const isClaimable = mission.canClaim && !mission.isClaimed;
 
     return (
         <div
-            className={`p-4 rounded-[1.5rem] border transition-all duration-300 flex items-center gap-4 relative overflow-hidden ${mission.isClaimed
+            className={`p-4 rounded-[1.5rem] border transition-all duration-300 flex items-center gap-4 relative overflow-hidden min-h-[110px] ${mission.isClaimed
                 ? 'bg-black/20 border-white/5 opacity-60 grayscale'
                 : isClaimable
                     ? 'bg-yellow-500/[0.05] border-yellow-500/20 shadow-[0_5px_15px_rgba(234,179,8,0.03)]'
                     : 'bg-white/[0.02] border-white/5 hover:border-white/10 hover:bg-white/[0.04]'
                 }`}
         >
-            {/* Mission Icon Compact */}
-            <button
-                onClick={() => setIsDescOpen(!isDescOpen)}
-                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-colors hover:scale-105 active:scale-95 ${mission.isClaimed
+            {/* Mission Icon */}
+            <div
+                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-colors ${mission.isClaimed
                     ? 'bg-gray-500/5 text-gray-500 border-gray-500/10'
                     : isClaimable
-                        ? 'bg-yellow-500/15 text-yellow-400 border-yellow-500/20'
-                        : 'bg-white/5 text-gray-500 border-white/5 hover:bg-white/10 hover:border-white/20'
+                        ? 'bg-yellow-500/15 text-yellow-400 border-yellow-500/20 shadow-[0_0_15px_rgba(234,179,8,0.1)]'
+                        : 'bg-white/5 text-gray-500 border-white/5'
                     }`}
-                title="Vedi dettagli missione"
             >
                 {mission.slug.includes('streak') && <Flame size={20} />}
                 {mission.slug.includes('sweep') && <Zap size={20} />}
                 {mission.slug.includes('weekly') && <Award size={20} />}
                 {mission.slug.includes('milestone') && <Star size={20} />}
-            </button>
+            </div>
 
-            <div className="flex-1 min-w-0">
-                <div className="flex flex-col mb-2">
-                    <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0 flex items-center gap-1.5 flex-wrap">
-                            <h4 className={`text-[12px] font-black uppercase italic tracking-tighter leading-tight ${mission.isClaimed ? 'text-gray-500' : 'text-white'}`}>
-                                {mission.title}
-                            </h4>
-                            {/* Description Trigger */}
-                            <div className="relative shrink-0 inline-flex items-center">
-                                <button
-                                    id={`trigger-${mission.slug}`}
-                                    onClick={() => setIsDescOpen(!isDescOpen)}
-                                    className="p-1 hover:bg-white/5 rounded-full text-gray-400 transition-colors"
-                                >
-                                    <Info size={12} />
-                                </button>
-
-                                {isDescOpen && typeof document !== 'undefined' && createPortal(
-                                    <>
-                                        <div className="fixed inset-0 z-[60]" onClick={() => setIsDescOpen(false)} />
-                                        <div
-                                            className="fixed z-[70] bg-[#0f0f13] border border-white/10 rounded-xl p-3 shadow-2xl animate-in fade-in zoom-in-95 duration-200 backdrop-blur-xl max-w-[240px]"
-                                            style={{
-                                                top: document.getElementById(`trigger-${mission.slug}`)?.getBoundingClientRect().top ? document.getElementById(`trigger-${mission.slug}`)!.getBoundingClientRect().top - 8 : 0,
-                                                left: document.getElementById(`trigger-${mission.slug}`)?.getBoundingClientRect().left ? document.getElementById(`trigger-${mission.slug}`)!.getBoundingClientRect().left : 0,
-                                                transform: 'translateY(-100%)'
-                                            }}
-                                        >
-                                            <div className="flex items-center gap-2 mb-1.5 border-b border-white/5 pb-1.5">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 shadow-[0_0_5px_rgba(234,179,8,0.5)]"></div>
-                                                <h5 className="text-[9px] font-black text-white uppercase tracking-widest">Dettaglio Missione</h5>
-                                            </div>
-                                            <p className="text-[10px] text-gray-400 font-medium leading-relaxed uppercase tracking-wider">{mission.description}</p>
-                                        </div>
-                                    </>,
-                                    document.body
-                                )}
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0 bg-black/20 px-2 py-0.5 rounded-full border border-white/5">
-                                <span className={`text-[10px] font-black italic ${mission.isClaimed ? 'text-gray-600' : isClaimable ? 'text-yellow-400' : 'text-white/80'}`}>
-                                    {mission.current}
-                                </span>
-                                <span className="text-[8px] text-gray-600 font-bold">/</span>
-                                <span className="text-[8px] text-gray-500 font-bold">{mission.goal}</span>
-                            </div>
-                        </div>
-
-                    </div>
+            <div className="flex-1 min-w-0 py-1">
+                <div className="mb-1">
+                    <h4 className={`text-[12px] font-black uppercase italic tracking-tighter leading-tight mb-0.5 ${mission.isClaimed ? 'text-gray-500' : 'text-white'}`}>
+                        {mission.title}
+                    </h4>
+                    <p className="text-[9px] text-gray-400 font-medium leading-tight uppercase tracking-wider line-clamp-3">
+                        {mission.description}
+                    </p>
                 </div>
 
-                {/* Progress Visualization Compact */}
-                <div className="h-1 bg-black/20 rounded-full overflow-hidden">
-                    <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${progress}%` }}
-                        transition={{ duration: 1 }}
-                        className={`h-full rounded-full ${mission.isClaimed
-                            ? 'bg-gray-700'
-                            : isClaimable
-                                ? 'bg-yellow-500 shadow-[0_0_5px_rgba(234,179,8,0.5)]'
-                                : 'bg-gradient-to-r from-purple-500 to-blue-500'
-                            }`}
-                    />
+                {/* Progress Visualization */}
+                <div className="flex items-center gap-3 mt-3">
+                    <div className="flex-1 h-1.5 bg-black/40 rounded-full overflow-hidden">
+                        <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${progress}%` }}
+                            transition={{ duration: 1 }}
+                            className={`h-full rounded-full ${mission.isClaimed
+                                ? 'bg-gray-700'
+                                : isClaimable
+                                    ? 'bg-yellow-500 shadow-[0_0_5px_rgba(234,179,8,0.5)]'
+                                    : 'bg-gradient-to-r from-purple-500 to-blue-500'
+                                }`}
+                        />
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-lg bg-black/20 border border-white/5 min-w-[45px] justify-center">
+                        <span className={`text-[10px] font-black italic ${mission.isClaimed ? 'text-gray-600' : isClaimable ? 'text-yellow-400' : 'text-white/80'}`}>
+                            {mission.current}
+                        </span>
+                        <span className="text-[8px] text-gray-600 font-bold">/</span>
+                        <span className="text-[8px] text-gray-500 font-bold">{mission.goal}</span>
+                    </div>
                 </div>
             </div>
 
-            {/* Action Button Compact with Reward Integrated */}
+            {/* Action Button Compact */}
             <div className="shrink-0 min-w-[90px]">
                 {mission.isClaimed ? (
                     <div className="flex flex-col items-center justify-center text-green-500/30">
@@ -121,23 +87,25 @@ function MissionItem({ mission, claiming, onClaim }: MissionItemProps) {
                     </div>
                 ) : (
                     <button
-                        onClick={() => onClaim(mission)}
+                        onClick={(e) => onClaim(mission, e)}
                         disabled={!mission.canClaim || !!claiming}
-                        className={`w-full py-1.5 px-2 rounded-xl transition-all flex flex-col items-center justify-center gap-0.5 border ${isClaimable
-                            ? 'bg-white text-black border-white hover:scale-105 active:scale-95 shadow-md'
+                        className={`w-full py-2 px-2 rounded-xl transition-all flex flex-col items-center justify-center gap-0.5 border ${isClaimable
+                            ? 'bg-white text-black border-white hover:scale-105 active:scale-95 shadow-lg'
                             : 'bg-white/5 text-gray-500/50 cursor-not-allowed border-white/5'
                             }`}
                     >
-                        <span className="text-[10px] font-black tracking-tighter leading-none">
+                        <span className="text-[11px] font-black tracking-tighter leading-none">
                             +{mission.reward} MC
                         </span>
-                        <span className="text-[8px] font-black uppercase tracking-widest opacity-70 leading-none">
-                            {claiming === mission.slug ? (
-                                <Loader2 size={10} className="animate-spin" />
-                            ) : (
-                                isClaimable ? 'RISCATTA' : ''
-                            )}
-                        </span>
+                        {isClaimable && (
+                            <span className="text-[8px] font-black uppercase tracking-widest opacity-70 leading-none mt-0.5">
+                                {claiming === mission.slug ? (
+                                    <Loader2 size={10} className="animate-spin" />
+                                ) : (
+                                    'RISCATTA'
+                                )}
+                            </span>
+                        )}
                     </button>
                 )}
             </div>
@@ -153,6 +121,8 @@ export default function MusiRewards({ initialMissions }: MusiRewardsProps) {
     const [missions, setMissions] = useState(initialMissions);
     const [claiming, setClaiming] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showCelebration, setShowCelebration] = useState(false);
+    const [flyingCoins, setFlyingCoins] = useState<{ id: number; x: number; y: number; targetX: number; targetY: number; delay: number; randomX: number; randomY: number }[]>([]);
 
     const claimableCount = missions.filter(m => m.canClaim && !m.isClaimed).length;
 
@@ -161,19 +131,52 @@ export default function MusiRewards({ initialMissions }: MusiRewardsProps) {
         setMissions(initialMissions);
     }, [initialMissions]);
 
-    const handleClaim = async (mission: RewardMission) => {
+    const handleClaim = async (mission: RewardMission, e: React.MouseEvent) => {
         if (claiming || !mission.canClaim || mission.isClaimed) return;
+
+        // Trigger flying coins
+        const rect = e.currentTarget.getBoundingClientRect();
+        const startX = rect.left + rect.width / 2;
+        const startY = rect.top + rect.height / 2;
+
+        // Target position (MusiCoin balance) - Find the visible one
+        const targetElements = document.querySelectorAll('.musicoin-balance-target');
+        const targetEl = Array.from(targetElements).find(el => {
+            const rect = el.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0 && getComputedStyle(el).display !== 'none';
+        }) as HTMLElement || targetElements[0]; // Fallback to first one
+
+        const targetRect = targetEl?.getBoundingClientRect();
+        const targetX = targetRect ? targetRect.left + targetRect.width / 2 : typeof window !== 'undefined' ? window.innerWidth / 2 : startX;
+        const targetY = targetRect ? targetRect.top + targetRect.height / 2 : -50;
+
+        // Number of coins = reward amount (max 30)
+        const count = Math.min(mission.reward, 30);
+
+        const newCoins = Array.from({ length: count }).map((_, i) => ({
+            id: Date.now() + i,
+            x: startX,
+            y: startY,
+            targetX,
+            targetY,
+            delay: i * 0.05, // Faster staggered delay for more coins
+            randomX: (Math.random() - 0.5) * 120, // Slightly reduced spread
+            randomY: (Math.random() - 0.5) * 40
+        }));
+
+        setFlyingCoins(prev => [...prev, ...newCoins]);
+
+        // Cleanup coins after animation
+        setTimeout(() => {
+            setFlyingCoins(prev => prev.filter(c => !newCoins.find(nc => nc.id === c.id)));
+        }, 3500);
 
         setClaiming(mission.slug);
         try {
             const res = await claimRewardAction(mission.slug);
             if (res.success) {
-                confetti({
-                    particleCount: 150,
-                    spread: 70,
-                    origin: { y: 0.6 },
-                    colors: ['#fbbf24', '#f59e0b', '#ffffff']
-                });
+                setShowCelebration(true);
+                setTimeout(() => setShowCelebration(false), 5000);
 
                 // Update local state
                 setMissions(prev => prev.map(m =>
@@ -225,7 +228,7 @@ export default function MusiRewards({ initialMissions }: MusiRewardsProps) {
                         <div className="w-10 h-10 rounded-xl bg-yellow-500/10 flex items-center justify-center text-yellow-500 border border-yellow-500/20 shadow-[0_0_10px_rgba(234,179,8,0.1)]">
                             <Gift size={20} />
                         </div>
-                        <div>
+                        <div className="flex flex-col">
                             <h2 className="text-xl font-black text-white italic tracking-tighter uppercase leading-none">MusiRewards</h2>
                         </div>
                     </div>
@@ -300,6 +303,50 @@ export default function MusiRewards({ initialMissions }: MusiRewardsProps) {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* Flying Coins Portal */}
+            {typeof document !== 'undefined' && createPortal(
+                <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden">
+                    {flyingCoins.map(coin => (
+                        <motion.div
+                            key={coin.id}
+                            initial={{
+                                x: coin.x,
+                                y: coin.y,
+                                scale: 0,
+                                opacity: 1
+                            }}
+                            animate={{
+                                x: [
+                                    coin.x,
+                                    coin.x + coin.randomX,
+                                    coin.targetX
+                                ],
+                                y: [
+                                    coin.y,
+                                    coin.y + coin.randomY - 50,
+                                    coin.targetY
+                                ],
+                                scale: [0, 1.5, 1.2, 0],
+                                opacity: [1, 1, 1, 0],
+                                rotate: [0, 180, 360, 720]
+                            }}
+                            transition={{
+                                duration: 1.8,
+                                delay: coin.delay,
+                                times: [0, 0.1, 0.95, 1],
+                                ease: [0.23, 1, 0.32, 1] // Custom quintic ease-out
+                            }}
+                            className="absolute w-4 h-4 bg-gradient-to-br from-yellow-300 via-yellow-500 to-yellow-600 rounded-full border-2 border-yellow-700/50 shadow-[0_0_15px_rgba(234,179,8,0.7)] flex items-center justify-center overflow-hidden"
+                        >
+                            {/* Shimmer Effect on Coin */}
+                            <div className="absolute inset-x-0 top-0 h-1/2 bg-white/30 skew-y-12 animate-pulse" />
+                            <span className="text-[8px] font-black text-yellow-950 relative z-10 select-none">M</span>
+                        </motion.div>
+                    ))}
+                </div>,
+                document.body
+            )}
         </>
     );
 }
