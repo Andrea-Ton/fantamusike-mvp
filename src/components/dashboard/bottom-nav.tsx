@@ -43,8 +43,8 @@ export default function BottomNav({
 
     return (
         <>
-            {/* Background Buffer for Mobile Chrome UI shifts */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-[#0b0b10] z-40 pointer-events-none" />
+            {/* Background Buffer for Mobile Safari/Chrome UI shifts - Made taller for better coverage */}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 h-24 bg-[#0b0b10] z-40 pointer-events-none" />
 
             <div className="md:hidden fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-5 right-5 bg-[#0a0a0e]/90 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] px-4 py-2.5 flex justify-around items-center z-50 animate-fade-in-up-subtle shadow-[0_8px_32px_rgba(0,0,0,0.8)]">
                 {NAV_ITEMS.map((item) => {

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { GoogleTagManager } from '@next/third-parties/google';
 import "./globals.css";
@@ -60,6 +60,14 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://fanta.musike.fm",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0b0b10",
+  viewportFit: "cover",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 import CookieBanner from "@/components/cookie-banner";
