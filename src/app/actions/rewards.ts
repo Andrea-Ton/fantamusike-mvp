@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 
-export const getGamingWeekStart = () => {
+export const getGamingWeekStart = async () => {
     const d = new Date();
     const day = d.getUTCDay(); // 0: Sun, 1: Mon, ..., 6: Sat
     const diff = (day === 0 ? 6 : day - 1); // Days since last Monday
@@ -147,7 +147,7 @@ export async function getRewardsStateAction(): Promise<{ success: boolean; missi
 
     // 3. Weekly Commitment (3 promos for 5 days in last 7 days)
     // Anchor to Monday 5:00 AM UTC
-    const weekStart = getGamingWeekStart();
+    const weekStart = await getGamingWeekStart();
     const currentWeekPromos = allPromos.filter(p => {
         const pDate = new Date(p.date); // daily_promos.date is just a date string, so it represents the start of the day
         return pDate >= new Date(weekStart.toISOString().split('T')[0]);

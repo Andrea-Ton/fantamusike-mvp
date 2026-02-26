@@ -71,7 +71,7 @@ export default async function DashboardLayout({
 
     // 2. Rewards Checking
     const claimedSlugs = new Set(claimedRes.data?.map(c => c.reward_slug) || []);
-    const weekStart = getGamingWeekStart();
+    const weekStart = await getGamingWeekStart();
     const weeklySlug = `weekly-commitment-${weekStart.getTime()}`;
 
     const daysDone = weekPromos?.filter(p => p.quiz_done && p.bet_done && p.boost_done).length || 0;
