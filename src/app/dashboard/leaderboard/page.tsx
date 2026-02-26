@@ -22,14 +22,12 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
     const page = sParams.page ? parseInt(sParams.page) : undefined;
     const activeTab = sParams.tab || 'weekly';
 
-    // Fetch real leaderboard data
-    const [leaderboardData, hofWinners] = await Promise.all([
+    // Level 1: Fetch everything in parallel
+    const [leaderboardData, hofWinners, nextResetDateStr] = await Promise.all([
         getLeaderboardAction(user?.id, page),
-        getHallOfFameAction()
+        getHallOfFameAction(),
+        getNextResetDateAction()
     ]);
-
-    // Weekly Reset Countdown Calculation
-    const nextResetDateStr = await getNextResetDateAction();
     const nextResetDate = new Date(nextResetDateStr);
     const now = new Date();
     const diff = nextResetDate.getTime() - now.getTime();

@@ -15,39 +15,34 @@ export default async function MarketplacePage() {
         redirect('/');
     }
 
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+    // Level 1: Fetch metadata in parallel
+    const [
+        profileRes,
+        boxesRes,
+        ordersRes,
+        totalUsersRes,
+        referralCountRes
+    ] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', user.id).single(),
+        getMysteryBoxesAction(),
+        supabase.from('mystery_box_orders').select('box_id').eq('user_id', user.id),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('referred_by', user.id)
+    ]);
 
-    const { data: boxes } = await getMysteryBoxesAction();
+    const profile = profileRes.data;
+    const { data: boxes } = boxesRes;
+    const { data: orders } = ordersRes;
+    const totalUsers = totalUsersRes.count;
+    const referralCount = referralCountRes.count;
 
     // Fetch user order counts for each box
     const userOrderCounts: Record<string, number> = {};
-    if (boxes) {
-        const { data: orders } = await supabase
-            .from('mystery_box_orders')
-            .select('box_id')
-            .eq('user_id', user.id);
-
-        if (orders) {
-            orders.forEach(order => {
-                userOrderCounts[order.box_id] = (userOrderCounts[order.box_id] || 0) + 1;
-            });
-        }
+    if (orders) {
+        orders.forEach(order => {
+            userOrderCounts[order.box_id] = (userOrderCounts[order.box_id] || 0) + 1;
+        });
     }
-
-    // Fetch total platform user count for Community Goals
-    const { count: totalUsers } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true });
-
-    // Fetch referral count for ping logic
-    const { count: referralCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('referred_by', user.id);
 
     // 24h Recharge Ping Logic
     const REFERRAL_LIMIT = 10;

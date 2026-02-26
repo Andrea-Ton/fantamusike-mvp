@@ -21,14 +21,17 @@ import MusiCoinBalance from '@/components/dashboard/musicoin-balance';
 import FeatureTour from '@/components/dashboard/feature-tour';
 
 export default async function DashboardPage() {
-    const metadata = await getDashboardMetadataAction();
+    // Level 1: Fetch metadata and update streak in parallel
+    const [metadata, _streak] = await Promise.all([
+        getDashboardMetadataAction(),
+        updateLoginStreakAction()
+    ]);
 
     if (!metadata) {
         redirect('/');
     }
 
-    // Update Streak & Fetch Rewards State
-    await updateLoginStreakAction();
+    // Level 2: Fetch rewards state and curate roster in parallel
     const { missions } = await getRewardsStateAction();
 
     const {

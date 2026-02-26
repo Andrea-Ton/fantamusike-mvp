@@ -22,11 +22,40 @@ export default async function DashboardLayout({
         redirect('/');
     }
 
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
+    // Level 1: Fetch everything in parallel
+    const today = new Date().toISOString().split('T')[0];
+    const [
+        profileRes,
+        currentSeason,
+        notificationRes,
+        todayPromoRes,
+        claimedRes,
+        weekPromosRes,
+        referralCountRes,
+        activeBoxesRes,
+        userOrdersRes,
+        totalUsersRes
+    ] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+        getCurrentSeasonAction(),
+        getSystemNotificationAction(),
+        supabase.from('daily_promos').select('quiz_done, bet_done, boost_done').eq('user_id', user.id).eq('date', today).maybeSingle(),
+        supabase.from('claimed_rewards').select('reward_slug').eq('user_id', user.id),
+        supabase.from('daily_promos').select('quiz_done, bet_done, boost_done').eq('user_id', user.id).limit(7),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('referred_by', user.id),
+        supabase.from('mystery_boxes').select('id, price_musicoins, available_copies, max_copies_per_user, target_user_goal').eq('is_active', true),
+        supabase.from('mystery_box_orders').select('box_id').eq('user_id', user.id),
+        supabase.from('profiles').select('*', { count: 'exact', head: true })
+    ]);
+
+    const profile = profileRes.data;
+    const notification = notificationRes.data;
+    const todayPromo = todayPromoRes.data;
+    const weekPromos = weekPromosRes.data;
+    const referralCount = referralCountRes.count || 0;
+    const activeBoxes = activeBoxesRes.data;
+    const userOrders = userOrdersRes.data;
+    const totalUsers = totalUsersRes.count || 0;
 
     // Prioritize DB profile, fallback to metadata, fallback to nothing
     const avatarUrl = profile?.avatar_url ?? user?.user_metadata?.avatar_url;
@@ -34,36 +63,13 @@ export default async function DashboardLayout({
     const isAdmin = profile?.is_admin || false;
 
     // Fetch Current Season
-    const currentSeason = await getCurrentSeasonAction();
     const seasonName = currentSeason?.name || 'Season Zero';
 
-    // Fetch System Notification
-    const { data: notification } = await getSystemNotificationAction();
-
     // 1. Promo Checking
-    const today = new Date().toISOString().split('T')[0];
-    const { data: todayPromo } = await supabase
-        .from('daily_promos')
-        .select('quiz_done, bet_done, boost_done')
-        .eq('user_id', user.id)
-        .eq('date', today)
-        .maybeSingle();
-
     const pendingPromos = !todayPromo || !(todayPromo.quiz_done && todayPromo.bet_done && todayPromo.boost_done);
 
     // 2. Rewards Checking
-    const { data: claimedRes } = await supabase
-        .from('claimed_rewards')
-        .select('reward_slug')
-        .eq('user_id', user.id);
-    const claimedSlugs = new Set(claimedRes?.map(c => c.reward_slug) || []);
-
-    // Fetch promos for the weekly commitment logic (rough estimate for ping)
-    const { data: weekPromos } = await supabase
-        .from('daily_promos')
-        .select('quiz_done, bet_done, boost_done')
-        .eq('user_id', user.id)
-        .limit(7); // Enough for quick check
+    const claimedSlugs = new Set(claimedRes.data?.map(c => c.reward_slug) || []);
 
     const daysDone = weekPromos?.filter(p => p.quiz_done && p.bet_done && p.boost_done).length || 0;
     const pendingRewards = (daysDone >= 5 && !claimedSlugs.has('weekly-commitment')) ||
@@ -71,11 +77,6 @@ export default async function DashboardLayout({
     // Note: This is an approximation for the layout ping. MusiRewards component handles full logic.
 
     // 3. Recharge Checking (Session-based via last_recharge_seen_at)
-    const { count: referralCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('referred_by', user.id);
-
     const REFERRAL_LIMIT = 10;
     const lastSeen = profile?.last_recharge_seen_at ? new Date(profile.last_recharge_seen_at) : new Date(0);
     const now = new Date();
@@ -90,33 +91,12 @@ export default async function DashboardLayout({
     // 5. MusiMarket Ping (Advanced checkout - Only ping if AT LEAST ONE box is truly purchasable)
     let pingMusiMarket = false;
 
-    const { data: activeBoxes } = await supabase
-        .from('mystery_boxes')
-        .select('id, price_musicoins, available_copies, max_copies_per_user, target_user_goal')
-        .eq('is_active', true);
-
     if (activeBoxes && activeBoxes.length > 0) {
-        // Fetch user orders
-        const { data: userOrders } = await supabase
-            .from('mystery_box_orders')
-            .select('box_id')
-            .eq('user_id', user.id);
-
         const orderCounts: Record<string, number> = {};
         if (userOrders) {
             userOrders.forEach(o => {
                 orderCounts[o.box_id] = (orderCounts[o.box_id] || 0) + 1;
             });
-        }
-
-        // Fetch total users if any box needs it
-        let totalUsers = 0;
-        const needsUserCount = activeBoxes.some(b => b.target_user_goal !== null);
-        if (needsUserCount) {
-            const { count } = await supabase
-                .from('profiles')
-                .select('*', { count: 'exact', head: true });
-            totalUsers = count || 0;
         }
 
         const userCoins = profile?.musi_coins || 0;
