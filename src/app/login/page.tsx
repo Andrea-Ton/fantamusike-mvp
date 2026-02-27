@@ -11,10 +11,14 @@ export default function LoginPage() {
     const [error, setError] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
 
-    const handleSubmit = async (formData: FormData) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
         setIsLoading(true);
         setError(null);
+
+        const formData = new FormData(e.currentTarget);
         const result = await login(formData);
+
         if (result?.error) {
             setError(result.error);
             setIsLoading(false);
@@ -50,7 +54,7 @@ export default function LoginPage() {
                     <p className="text-gray-400 text-sm">Accedi per gestire la tua Label</p>
                 </div>
 
-                <form action={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Email</label>
                         <input

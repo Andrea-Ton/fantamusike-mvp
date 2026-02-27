@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Home, Search, Trophy, Shield, User, ShoppingBag } from 'lucide-react';
 import { sendGTMEvent } from '@next/third-parties/google';
 import { NotificationPing } from '@/components/ui/notification-ping';
@@ -28,18 +29,11 @@ export default function BottomNav({
     pingProfile?: boolean
 }) {
     const pathname = usePathname();
-    const router = useRouter();
+    const [activePath, setActivePath] = React.useState(pathname);
 
-    const handleNavigation = (href: string, label: string) => {
-        sendGTMEvent({
-            event: 'navigation_click',
-            category: 'engagement',
-            label: label,
-            destination: href,
-            source: 'bottom_nav'
-        });
-        router.push(href);
-    };
+    React.useEffect(() => {
+        setActivePath(pathname);
+    }, [pathname]);
 
     return (
         <>
@@ -48,16 +42,27 @@ export default function BottomNav({
 
             <div className="md:hidden fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-5 right-5 bg-[#0a0a0e]/90 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] px-4 py-2.5 flex justify-around items-center z-50 animate-fade-in-up-subtle shadow-[0_8px_32px_rgba(0,0,0,0.8)]">
                 {NAV_ITEMS.map((item) => {
-                    const isActive = pathname === item.href;
+                    const isActive = activePath === item.href;
                     const showPing = (item.href === '/dashboard' && pingDashboard) ||
                         (item.href === '/dashboard/draft' && pingTalentScout) ||
                         (item.href === '/dashboard/marketplace' && pingMusiMarket) ||
                         (item.href === '/dashboard/profile' && pingProfile);
                     return (
-                        <button
+                        <Link
                             key={item.href}
+                            href={item.href}
+                            prefetch={true}
                             id={item.href === '/dashboard/draft' ? 'nav-draft-mobile' : undefined}
-                            onClick={() => handleNavigation(item.href, item.label)}
+                            onClick={() => {
+                                setActivePath(item.href);
+                                sendGTMEvent({
+                                    event: 'navigation_click',
+                                    category: 'engagement',
+                                    label: item.label,
+                                    destination: item.href,
+                                    source: 'bottom_nav'
+                                });
+                            }}
                             className={`flex flex-col items-center gap-1.5 transition-all relative outline-none ${isActive ? 'text-white scale-110' : 'text-gray-500 hover:text-gray-300'
                                 }`}
                         >
@@ -68,25 +73,36 @@ export default function BottomNav({
                             <span className={`text-[9px] font-black uppercase tracking-tighter italic ${isActive ? 'opacity-100' : 'opacity-60'}`}>
                                 {item.label.split(' ')[0]}
                             </span>
-                        </button>
+                        </Link>
                     );
                 })}
                 {isAdmin && (
-                    <button
-                        onClick={() => handleNavigation('/admin', 'Admin')}
-                        className={`flex flex-col items-center gap-1.5 transition-all relative outline-none ${pathname.startsWith('/admin') ? 'text-white scale-110' : 'text-gray-500 hover:text-gray-300'
+                    <Link
+                        href="/admin"
+                        prefetch={true}
+                        onClick={() => {
+                            setActivePath('/admin');
+                            sendGTMEvent({
+                                event: 'navigation_click',
+                                category: 'engagement',
+                                label: 'Admin',
+                                destination: '/admin',
+                                source: 'bottom_nav'
+                            });
+                        }}
+                        className={`flex flex-col items-center gap-1.5 transition-all relative outline-none ${activePath.startsWith('/admin') ? 'text-white scale-110' : 'text-gray-500 hover:text-gray-300'
                             }`}
                     >
-                        <div className={`p-2 rounded-xl transition-all ${pathname.startsWith('/admin') ? 'bg-red-500/10 shadow-inner' : ''}`}>
-                            <Shield size={20} strokeWidth={pathname.startsWith('/admin') ? 2.5 : 2} className={pathname.startsWith('/admin') ? 'text-red-500' : ''} />
+                        <div className={`p-2 rounded-xl transition-all ${activePath.startsWith('/admin') ? 'bg-red-500/10 shadow-inner' : ''}`}>
+                            <Shield size={20} strokeWidth={activePath.startsWith('/admin') ? 2.5 : 2} className={activePath.startsWith('/admin') ? 'text-red-500' : ''} />
                         </div>
-                        <span className={`text-[9px] font-black uppercase tracking-tighter italic ${pathname.startsWith('/admin') ? 'opacity-100' : 'opacity-60'}`}>
+                        <span className={`text-[9px] font-black uppercase tracking-tighter italic ${activePath.startsWith('/admin') ? 'opacity-100' : 'opacity-60'}`}>
                             Admin
                         </span>
-                        {pathname.startsWith('/admin') && (
+                        {activePath.startsWith('/admin') && (
                             <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.5)]" />
                         )}
-                    </button>
+                    </Link>
                 )}
             </div>
         </>

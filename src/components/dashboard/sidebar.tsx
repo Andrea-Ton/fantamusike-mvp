@@ -42,6 +42,12 @@ export default function Sidebar({
     const router = useRouter();
     const supabase = createClient();
 
+    const [activePath, setActivePath] = React.useState(pathname);
+
+    React.useEffect(() => {
+        setActivePath(pathname);
+    }, [pathname]);
+
     const handleSignOut = async () => {
         await supabase.auth.signOut();
         router.push('/');
@@ -72,7 +78,7 @@ export default function Sidebar({
             <div className="flex-1 px-4 py-8 space-y-1.5 flex flex-col">
                 <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] px-4 mb-3">Menu</p>
                 {NAV_ITEMS.map((item) => {
-                    const isActive = pathname === item.href;
+                    const isActive = activePath === item.href;
                     const showPing = (item.href === '/dashboard' && pingDashboard) ||
                         (item.href === '/dashboard/draft' && pingTalentScout) ||
                         (item.href === '/dashboard/marketplace' && pingMusiMarket);
@@ -81,13 +87,17 @@ export default function Sidebar({
                             key={item.href}
                             id={item.href === '/dashboard/draft' ? 'nav-draft-desktop' : undefined}
                             href={item.href}
-                            onClick={() => sendGTMEvent({
-                                event: 'navigation_click',
-                                category: 'engagement',
-                                label: item.label,
-                                destination: item.href,
-                                source: 'sidebar'
-                            })}
+                            prefetch={true}
+                            onClick={() => {
+                                setActivePath(item.href);
+                                sendGTMEvent({
+                                    event: 'navigation_click',
+                                    category: 'engagement',
+                                    label: item.label,
+                                    destination: item.href,
+                                    source: 'sidebar'
+                                });
+                            }}
                             className={`group w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 relative overflow-hidden ${isActive
                                 ? 'bg-white/5 text-white border border-white/10 shadow-inner'
                                 : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]'
@@ -111,22 +121,26 @@ export default function Sidebar({
                         <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] px-4 mb-3">Amministrazione</p>
                         <Link
                             href="/admin"
-                            onClick={() => sendGTMEvent({
-                                event: 'navigation_click',
-                                category: 'engagement',
-                                label: 'Admin Panel',
-                                destination: '/admin',
-                                source: 'sidebar_admin'
-                            })}
-                            className={`group w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 relative overflow-hidden ${pathname.startsWith('/admin')
+                            prefetch={true}
+                            onClick={() => {
+                                setActivePath('/admin');
+                                sendGTMEvent({
+                                    event: 'navigation_click',
+                                    category: 'engagement',
+                                    label: 'Admin Panel',
+                                    destination: '/admin',
+                                    source: 'sidebar_admin'
+                                });
+                            }}
+                            className={`group w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 relative overflow-hidden ${activePath.startsWith('/admin')
                                 ? 'bg-red-500/10 text-red-500 border border-red-500/20 shadow-inner'
                                 : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]'
                                 }`}
                         >
-                            {pathname.startsWith('/admin') && (
+                            {activePath.startsWith('/admin') && (
                                 <div className="absolute left-0 top-3 bottom-3 w-1 bg-red-500 rounded-r-full" />
                             )}
-                            <Shield size={18} className={`${pathname.startsWith('/admin') ? 'text-red-500' : 'group-hover:text-gray-300'} transition-colors`} />
+                            <Shield size={18} className={`${activePath.startsWith('/admin') ? 'text-red-500' : 'group-hover:text-gray-300'} transition-colors`} />
                             <span className="font-black uppercase tracking-widest text-[11px]">Pannello Admin</span>
                         </Link>
                     </>
@@ -134,7 +148,7 @@ export default function Sidebar({
             </div>
 
             <div className="p-6 mt-auto">
-                <Link href="/dashboard/profile" className="bg-white/5 rounded-[1.5rem] p-4 border border-white/10 flex items-center gap-3 mb-2 hover:bg-white/10 transition-all group cursor-pointer shadow-inner backdrop-blur-md relative">
+                <Link href="/dashboard/profile" prefetch={true} className="bg-white/5 rounded-[1.5rem] p-4 border border-white/10 flex items-center gap-3 mb-2 hover:bg-white/10 transition-all group cursor-pointer shadow-inner backdrop-blur-md relative">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 p-0.5 relative group-hover:scale-105 transition-transform shadow-lg">
                         {avatarUrl ? (
                             <Image
